@@ -78,7 +78,7 @@ export default function App() {
             <button className="cdpc-editor-back" onClick={() => setEditorOpen(false)}>
               <ArrowLeft size={16} /> {pendingPayload?.language === 'en-US' ? 'Back to Studio' : '返回皮肤工作台'}
             </button>
-            <span className="cdpc-editor-title">{pendingPayload?.language === 'en-US' ? 'CDPC Studio · Blockbench (GPL-3.0-or-later)' : 'Pixcape Studio · Blockbench（GPL-3.0-or-later）'}</span>
+            <span className="cdpc-editor-title">{pendingPayload?.language === 'en-US' ? 'CDPC Studio · Blockbench (GPL-3.0-or-later)' : 'CDPC Studio · Blockbench（GPL-3.0-or-later）'}</span>
             <a className="cdpc-editor-new-tab" href={BLOCKBENCH_PATH} target="_blank" rel="noreferrer">
               {pendingPayload?.language === 'en-US' ? 'Open in new tab' : '在新标签页打开'} <ExternalLink size={14} />
             </a>
@@ -89,7 +89,7 @@ export default function App() {
           {importFeedback && <div className="cdpc-editor-feedback" role="status" aria-live="polite">{importFeedback}</div>}
           <iframe
             ref={iframeRef}
-            title="Pixcape 内置 Blockbench 完整模型编辑器"
+            title="CDPC 内置 Blockbench 完整模型编辑器"
             src={BLOCKBENCH_PATH}
             onLoad={handleEditorLoad}
             allow="clipboard-read; clipboard-write; fullscreen"
