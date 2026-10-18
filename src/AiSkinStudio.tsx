@@ -167,7 +167,7 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
               <div className="ai-studio__empty"><div className="ai-studio__empty-art"><Sparkles size={34} /></div><strong>你的角色会出现在这里</strong><span>选择模型、写下想法，然后开始生成。</span></div>}
           </div>
           {result?.outputKind === 'minecraft-skin' && <div className="ai-studio__3d-preview"><div><strong>可交互 3D 预览</strong><small>拖动旋转 · 滚轮缩放 · 右键平移</small></div><canvas ref={previewCanvasRef} aria-label="Minecraft 皮肤 3D 预览" /></div>}
-          {result && <div className="ai-studio__result-info"><div><strong>{result.provider} / {result.model}</strong><small>{result.outputKind === 'minecraft-skin' ? `Minecraft 64×64 UV 纹理 · ${variant === 'slim' ? 'Slim' : 'Classic'}` : '概念图'}</small></div><a href={result.imageDataUrl} download="pixcape-ai-skin.png">下载皮肤 PNG</a><p>{result.notice}</p></div>}
+          {result && <div className="ai-studio__result-info"><div><strong>{result.provider} / {result.model}</strong><small>{result.outputKind === 'minecraft-skin' ? `Minecraft 64×64 UV 纹理 · ${variant === 'slim' ? 'Slim' : 'Classic'}` : '概念图'}</small></div><a href={result.imageDataUrl} download="cdpc-ai-skin.png">下载皮肤 PNG</a><p>{result.notice}</p></div>}
           <div className="ai-studio__disclaimer"><strong>生成后请检查 3D 预览</strong><p>服务端会将左右双视图投影到标准 64×64 UV 纹理，并强制基础层不透明、未使用区域透明。图像模型的正背面一致性仍可能有误差；导入游戏前请先检查脸部、服装和 Classic / Slim 手臂效果。</p></div>
         </section>
       </div>
