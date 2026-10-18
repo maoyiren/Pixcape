@@ -117,3 +117,9 @@ model VerificationToken {
   expires    DateTime
   @@unique([identifier, token])
 }
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
