@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
-import { reviewCreatorApplication, setUserRole, setUserStatus } from './actions'
+import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus } from './actions'
 
 type HealthCheck = {
   name: string
@@ -170,6 +170,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
         <h3>{user.name ?? '未设置名称'}</h3><p>{user.email ?? user.id}</p><p>角色：{user.role} · 状态：{user.status} · 注册：{user.createdAt.toISOString().slice(0, 10)}</p>
         {user.role !== 'ADMIN' && user.status === 'ACTIVE' ? <form action={setUserRole} className="actions"><input type="hidden" name="userId" value={user.id} /><label htmlFor={`role-${user.id}`}>调整角色</label><select id={`role-${user.id}`} name="role" defaultValue={user.role} aria-label={`为 ${user.name ?? user.email ?? user.id} 设置角色`}><option value="USER">普通用户</option><option value="CREATOR">创作者</option></select><button className="pixel-button primary" type="submit">保存角色</button></form> : null}
         {user.role !== 'ADMIN' && user.status !== 'DELETED' ? <form action={setUserStatus} className="actions"><input type="hidden" name="userId" value={user.id} />{user.status === 'SUSPENDED' ? <button className="pixel-button primary" type="submit" name="status" value="ACTIVE">恢复账户</button> : <button className="pixel-button" type="submit" name="status" value="SUSPENDED">封禁账户</button>}</form> : null}
+        {user.status === 'ACTIVE' && user.id !== admin.id ? <form action={setAdminAccess} className="actions"><input type="hidden" name="userId" value={user.id} />{user.role === 'ADMIN' ? <button className="pixel-button" type="submit" name="operation" value="revoke">撤销管理员</button> : <button className="pixel-button" type="submit" name="operation" value="grant">授予管理员</button>}</form> : null}
       </article>)}</div>}
     </section>
     <section className="hero inventory-panel" id="audit"><h2>操作审计日志</h2><p>最近 30 条管理操作，用于追踪账号状态、角色调整和创作者审核。敏感凭据不会写入日志。</p>
