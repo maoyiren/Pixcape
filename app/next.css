@@ -35,3 +35,8 @@
 .site-nav .site-nav-account .site-nav-admin{background:#4b8733;border-color:#76a85f;color:white}
 @media(max-width:720px){.site-nav{position:relative;align-items:flex-start;flex-wrap:wrap;gap:8px;padding:10px 12px}.site-brand{min-height:38px}.site-nav-links{order:3;flex:1 0 100%;justify-content:flex-start;overflow-x:auto;padding-bottom:2px}.site-nav-links a{flex-shrink:0}.site-nav-account{margin-left:auto}.site-nav a:not(.site-brand){min-height:38px;padding:7px 10px;font-size:12px}.site-nav .site-nav-admin{display:none!important}}
 @media(prefers-reduced-motion:reduce){.site-nav a{transition:none}}
+
+.application-card select{min-height:42px;max-width:100%;padding:8px 34px 8px 12px;border:2px solid #555;background:#f4f4f4;color:#202020;font:inherit;font-weight:700;border-radius:3px}
+.application-card label{align-self:center;font-size:13px;font-weight:800}
+.application-card form.actions{align-items:center}
+@media(max-width:680px){.application-card select{width:100%;max-width:none}.application-card form.actions{align-items:stretch}.application-card label{align-self:flex-start}}
