@@ -1,5 +1,5 @@
 import 'server-only'
-import type { NextAuthOptions, Provider } from 'next-auth'
+import type { NextAuthOptions } from 'next-auth'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import AzureADProvider from 'next-auth/providers/azure-ad'
@@ -9,7 +9,7 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 
 const authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
-const providers: Provider[] = []
+const providers: NextAuthOptions['providers'] = []
 
 if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
   providers.push(GitHubProvider({ clientId: process.env.AUTH_GITHUB_ID, clientSecret: process.env.AUTH_GITHUB_SECRET }))
