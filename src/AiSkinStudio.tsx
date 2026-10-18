@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ChevronDown, ImagePlus, LoaderCircle, Sparkles, WandSparkles } from 'lucide-react'
 import * as Select from '@radix-ui/react-select'
+import * as Tabs from '@radix-ui/react-tabs'
 import { SkinViewer } from 'skinview3d'
 import './ai-skin-studio.css'
 
@@ -116,10 +117,12 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
 
           <div className="ai-studio__field">
             <label>生成方式</label>
-            <div className="ai-studio__segmented">
-              <button className={task === 'text-to-image' ? 'active' : ''} onClick={() => setTask('text-to-image')}><WandSparkles size={16} /> 文字生成</button>
-              <button className={task === 'image-to-image' ? 'active' : ''} onClick={() => setTask('image-to-image')}><ImagePlus size={16} /> 参考图转换</button>
-            </div>
+            <Tabs.Root className="ai-studio__segmented" value={task} onValueChange={(value) => setTask(value as 'text-to-image' | 'image-to-image')}>
+              <Tabs.List aria-label="生成方式">
+                <Tabs.Trigger value="text-to-image"><WandSparkles size={16} /> 文字生成</Tabs.Trigger>
+                <Tabs.Trigger value="image-to-image"><ImagePlus size={16} /> 参考图转换</Tabs.Trigger>
+              </Tabs.List>
+            </Tabs.Root>
           </div>
 
           <div className="ai-studio__field">
