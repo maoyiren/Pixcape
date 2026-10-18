@@ -299,15 +299,15 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
 
   return <div className="preset-shell">
     <header className="preset-topbar">
-      <a className="preset-brand" href="#" onClick={event => event.preventDefault()}><img src="/pixcape-icon.svg" alt="" /> CDPC <small>PRESET STUDIO</small></a>
-      <nav className="preset-main-nav" aria-label="主导航" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,flexWrap:'wrap',flex:'1 1 240px',minWidth:0}}>
-        <span aria-current="page" className="preset-nav-current" style={{display:'inline-flex',alignItems:'center',gap:7,minHeight:36,padding:'0 12px',borderRadius:9,background:'#26364d',border:'1px solid #405777',color:'#f2f6ff',fontSize:12,fontWeight:750,whiteSpace:'nowrap'}}>▦ {tr('工作台', language)}</span>
-        <button type="button" onClick={onOpenAI} className="preset-nav-button" style={{display:'inline-flex',alignItems:'center',gap:7,minHeight:36,padding:'0 12px',borderRadius:9,border:'1px solid #34445e',background:'#172337',color:'#dbe6f8',fontSize:12,fontWeight:650,whiteSpace:'nowrap'}}>✦ {tr('AI 皮肤工坊', language)}</button>
-        <button type="button" onClick={openEditorWithPreset} disabled={!ready} className="preset-nav-editor" style={{display:'inline-flex',alignItems:'center',gap:7,minHeight:36,padding:'0 12px',borderRadius:9,border:'1px solid #3977ed',background:ready?'#3977ed':'#25334a',color:'#fff',fontSize:12,fontWeight:650,whiteSpace:'nowrap',opacity:ready?1:.55}}>{tr('3D 模型编辑', language)} ↗</button>
+      <a className="preset-brand" href="#" onClick={event => event.preventDefault()}><img src="/cdpc-icon.svg" alt="" /> CDPC <small>PRESET STUDIO</small></a>
+      <nav className="preset-main-nav" aria-label="主导航">
+        <span aria-current="page" className="preset-nav-current">▦ {tr('工作台', language)}</span>
+        <button type="button" onClick={onOpenAI} className="preset-nav-button">✦ {tr('AI 皮肤工坊', language)}</button>
+        <button type="button" onClick={openEditorWithPreset} disabled={!ready} className="preset-nav-editor">{tr('3D 模型编辑', language)} ↗</button>
       </nav>
       <div className="preset-top-actions"><span className="preset-workspace-label">{tr('Minecraft 皮肤与服装工作台', language)}</span><label className="preset-language-switch">{tr('选择语言', language)} <select aria-label="Language" value={language} onChange={event => { const next = event.target.value as StudioLanguage; setLanguage(next); localStorage.setItem('pixcape-language', next); document.documentElement.lang = next }}><option value="zh-CN">简体中文</option><option value="en-US">English</option></select></label></div>
     </header>
-    <aside role="note" aria-label="项目声明与素材署名" style={{ padding: '6px 16px', borderBottom: '1px solid #65552d', background: '#28251b', color: '#f2e4b7', fontSize: 11, lineHeight: 1.4 }}>
+    <aside role="note" aria-label="项目声明与素材署名" className="preset-asset-notice">
       {language === 'en-US' ? 'Unofficial Minecraft project · Coat & shawl assets: 邹陈云飞, Th千' : '非官方 Minecraft 项目 · 外套与披肩素材：邹陈云飞、Th千'}
     </aside>
     <section className="preset-current-skin">
