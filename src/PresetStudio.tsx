@@ -372,6 +372,6 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
       </section>
 
     </main>
-    <footer className="preset-footer"><span>Pixcape · 预制服装工作台</span><span>外套与披肩素材：邹陈云飞、Th千</span></footer>
+    <footer className="preset-footer"><span>CDPC · 皮肤与像素创作工具</span><span>非官方 Minecraft 项目 · 不隶属于 Mojang 或 Microsoft</span></footer>
   </div>
 }
