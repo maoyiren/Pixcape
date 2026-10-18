@@ -37,3 +37,9 @@
 - [ ] 通过 CI 与浏览器验收后才合并并发布镜像。
 
 注意：CSS 统一不替代服务端权限校验；本次不改认证、素材处理、数据库或 Blockbench 内部逻辑。
+
+
+## 2026-10-18 CI 修复记录
+- 根据 PR #9 的 GitHub Actions 日志定位到 Next.js 构建失败原因：主分支最近加入登录限流后，auth.ts 的 allowCredentialAttempt 参数类型与 NextAuth 的请求类型不兼容。
+- 已同步当前 main 的 auth.ts 修复，保留登录限流逻辑，不通过跳过 TypeScript 检查来规避问题。
+- 修复后的新提交需重新触发 CI；只有新的 Next.js build、Docker build 和测试全部通过后，才能考虑合并和发布。
