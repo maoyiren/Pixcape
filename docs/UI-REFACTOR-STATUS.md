@@ -1,7 +1,7 @@
 # CDPC UI 重构实施记录
 
 日期：2026-10-18  
-分支：`ui/unified-design-system`  
+分支：`ui/cdpc-unified-design-v2`  
 设计基线：`docs/UNIFIED-UI-DESIGN.md`
 
 ## 已实施
