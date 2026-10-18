@@ -94,13 +94,13 @@ export type PresetEditorPayload = {
 }
 
 type StudioLanguage = 'zh-CN' | 'en-US'
-type Props = { onOpenEditor: (payload: PresetEditorPayload) => void }
+type Props = { onOpenEditor: (payload: PresetEditorPayload) => void; onOpenAI: () => void }
 const EN: Record<string, string> = {
 'Minecraft 皮肤与服装工作台':'Minecraft Skin & Outfit Studio','当前皮肤':'Current Skin','已就绪':'Ready','正在加载':'Loading','导入皮肤':'Import Skin','导出合成皮肤 PNG':'Export Combined Skin PNG','发送到 Blockbench 编辑':'Send to Blockbench','预制服装':'Presets','披肩':'Shawl','外套':'Jacket','披风':'Cape','角色预览':'Character Preview','Steve 粗臂':'Steve · Classic','Alex 细臂':'Alex · Slim','正面':'Front','背面':'Back','切换为披风':'Switch to Cape','切换为鞘翅':'Switch to Elytra','白天':'Day','夜晚':'Night','平原':'Plains','沙漠':'Desert','森林':'Forest','下界':'Nether','末地':'The End','自定义':'Custom','背景调色':'Background Color','恢复天空蓝':'Reset Sky Blue','站立':'Idle','挥手':'Wave','行走':'Walk','飞行':'Fly','切换动作':'Switch action','缩放':'Zoom','X 轴':'X axis','Y 轴':'Y axis','Z 轴':'Z axis','重置视角':'Reset View','重置':'Reset','选择语言':'Language','拖动旋转 · 上下拖动俯仰 · 滚轮缩放 · 正面 / 背面':'Drag to rotate · vertical drag to tilt · wheel to zoom · front / back','正在加载模板…':'Loading presets…','模板已应用，可旋转预览或导出 PNG':'Preset applied. Rotate preview or export PNG.','备用皮肤已就绪':'Fallback skin ready','已导入皮肤，正在应用模板…':'Skin imported. Applying presets…','皮肤仍在加载，请稍后再打开编辑器。':'Skin is loading. Please wait before opening the editor.','已将当前预制皮肤发送到 Blockbench':'Current preset skin sent to Blockbench','已导出合成皮肤 PNG':'Combined skin PNG exported','请导入 PNG 格式的 Minecraft 皮肤。':'Please import a Minecraft skin in PNG format.','皮肤尺寸必须是标准的 64 × 64 PNG，未修改当前皮肤。':'Skin must be a standard 64 × 64 PNG. Current skin was not changed.','无法读取这张 PNG 图片，请选择有效的皮肤文件。':'Could not read this PNG. Choose a valid skin file.','部分远程模板素材加载失败，已显示备用皮肤；可继续编辑或重新导入 PNG。':'Some remote assets failed. A fallback skin is shown; continue editing or import a PNG.','披肩 / 外套模板 · 实时 3D 预览':'Shawl / jacket presets · live 3D preview'
 }
 function tr(text: string, language: StudioLanguage): string { return language === 'en-US' ? (EN[text] || text) : text }
 
-export default function PresetStudio({ onOpenEditor }: Props) {
+export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const skinInputRef = useRef<HTMLInputElement>(null)
   const [language, setLanguage] = useState<StudioLanguage>(() => localStorage.getItem('pixcape-language') === 'en-US' ? 'en-US' : 'zh-CN')
@@ -300,6 +300,11 @@ export default function PresetStudio({ onOpenEditor }: Props) {
   return <div className="preset-shell">
     <header className="preset-topbar">
       <a className="preset-brand" href="#" onClick={event => event.preventDefault()}><span>✦</span> Pixcape <small>PRESET STUDIO</small></a>
+      <nav aria-label="主导航" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,flexWrap:'wrap',flex:'1 1 240px',minWidth:0}}>
+        <span aria-current="page" style={{display:'inline-flex',alignItems:'center',gap:7,minHeight:36,padding:'0 12px',borderRadius:9,background:'#26364d',border:'1px solid #405777',color:'#f2f6ff',fontSize:12,fontWeight:750,whiteSpace:'nowrap'}}>▦ {tr('工作台', language)}</span>
+        <button type="button" onClick={onOpenAI} style={{display:'inline-flex',alignItems:'center',gap:7,minHeight:36,padding:'0 12px',borderRadius:9,border:'1px solid #34445e',background:'#172337',color:'#dbe6f8',fontSize:12,fontWeight:650,whiteSpace:'nowrap'}}>✦ {tr('AI 皮肤工坊', language)}</button>
+        <button type="button" onClick={openEditorWithPreset} disabled={!ready} style={{display:'inline-flex',alignItems:'center',gap:7,minHeight:36,padding:'0 12px',borderRadius:9,border:'1px solid #3977ed',background:ready?'#3977ed':'#25334a',color:'#fff',fontSize:12,fontWeight:650,whiteSpace:'nowrap',opacity:ready?1:.55}}>{tr('3D 模型编辑', language)} ↗</button>
+      </nav>
       <div className="preset-top-actions"><span className="preset-workspace-label">{tr('Minecraft 皮肤与服装工作台', language)}</span><label className="preset-language-switch">{tr('选择语言', language)} <select aria-label="Language" value={language} onChange={event => { const next = event.target.value as StudioLanguage; setLanguage(next); localStorage.setItem('pixcape-language', next); document.documentElement.lang = next }}><option value="zh-CN">简体中文</option><option value="en-US">English</option></select></label></div>
     </header>
     <aside role="note" aria-label="项目声明与素材署名" style={{ padding: '6px 16px', borderBottom: '1px solid #65552d', background: '#28251b', color: '#f2e4b7', fontSize: 11, lineHeight: 1.4 }}>
