@@ -1,23 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#080f1b"/>
-  <path d="M0 475H1200V630H0Z" fill="#0e1b2b"/>
-  <path d="M0 475H1200" stroke="#1b344c" stroke-width="2"/>
-  <g transform="translate(160 140) scale(2.7)">
-    <rect width="128" height="128" rx="16" fill="#080f1b"/>
-    <path d="M25 19H78L99 32V41H88V34H76V28H37V34H25Z" fill="#18b8f5"/>
-    <path d="M18 37H29V47H24V83H34V91H50V98H70V89H80V98L70 109H45L33 101H23V91H18Z" fill="#087ce5"/>
-    <path d="M35 39H76V48H84V70H75V81H47V73H35Z" fill="#252b3a"/>
-    <path d="M35 39H76V48H47V56H35Z" fill="#45404a"/>
-    <path d="M35 48H47V56H58V64H35Z" fill="#332e3a"/>
-    <path d="M47 56H58V64H69V73H47Z" fill="#171d2b"/>
-    <path d="M35 56H43V64H35Z M59 56H67V64H59Z" fill="#fff2dc"/>
-    <path d="M39 60H43V68H39Z M63 60H67V68H63Z" fill="#1599f6"/>
-    <path d="M48 73H75V81H61V87H48Z" fill="#0759cf"/>
-    <path d="M72 65L86 58V48L96 54V64L109 72V82L98 76V88L88 82V94L77 87V78Z" fill="#087ce5"/>
-    <path d="M86 58V68L96 74V64Z" fill="#18b8f5"/>
-    <path d="M96 64V74L109 82V72Z" fill="#38d4f2"/>
-    <path d="M77 78V87L88 94V82Z" fill="#39c9f2"/>
-  </g>
+  <rect width="1200" height="630" fill="#050d19"/>
+  <path d="M0 475H1200V630H0Z" fill="#0b1929"/>
+  <path d="M0 475H1200" stroke="#173650" stroke-width="2"/>
+  <image href="https://pixcape.liseezn.top/pixcape-icon.svg" x="105" y="72" width="430" height="430" preserveAspectRatio="xMidYMid meet"/>
   <text x="590" y="300" fill="#f2f6ff" font-family="Arial,sans-serif" font-size="104" font-weight="800" letter-spacing="5">CDPC</text>
   <rect x="596" y="332" width="118" height="7" fill="#18b8f5"/>
   <text x="590" y="390" fill="#91a9c6" font-family="Arial,sans-serif" font-size="29" letter-spacing="3">MINECRAFT SKIN WORKSHOP</text>
