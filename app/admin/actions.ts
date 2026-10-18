@@ -185,3 +185,30 @@ export async function setAdminAccess(formData: FormData) {
   if (changed === 'concurrent_change') redirect('/admin?error=concurrent_change')
   redirect('/admin?adminAccessUpdated=1')
 }
+
+
+export async function setEmailVerificationRequired(formData: FormData) {
+  const actor = await requireActiveAdmin()
+  const value = String(formData.get('required') ?? '')
+  if (!['true', 'false'].includes(value)) redirect('/admin?error=invalid_email_verification_setting')
+  if (value === 'true' && (!process.env.EMAIL_SERVER || !process.env.EMAIL_FROM || !process.env.NEXTAUTH_URL)) {
+    redirect('/admin?error=email_verification_smtp_missing')
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.appSetting.upsert({
+      where: { key: 'EMAIL_VERIFICATION_REQUIRED' },
+      update: { value },
+      create: { key: 'EMAIL_VERIFICATION_REQUIRED', value },
+    })
+    await tx.auditLog.create({
+      data: {
+        actorId: actor.id,
+        action: 'EMAIL_VERIFICATION_SETTING_CHANGED',
+        targetType: 'AppSetting',
+        targetId: 'EMAIL_VERIFICATION_REQUIRED',
+        details: { required: value === 'true' },
+      },
+    })
+  })
+  redirect('/admin?emailVerificationUpdated=1#configuration')
+}
