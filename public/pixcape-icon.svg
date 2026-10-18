@@ -1,11 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="12" fill="#24351c"/>
-  <path d="M8 8h112v34H8z" fill="#5e9e3f"/>
-  <path d="M8 30h112v12H8z" fill="#3d742b"/>
-  <path d="M8 42h112v78H8z" fill="#8b6845"/>
-  <path d="M8 42h112v10H8z" fill="#a7835a"/>
-  <path d="M18 54h20v18H18zM54 54h18v18H54zM90 54h20v18H90zM36 82h20v18H36zM76 82h20v18H76z" fill="#725238"/>
-  <path d="M42 18h44v28H42z" fill="#e5e8dc"/>
-  <path d="M50 26h28v12H50z" fill="#6da94c"/>
-  <path d="M50 42h28v4H50z" fill="#477a34"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="CDPC pixel logo">
+  <rect width="128" height="128" rx="16" fill="#080f1b"/>
+  <path d="M25 19H78L99 32V41H88V34H76V28H37V34H25Z" fill="#18b8f5"/>
+  <path d="M18 37H29V47H24V83H34V91H50V98H70V89H80V98L70 109H45L33 101H23V91H18Z" fill="#087ce5"/>
+  <path d="M35 39H76V48H84V70H75V81H47V73H35Z" fill="#252b3a"/>
+  <path d="M35 39H76V48H47V56H35Z" fill="#45404a"/>
+  <path d="M35 48H47V56H58V64H35Z" fill="#332e3a"/>
+  <path d="M47 56H58V64H69V73H47Z" fill="#171d2b"/>
+  <path d="M35 56H43V64H35Z" fill="#fff2dc"/>
+  <path d="M59 56H67V64H59Z" fill="#fff2dc"/>
+  <path d="M39 60H43V68H39Z" fill="#1599f6"/>
+  <path d="M63 60H67V68H63Z" fill="#1599f6"/>
+  <path d="M48 73H75V81H61V87H48Z" fill="#0759cf"/>
+  <path d="M72 65L86 58V48L96 54V64L109 72V82L98 76V88L88 82V94L77 87V78Z" fill="#087ce5"/>
+  <path d="M86 58V68L96 74V64Z" fill="#18b8f5"/>
+  <path d="M96 64V74L109 82V72Z" fill="#38d4f2"/>
+  <path d="M77 78V87L88 94V82Z" fill="#39c9f2"/>
+  <path d="M25 19H78L99 32V41H88V34H76V28H37V34H25Z" fill="none" stroke="#18b8f5" stroke-width="1"/>
+  <rect x="101" y="42" width="7" height="7" fill="#38d4f2"/>
+  <rect x="14" y="57" width="6" height="6" fill="#18b8f5"/>
 </svg>
