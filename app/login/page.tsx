@@ -11,7 +11,9 @@ const methods = [
   { id: 'email', label: '邮箱', enabled: Boolean(process.env.EMAIL_SERVER && process.env.EMAIL_FROM) },
 ]
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ verification?: string }> }) {
+  const params = await searchParams
+  const verificationMessage = params?.verification === 'success' ? '邮箱验证成功，现在可以登录。' : params?.verification === 'expired' ? '验证链接已过期，请重新获取邮箱登录链接。' : params?.verification === 'invalid' ? '验证链接无效。' : params?.verification === 'error' ? '验证失败，请稍后重试。' : ''
   const enabledMethods = methods.filter((method) => method.enabled)
   const adminEnabled = Boolean(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL)
   return (
@@ -22,6 +24,7 @@ export default function LoginPage() {
       </header>
       <section className="hero inventory-panel">
         <h2>进入你的创作空间</h2>
+        {verificationMessage ? <p role="status">{verificationMessage}</p> : null}
         <p>选择一种已配置的登录方式。OAuth 或邮箱首次登录会创建普通用户；管理员登录使用单独的环境变量凭据。</p>
         {(enabledMethods.length > 0 || adminEnabled) ? <LoginForm methods={enabledMethods.map(({id,label}) => ({id,label}))} adminEnabled={adminEnabled} /> : (
           <p role="status">目前尚未启用登录方式。请配置 OAuth、SMTP 或管理员环境变量。</p>
