@@ -10,6 +10,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [email, setEmail] = useState('')
+  const [emailPassword, setEmailPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -30,6 +31,18 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     else setError('登录失败，请检查认证密钥和数据库配置。')
   }
 
+  async function passwordLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setBusy(true); setError(''); setMessage('')
+    try {
+      const result = await signIn('email-password', { email: email.trim(), password: emailPassword, callbackUrl: '/account', redirect: false })
+      if (result?.error) setError('邮箱或密码错误，或账户当前不可登录。')
+      else if (result?.url) window.location.assign(result.url)
+      else setError('登录失败，请重试。')
+    } catch { setError('登录失败，请重试。') }
+    finally { setBusy(false) }
+  }
+
   async function emailLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setBusy(true); setError(''); setMessage('')
@@ -46,11 +59,19 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     {methods.filter((method) => method.id !== 'email').map((method) =>
       <button className="pixel-button" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)}>{method.label}</button>
     )}
-    {emailEnabled && <form onSubmit={(e) => void emailLogin(e)} className="auth-email-form">
-      <label htmlFor="auth-email">邮箱登录</label>
+    <form onSubmit={(e) => void passwordLogin(e)} className="auth-email-form">
+      <label htmlFor="auth-email">邮箱账号</label>
       <input id="auth-email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
-      <button className="pixel-button primary" disabled={busy} type="submit">发送邮箱登录链接</button>
-    </form>}
+      <label htmlFor="auth-password">密码</label>
+      <input id="auth-password" type="password" autoComplete="current-password" required maxLength={256} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} />
+      <button className="pixel-button primary" disabled={busy} type="submit">{busy ? '正在登录…' : '邮箱密码登录'}</button>
+      <p><a href="/register">没有账户？立即注册</a></p>
+    </form>
+    {emailEnabled && <details><summary>改用邮箱登录链接</summary><form onSubmit={(e) => void emailLogin(e)} className="auth-email-form">
+      <label htmlFor="magic-email">邮箱地址</label>
+      <input id="magic-email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" />
+      <button className="pixel-button primary" disabled={busy} type="submit">发送登录链接</button>
+    </form></details>}
     {adminEnabled && <details className="admin-login-details">
       <summary>管理员登录</summary>
       <form onSubmit={(e) => void adminLogin(e)} className="auth-email-form">
