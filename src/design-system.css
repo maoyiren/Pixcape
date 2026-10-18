@@ -159,3 +159,6 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 /* Shared notice treatment for asset credits and non-affiliation disclosures. */
 .preset-asset-notice { padding: 7px 16px; border-bottom: 1px solid var(--cdpc-border); background: var(--cdpc-surface); color: var(--cdpc-muted); font-size: 11px; line-height: 1.5; }
 .preset-asset-notice::selection { background: var(--cdpc-accent); color: #101318; }
+
+/* Keep the mounted studio state while the embedded model editor is active. */
+.cdpc-studio-hidden { display: none !important; }
