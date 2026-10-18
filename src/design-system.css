@@ -121,11 +121,18 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 
 /* AI Studio shared surfaces and controls. */
 .ai-studio { background: var(--cdpc-bg) !important; color: var(--cdpc-text) !important; }
-.ai-studio__header, .ai-studio__panel, .ai-studio__workspace, .ai-studio__result,
+.ai-studio__topbar, .ai-studio__controls, .ai-studio__canvas, .ai-studio__result-info,
 .ai-studio__3d-preview, .ai-studio__disclaimer {
   border-color: var(--cdpc-border) !important; border-radius: var(--cdpc-radius-md) !important;
   box-shadow: none !important;
 }
+.ai-studio__topbar { background: var(--cdpc-surface) !important; }
+.ai-studio__controls { background: var(--cdpc-surface) !important; color: var(--cdpc-text) !important; }
+.ai-studio__field input, .ai-studio__field select, .ai-studio__field textarea {
+  background: var(--cdpc-bg) !important; color: var(--cdpc-text) !important; border-color: var(--cdpc-border) !important;
+}
+.ai-studio__segmented button { border-radius: var(--cdpc-radius-sm) !important; box-shadow: none !important; }
+.ai-studio__generate { background: var(--cdpc-accent) !important; color: #111827 !important; border-color: var(--cdpc-accent) !important; box-shadow: none !important; }
 .ai-studio button, .ai-studio input, .ai-studio select, .ai-studio textarea {
   border-radius: var(--cdpc-radius-sm) !important;
 }
