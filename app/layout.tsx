@@ -16,5 +16,5 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="zh-CN"><body><SiteNav />{children}</body></html>
+  return <html lang="zh-CN"><body><SiteNav />{children}<footer className="cdpc-site-footer"><span>CDPC · 皮肤与像素创作工具</span><span>非官方 Minecraft 项目 · 不隶属于 Mojang 或 Microsoft</span></footer></body></html>
 }
