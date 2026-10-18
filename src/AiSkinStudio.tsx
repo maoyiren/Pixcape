@@ -106,7 +106,7 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
     <main className="ai-studio">
       <header className="ai-studio__topbar">
         <button className="ai-studio__back" onClick={onBack}><ArrowLeft size={17} /> 返回皮肤工作台</button>
-        <div className="ai-studio__brand"><span className="ai-studio__brand-icon"><img src="/pixcape-icon.svg" alt="" /></span><div><strong>CDPC AI 工坊</strong><small>多模型图像生成 · 实验功能</small></div></div>
+        <div className="ai-studio__brand"><span className="ai-studio__brand-icon"><img src="/cdpc-icon.svg" alt="" /></span><div><strong>CDPC AI 工坊</strong><small>多模型图像生成 · 实验功能</small></div></div>
         <span className="ai-studio__pill">预览版</span>
       </header>
 
