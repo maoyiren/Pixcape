@@ -1,10 +1,11 @@
 import { spawnSync } from 'node:child_process'
-import { cpSync, copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs'
+import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 const root = process.cwd()
 const sourceDir = path.join(root, '.cache', 'blockbench')
 const outputDir = path.join(root, 'public', 'blockbench')
+const bridgeSource = path.join(root, 'scripts', 'pixcape-blockbench-bridge.js')
 const blockbenchRef = process.env.BLOCKBENCH_REF || '5b0c99cd5a0e0ef3d15f52e91e945672076022ac'
 
 function run(command, args, cwd = root) {
@@ -13,6 +14,10 @@ function run(command, args, cwd = root) {
   if (result.status !== 0) {
     throw new Error(`Command failed: ${command} ${args.join(' ')} (exit ${result.status})`)
   }
+}
+
+if (!existsSync(bridgeSource)) {
+  throw new Error('Missing Pixcape Blockbench bridge: scripts/pixcape-blockbench-bridge.js')
 }
 
 rmSync(sourceDir, { recursive: true, force: true })
@@ -44,4 +49,14 @@ for (const dir of requiredDirs) {
   if (!existsSync(from)) throw new Error(`Missing Blockbench runtime directory: ${dir}`)
   cpSync(from, path.join(outputDir, dir), { recursive: true })
 }
-console.log(`Blockbench ${blockbenchRef} copied to public/blockbench/`)
+
+copyFileSync(bridgeSource, path.join(outputDir, 'pixcape-bridge.js'))
+const htmlPath = path.join(outputDir, 'index.html')
+const html = readFileSync(htmlPath, 'utf8')
+if (!html.includes('pixcape-bridge.js')) {
+  if (!/<\\/body>/i.test(html)) {
+    throw new Error('Cannot inject Pixcape bridge: Blockbench index.html has no closing body tag')
+  }
+  writeFileSync(htmlPath, html.replace(/<\\/body>/i, '  <script src="./pixcape-bridge.js"></script>\\n</body>'))
+}
+console.log(`Blockbench ${blockbenchRef} copied to public/blockbench/ with Pixcape import bridge`)
