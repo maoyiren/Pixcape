@@ -59,8 +59,10 @@ providers.push(CredentialsProvider({
     const email = credentials?.email?.trim().toLowerCase()
     const password = credentials?.password ?? ''
     if (!email || !password || password.length > 256) return null
-    const user = await prisma.user.findUnique({ where: { email }, select: { id: true, email: true, name: true, passwordHash: true, role: true, status: true } })
+    const user = await prisma.user.findUnique({ where: { email }, select: { id: true, email: true, name: true, passwordHash: true, role: true, status: true, emailVerified: true } })
     if (!user?.passwordHash || user.status !== 'ACTIVE') return null
+    const verificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } })
+    if (verificationSetting?.value === 'true' && !user.emailVerified) return null
     const [salt, stored] = user.passwordHash.split(':')
     if (!salt || !stored) return null
     try {
@@ -134,10 +136,14 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async signIn({ user }) {
+    async signIn({ user, account }) {
       if (!user.id) return false
-      const record = await prisma.user.findUnique({ where: { id: user.id }, select: { status: true } })
-      return record?.status === 'ACTIVE'
+      const record = await prisma.user.findUnique({ where: { id: user.id }, select: { status: true, email: true } })
+      if (record?.status !== 'ACTIVE') return false
+      if (account?.provider === 'email' && record.email) {
+        await prisma.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } })
+      }
+      return true
     },
   },
 }
