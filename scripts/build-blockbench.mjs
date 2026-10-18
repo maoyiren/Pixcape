@@ -54,9 +54,9 @@ copyFileSync(bridgeSource, path.join(outputDir, 'pixcape-bridge.js'))
 const htmlPath = path.join(outputDir, 'index.html')
 const html = readFileSync(htmlPath, 'utf8')
 if (!html.includes('pixcape-bridge.js')) {
-  if (!/<\\/body>/i.test(html)) {
+  if (!/<\/body>/i.test(html)) {
     throw new Error('Cannot inject Pixcape bridge: Blockbench index.html has no closing body tag')
   }
-  writeFileSync(htmlPath, html.replace(/<\\/body>/i, '  <script src="./pixcape-bridge.js"></script>\\n</body>'))
+  writeFileSync(htmlPath, html.replace(/<\/body>/i, '  <script src="./pixcape-bridge.js"></script>\n</body>'))
 }
 console.log(`Blockbench ${blockbenchRef} copied to public/blockbench/ with Pixcape import bridge`)
