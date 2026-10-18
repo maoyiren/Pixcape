@@ -35,3 +35,18 @@ test('Next.js routes share the same footer and CDPC branding', () => {
   assert.match(nav, /<span>CDPC<\/span>/)
   assert.match(css, /--cdpc-bg:#101318/)
 })
+
+
+test('Next.js shared styling preserves accessible focus and reduced-motion behavior', () => {
+  const css = read('../../app/next.css')
+  assert.match(css, /:focus-visible/)
+  assert.match(css, /prefers-reduced-motion:\s*reduce/)
+  assert.match(css, /--cdpc-accent/)
+  assert.match(css, /@media\(max-width:720px\)/)
+})
+
+test('shared layout keeps the non-affiliation notice and language metadata', () => {
+  const layout = read('../../app/layout.tsx')
+  assert.match(layout, /lang="zh-CN"/)
+  assert.match(layout, /不隶属于 Mojang 或 Microsoft/)
+})
