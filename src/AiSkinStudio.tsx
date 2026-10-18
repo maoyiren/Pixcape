@@ -171,6 +171,10 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
           <div className="ai-studio__disclaimer"><strong>生成后请检查 3D 预览</strong><p>服务端会将左右双视图投影到标准 64×64 UV 纹理，并强制基础层不透明、未使用区域透明。图像模型的正背面一致性仍可能有误差；导入游戏前请先检查脸部、服装和 Classic / Slim 手臂效果。</p></div>
         </section>
       </div>
+      <footer className="cdpc-site-footer">
+        <span>CDPC · 皮肤与像素创作工具</span>
+        <span>非官方 Minecraft 项目 · 不隶属于 Mojang 或 Microsoft</span>
+      </footer>
     </main>
   )
 }
