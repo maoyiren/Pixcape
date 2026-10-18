@@ -50,3 +50,28 @@ test('shared layout keeps the non-affiliation notice and language metadata', () 
   assert.match(layout, /lang="zh-CN"/)
   assert.match(layout, /不隶属于 Mojang 或 Microsoft/)
 })
+
+
+test('AI generation mode uses accessible Radix Tabs and shared styling', () => {
+  const studio = read('../../src/AiSkinStudio.tsx')
+  const css = read('../../src/ai-skin-studio.css')
+  assert.match(studio, /import \* as Tabs from '@radix-ui\/react-tabs'/)
+  assert.match(studio, /<Tabs\.Root className="ai-studio__segmented"/)
+  assert.match(studio, /<Tabs\.Trigger value="text-to-image">/)
+  assert.match(studio, /<Tabs\.Trigger value="image-to-image">/)
+  assert.match(css, /\[role="tab"\]\[data-state="active"\]/)
+})
+
+test('Next.js navigation and admin routes have small-screen responsive safeguards', () => {
+  const css = read('../../app/next.css')
+  assert.match(css, /\.site-nav-links\{order:3;flex:1 1 100%/)
+  assert.match(css, /\.admin-overview\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/)
+  assert.match(css, /@media\(max-width:420px\)/)
+  assert.match(css, /\.inventory-shell table\{display:block;max-width:100%;overflow-x:auto/)
+})
+
+test('AI studio provides compact touch-friendly layout on narrow screens', () => {
+  const css = read('../../src/ai-skin-studio.css')
+  assert.match(css, /@media\(max-width:520px\)/)
+  assert.match(css, /\.ai-studio__segmented \[role="tab"\]/)
+})
