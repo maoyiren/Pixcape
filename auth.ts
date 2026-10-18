@@ -14,6 +14,7 @@ import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 const authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
 const providers: NextAuthOptions['providers'] = []
 
+// NextAuth's internal request type permits headers to be absent; treat that as an unknown client.
 async function allowCredentialAttempt(request: { headers?: unknown }): Promise<boolean> {
   const configuredHeader = (process.env.LOGIN_RATE_LIMIT_IP_HEADER || 'x-real-ip').toLowerCase()
   const headers = (request.headers ?? {}) as Record<string, string | string[] | undefined>
