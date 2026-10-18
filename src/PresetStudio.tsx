@@ -300,7 +300,7 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
 
   return <div className="preset-shell">
     <header className="preset-topbar">
-      <a className="preset-brand" href="#" onClick={event => event.preventDefault()}><span>✦</span> Pixcape <small>PRESET STUDIO</small></a>
+      <a className="preset-brand" href="#" onClick={event => event.preventDefault()}><img src="/pixcape-icon.svg" alt="" /> CDPC <small>PRESET STUDIO</small></a>
       <nav className="preset-main-nav" aria-label="主导航" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,flexWrap:'wrap',flex:'1 1 240px',minWidth:0}}>
         <span aria-current="page" className="preset-nav-current" style={{display:'inline-flex',alignItems:'center',gap:7,minHeight:36,padding:'0 12px',borderRadius:9,background:'#26364d',border:'1px solid #405777',color:'#f2f6ff',fontSize:12,fontWeight:750,whiteSpace:'nowrap'}}>▦ {tr('工作台', language)}</span>
         <button type="button" onClick={onOpenAI} className="preset-nav-button" style={{display:'inline-flex',alignItems:'center',gap:7,minHeight:36,padding:'0 12px',borderRadius:9,border:'1px solid #34445e',background:'#172337',color:'#dbe6f8',fontSize:12,fontWeight:650,whiteSpace:'nowrap'}}>✦ {tr('AI 皮肤工坊', language)}</button>
