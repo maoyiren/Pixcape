@@ -6,7 +6,7 @@ import AzureADProvider from 'next-auth/providers/azure-ad'
 import AppleProvider from 'next-auth/providers/apple'
 import EmailProvider from 'next-auth/providers/email'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { timingSafeEqual } from 'node:crypto'
+import { timingSafeEqual, scryptSync } from 'node:crypto'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 
@@ -46,6 +46,31 @@ if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMI
     },
   }))
 }
+
+
+providers.push(CredentialsProvider({
+  id: 'email-password',
+  name: '邮箱和密码',
+  credentials: {
+    email: { label: '邮箱', type: 'email' },
+    password: { label: '密码', type: 'password' },
+  },
+  async authorize(credentials) {
+    const email = credentials?.email?.trim().toLowerCase()
+    const password = credentials?.password ?? ''
+    if (!email || !password || password.length > 256) return null
+    const user = await prisma.user.findUnique({ where: { email }, select: { id: true, email: true, name: true, passwordHash: true, role: true, status: true } })
+    if (!user?.passwordHash || user.status !== 'ACTIVE') return null
+    const [salt, stored] = user.passwordHash.split(':')
+    if (!salt || !stored) return null
+    try {
+      const expected = Buffer.from(stored, 'hex')
+      const actual = scryptSync(password, salt, expected.length)
+      if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null
+    } catch { return null }
+    return { id: user.id, email: user.email, name: user.name, role: user.role, status: user.status }
+  },
+}))
 
 if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
   providers.push(GitHubProvider({ clientId: process.env.AUTH_GITHUB_ID, clientSecret: process.env.AUTH_GITHUB_SECRET }))
