@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { scryptSync, randomBytes } from 'node:crypto'
+import nodemailer from 'nodemailer'
 import { prisma } from '@/lib/prisma'
 import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 
@@ -27,14 +28,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '密码长度必须为 10 至 256 个字符。' }, { status: 400 })
   }
   try {
+    const setting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } })
+    const requireVerification = setting?.value === 'true'
+    if (requireVerification && (!process.env.EMAIL_SERVER || !process.env.EMAIL_FROM || !process.env.NEXTAUTH_URL)) {
+      return NextResponse.json({ error: '邮箱验证已开启，但 SMTP 或站点地址未配置。请联系管理员。' }, { status: 503 })
+    }
     const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
     if (existing) return NextResponse.json({ error: '该邮箱已注册，请直接登录。' }, { status: 409 })
     const salt = randomBytes(16).toString('hex')
     const passwordHash = `${salt}:${scryptSync(password, salt, 64).toString('hex')}`
     await prisma.user.create({
-      data: { email, name: name || email.split('@')[0], passwordHash, role: 'USER', status: 'ACTIVE' },
+      data: { email, name: name || email.split('@')[0], passwordHash, role: 'USER', status: 'ACTIVE', ...(requireVerification ? {} : { emailVerified: null }) },
       select: { id: true },
     })
+    if (requireVerification) {
+      const token = randomBytes(32).toString('hex')
+      const identifier = `register:${email}`
+      const expires = new Date(Date.now() + 30 * 60 * 1000)
+      await prisma.verificationToken.deleteMany({ where: { identifier } })
+      await prisma.verificationToken.create({ data: { identifier, token, expires } })
+      const verifyUrl = new URL('/api/register/verify', process.env.NEXTAUTH_URL)
+      verifyUrl.searchParams.set('email', email)
+      verifyUrl.searchParams.set('token', token)
+      try {
+        const transport = nodemailer.createTransport(process.env.EMAIL_SERVER!)
+        await transport.sendMail({
+          from: process.env.EMAIL_FROM,
+          to: email,
+          subject: '验证你的 CDPC 邮箱',
+          text: `请在 30 分钟内打开此链接验证邮箱：${verifyUrl.toString()}`,
+          html: `<p>请在 30 分钟内点击下方链接验证邮箱。</p><p><a href="${verifyUrl.toString()}">验证邮箱</a></p>`,
+        })
+      } catch {
+        await prisma.verificationToken.deleteMany({ where: { identifier } })
+        await prisma.user.deleteMany({ where: { email, passwordHash } })
+        return NextResponse.json({ error: '验证邮件发送失败，请联系管理员检查 SMTP 配置。' }, { status: 503 })
+      }
+      return NextResponse.json({ ok: true, message: '注册已提交，请查收验证邮件。验证链接 30 分钟后过期。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
+    }
     return NextResponse.json({ ok: true, message: '注册成功，请使用邮箱和密码登录。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch {
     return NextResponse.json({ error: '注册失败，请稍后重试。' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
