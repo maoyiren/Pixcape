@@ -6,7 +6,6 @@ import ThreeCapePreview from './ThreeCapePreview'
 import PresetThumbnail from './PresetThumbnail'
 import './preset-studio.css'
 import './preview-options.css'
-import './minecraft-inventory.css'
 import './navigation-refresh.css'
 
 type GarmentKind = 'shawl' | 'coat'
