@@ -67,10 +67,7 @@ export default function App() {
       {!editorOpen && aiOpen ? <AiSkinStudio onBack={() => setAiOpen(false)} /> : (
       <>
       <div style={{ display: editorOpen ? 'none' : 'block' }}>
-        {!editorOpen && <div style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 1000 }}>
-          <button onClick={() => setAiOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 12px', border: '1px solid #78965d', borderRadius: 8, color: '#f3ffe8', background: '#34532a', boxShadow: '0 4px 14px #0004', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>✦ AI 皮肤工坊</button>
-        </div>}
-        <PresetStudio onOpenEditor={(payload) => {
+        <PresetStudio onOpenAI={() => setAiOpen(true)} onOpenEditor={(payload) => {
           setPendingPayload(payload)
           setEditorOpen(true)
         }} />
