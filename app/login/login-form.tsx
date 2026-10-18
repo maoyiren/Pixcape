@@ -1,6 +1,7 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { signIn } from 'next-auth/react'
 
 type LoginMethod = { id: string; label: string }
@@ -16,8 +17,8 @@ export default function LoginForm({ methods }: { methods: LoginMethod[] }) {
     setMessage('')
     setError('')
     try {
-      // NextAuth provider sign-in must be initiated through its client helper
-      // (POST + CSRF token), not by navigating to /api/auth/signin/:provider.
+      // NextAuth provider sign-in must use its client helper (POST + CSRF),
+      // rather than navigating directly to /api/auth/signin/:provider.
       await signIn(provider, { callbackUrl: '/account' })
     } catch {
       setError('无法启动登录，请刷新页面后重试。若仍失败，请检查部署日志和 OAuth 回调配置。')
