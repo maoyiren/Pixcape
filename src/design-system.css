@@ -129,3 +129,22 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .ai-studio button, .ai-studio input, .ai-studio select, .ai-studio textarea {
   border-radius: var(--cdpc-radius-sm) !important;
 }
+
+/* Embedded Blockbench shell: consistent CDPC chrome, upstream editor remains untouched. */
+.cdpc-editor-overlay{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;background:var(--cdpc-bg);color:var(--cdpc-text)}
+.cdpc-editor-toolbar{min-height:54px;display:flex;align-items:center;gap:12px;padding:8px 16px;border-bottom:1px solid var(--cdpc-border);background:var(--cdpc-surface)}
+.cdpc-editor-back,.cdpc-editor-new-tab{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:7px 12px;border:1px solid var(--cdpc-border);border-radius:var(--cdpc-radius-sm);background:var(--cdpc-surface-raised);color:var(--cdpc-text);text-decoration:none;font-size:13px}
+.cdpc-editor-title{font-size:13px;color:var(--cdpc-muted)}
+.cdpc-editor-new-tab{margin-left:auto;color:var(--cdpc-accent)}
+.cdpc-editor-disclaimer{padding:7px 14px;border-bottom:1px solid #51472c;background:#24221b;color:#e9d9a7;font-size:11px;line-height:1.5}
+.cdpc-editor-feedback{padding:8px 14px;border-bottom:1px solid var(--cdpc-border);background:var(--cdpc-surface-raised);color:var(--cdpc-text);font-size:12px}
+.cdpc-editor-frame{border:0;width:100%;flex:1;min-height:0;background:var(--cdpc-bg)}
+@media(max-width:600px){.cdpc-editor-toolbar{gap:8px;padding:8px}.cdpc-editor-title{font-size:11px;line-height:1.4}.cdpc-editor-back{white-space:nowrap}.cdpc-editor-new-tab{font-size:0;padding:8px}.cdpc-editor-new-tab svg{width:16px;height:16px}}
+/* Shared workbench primitives. These are outer-shell styles only; the Blockbench iframe is not restyled. */
+.editor-shell{background:var(--cdpc-bg)!important}
+.topbar{background:var(--cdpc-surface)!important;border-color:var(--cdpc-border)!important;box-shadow:none!important}
+.panel,.left-sidebar .panel,.right-sidebar .panel{background:var(--cdpc-surface)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important;border-radius:var(--cdpc-radius-md)!important;box-shadow:none!important}
+.tool-button,.swatch,.layer-row,.palette-button{border-radius:var(--cdpc-radius-sm)!important;box-shadow:none!important}
+.tool-button{background:var(--cdpc-surface-raised)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important}
+.tool-button.selected{background:#293244!important;border-color:var(--cdpc-accent)!important;color:var(--cdpc-text)!important}
+.primary-btn,.export-wide{background:var(--cdpc-accent)!important;color:#111827!important;border:1px solid var(--cdpc-accent)!important;border-radius:var(--cdpc-radius-sm)!important;box-shadow:none!important;font-weight:700!important}
