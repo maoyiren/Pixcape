@@ -23,7 +23,7 @@ test('shared design system defines consistent tokens and responsive editor chrom
 test('preset studio no longer loads the conflicting pixel inventory theme', () => {
   const studio = read('../../src/PresetStudio.tsx')
   assert.doesNotMatch(studio, /minecraft-inventory\.css/)
-  assert.match(studio, /className="preset-footer"/)
+  assert.match(studio, /className="cdpc-site-footer"/)
 })
 
 test('Next.js routes share the same footer and CDPC branding', () => {
