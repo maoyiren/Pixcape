@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ImagePlus, LoaderCircle, Sparkles, WandSparkles } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ImagePlus, LoaderCircle, Sparkles, WandSparkles } from 'lucide-react'
+import * as Select from '@radix-ui/react-select'
 import { SkinViewer } from 'skinview3d'
 import './ai-skin-studio.css'
 
@@ -123,10 +124,20 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
 
           <div className="ai-studio__field">
             <label htmlFor="ai-model">图像模型</label>
-            <select id="ai-model" value={model} onChange={event => setModel(event.target.value)} disabled={!models.length}>
-              <option value="auto">自动选择可用模型</option>
-              {models.map(item => <option key={item.id} value={item.id}>{item.label} · {item.model} · {item.imageToImage ? '支持参考图' : '文字生成'}</option>)}
-            </select>
+            <Select.Root value={model} onValueChange={setModel} disabled={!models.length}>
+              <Select.Trigger id="ai-model" className="ai-studio__select-trigger" aria-label="图像模型">
+                <Select.Value placeholder="选择图像模型" />
+                <Select.Icon><ChevronDown size={16} /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content className="ai-studio__select-content" position="popper" sideOffset={5}>
+                  <Select.Viewport>
+                    <Select.Item className="ai-studio__select-item" value="auto"><Select.ItemText>自动选择可用模型</Select.ItemText></Select.Item>
+                    {models.map(item => <Select.Item className="ai-studio__select-item" key={item.id} value={item.id}><Select.ItemText>{item.label} · {item.model} · {item.imageToImage ? '支持参考图' : '文字生成'}</Select.ItemText></Select.Item>)}
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
             <small>仅显示服务端已配置的模型。不同模型的费用、速度和图像能力可能不同。</small>
           </div>
 
@@ -139,10 +150,20 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
 
           <div className="ai-studio__field">
             <label htmlFor="ai-variant">皮肤模型</label>
-            <select id="ai-variant" value={variant} onChange={event => setVariant(event.target.value as 'classic' | 'slim')}>
-              <option value="classic">Classic / Steve（4 像素手臂）</option>
-              <option value="slim">Slim / Alex（3 像素手臂）</option>
-            </select>
+            <Select.Root value={variant} onValueChange={value => setVariant(value as 'classic' | 'slim')}>
+              <Select.Trigger id="ai-variant" className="ai-studio__select-trigger" aria-label="皮肤模型">
+                <Select.Value />
+                <Select.Icon><ChevronDown size={16} /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content className="ai-studio__select-content" position="popper" sideOffset={5}>
+                  <Select.Viewport>
+                    <Select.Item className="ai-studio__select-item" value="classic"><Select.ItemText>Classic / Steve（4 像素手臂）</Select.ItemText></Select.Item>
+                    <Select.Item className="ai-studio__select-item" value="slim"><Select.ItemText>Slim / Alex（3 像素手臂）</Select.ItemText></Select.Item>
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
             <small>输出为 64×64 UV 纹理；正背面映射仍需在 3D 预览中检查。</small>
           </div>
 
