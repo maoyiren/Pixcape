@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
-import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus } from './actions'
+import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus, setEmailVerificationRequired } from './actions'
 
 type HealthCheck = {
   name: string
@@ -86,6 +86,8 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 export default async function AdminPage({ searchParams }: { searchParams?: Promise<{ q?: string; role?: string; status?: string }> }) {
   const admin = await requireRole('ADMIN')
   const params = await searchParams
+  const emailVerificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } }).catch(() => null)
+  const emailVerificationRequired = emailVerificationSetting?.value === 'true'
   const q = (params?.q ?? '').trim().slice(0, 100)
   const role = ['USER', 'CREATOR', 'ADMIN'].includes(params?.role ?? '') ? params?.role : ''
   const status = ['ACTIVE', 'SUSPENDED', 'DELETED'].includes(params?.status ?? '') ? params?.status : ''
@@ -176,6 +178,6 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     <section className="hero inventory-panel" id="audit"><h2>操作审计日志</h2><p>最近 30 条管理操作，用于追踪账号状态、角色调整和创作者审核。敏感凭据不会写入日志。</p>
       {auditLogs.length === 0 ? <p>暂无日志，或日志暂时无法读取。</p> : <div className="application-list">{auditLogs.map((entry) => <article className="application-card" key={entry.id}><h3>{entry.action}</h3><p>操作者：{entry.actor.name ?? entry.actor.email ?? '管理员账号'}</p><p>目标：{entry.targetType} · {entry.targetId}</p><p>时间：{entry.createdAt.toISOString().replace('T', ' ').slice(0, 19)} UTC</p><p>详情：{entry.details ? JSON.stringify(entry.details) : '无附加详情'}</p></article>)}</div>}
     </section>
-    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>集中管理登录提供商、邮件发送、AI 服务与安全策略。敏感凭据应加密保存、脱敏展示，并记录配置变更。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>Google、Microsoft、GitHub、Apple、邮箱魔法链接。</p><span className="config-status">下一阶段：数据库配置存储</span></article><article><h3>AI 服务商</h3><p>模型服务地址、模型选择、API Key 连接测试。</p><span className="config-status">下一阶段：加密密钥管理</span></article><article><h3>安全策略</h3><p>登录限流、会话有效期、注册开关与审计策略。</p><span className="config-status">当前安全策略仍由部署配置控制</span></article></div></section>
+    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>敏感凭据仍由部署 Secrets 管理；可在此切换是否要求新注册邮箱验证，所有变更都会记录审计日志。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>OAuth 凭据与 SMTP 服务器请在部署环境配置。邮箱验证当前：<strong>{emailVerificationRequired ? '已开启' : '关闭（默认）'}</strong>。</p><form action={setEmailVerificationRequired} className="actions"><button className="pixel-button" type="submit" name="required" value={emailVerificationRequired ? 'false' : 'true'}>{emailVerificationRequired ? '关闭邮箱验证' : '开启邮箱验证'}</button></form><span className="config-status">{emailVerificationRequired ? '新注册账户需点击验证邮件' : '注册无需验证码'}</span></article><article><h3>AI 服务商</h3><p>模型服务地址、模型选择、API Key 连接测试。</p><span className="config-status">密钥由部署环境管理</span></article><article><h3>安全策略</h3><p>登录限流、会话有效期与账户角色由服务端校验。</p><span className="config-status">登录与注册限流已启用</span></article></div></section>
   </main>
 }
