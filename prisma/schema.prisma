@@ -30,6 +30,7 @@ model User {
   name          String?
   email         String?         @unique
   emailVerified DateTime?
+  passwordHash  String?
   image         String?
   role          UserRole        @default(USER)
   status        UserStatus      @default(ACTIVE)
