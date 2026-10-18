@@ -66,7 +66,7 @@ export default function App() {
     <>
       {!editorOpen && aiOpen ? <AiSkinStudio onBack={() => setAiOpen(false)} /> : (
       <>
-      <div style={{ display: editorOpen ? 'none' : 'block' }}>
+      <div className={editorOpen ? 'cdpc-studio-hidden' : undefined}>
         <PresetStudio onOpenAI={() => setAiOpen(true)} onOpenEditor={(payload) => {
           setPendingPayload(payload)
           setEditorOpen(true)
