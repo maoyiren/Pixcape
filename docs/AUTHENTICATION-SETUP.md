@@ -171,3 +171,31 @@ LOGIN_RATE_LIMIT_IP_HEADER="x-real-ip"
 - [单镜像生产部署](./SINGLE-IMAGE-PRODUCTION.md)
 - [用户、创作者与管理员迁移方案](./NEXTJS-USER-ROLES-MIGRATION.md)
 - [生产安全上线清单](./PRODUCTION-SECURITY-ROLLOUT.md)
+
+
+## 8. 管理员用户名 / 密码登录
+
+部署环境可设置以下三个变量，全部非空时登录页会显示单独的“管理员登录”入口：
+
+```dotenv
+ADMIN_USERNAME="你的管理员用户名"
+ADMIN_PASSWORD="请使用唯一且足够长的随机密码"
+ADMIN_EMAIL="用于管理员账户的邮箱"
+```
+
+这组凭据与普通用户注册分离。首次使用正确凭据登录时，如果数据库中还没有该邮箱，会创建管理员账户；若已有该邮箱则授予 ADMIN 角色。账户必须处于 ACTIVE 状态。请只在受控部署 Secrets 中保存密码，不要把真实值提交到仓库或聊天记录。部署后请验证登录成功后能进入 `/admin`，并确认退出后无法访问管理员页面。
+
+## 9. 邮箱与密码注册
+
+当前注册页为 `/register`。默认不要求邮箱验证码：用户填写邮箱、至少 10 位密码即可创建普通用户，密码使用 Node.js scrypt 加盐哈希保存，不会以明文写入数据库。注册接口使用持久化 IP 限流。邮箱魔法链接仍是可选登录方式，需要配置 SMTP 后才显示。
+
+首次部署此版本前，先在维护窗口备份数据库并同步 Prisma schema：
+
+```bash
+npm run db:push
+npm run db:generate:all
+```
+
+`db:push` 会依据 `DATABASE_PROVIDER` 选择 PostgreSQL、MySQL 或 SQLite schema。请先在测试数据库验证；生产环境不要在未备份时执行 schema 变更。PostgreSQL 部署也可按项目现有 migration 流程运行 `npm run db:migrate`，并确认新 migration 已包含在部署版本中。
+
+普通邮箱注册不会自动授予管理员权限。管理员登录凭据应与普通账户登录流程分开保管。若将来需要启用邮箱验证，应在部署前实现并验证完整的验证邮件、一次性 token、过期处理和账户激活流程；仅配置 SMTP 并不等于已经启用注册验证。
