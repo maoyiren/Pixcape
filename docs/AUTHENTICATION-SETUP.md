@@ -198,4 +198,4 @@ npm run db:generate:all
 
 `db:push` 会依据 `DATABASE_PROVIDER` 选择 PostgreSQL、MySQL 或 SQLite schema。请先在测试数据库验证；生产环境不要在未备份时执行 schema 变更。PostgreSQL 部署也可按项目现有 migration 流程运行 `npm run db:migrate`，并确认新 migration 已包含在部署版本中。
 
-普通邮箱注册不会自动授予管理员权限。管理员登录凭据应与普通账户登录流程分开保管。若将来需要启用邮箱验证，应在部署前实现并验证完整的验证邮件、一次性 token、过期处理和账户激活流程；仅配置 SMTP 并不等于已经启用注册验证。
+普通邮箱注册不会自动授予管理员权限。管理员登录凭据应与普通账户登录流程分开保管。管理员可在“系统配置中心”开启邮箱验证。开启后，新注册账户必须点击有效期 30 分钟的一次性邮件链接才能使用邮箱密码登录；关闭时（默认）无需邮箱验证码。开启前必须配置并测试 EMAIL_SERVER、EMAIL_FROM 与 NEXTAUTH_URL。
