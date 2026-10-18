@@ -14,8 +14,8 @@ export async function SiteNav() {
   return (
     <nav className="site-nav" aria-label="主导航">
       <Link className="site-brand" href="/" aria-label="Pixcape 首页">
-        <span className="site-brand-mark" aria-hidden="true">P</span>
-        <span>Pixcape</span>
+        <span className="site-brand-mark" aria-hidden="true">C</span>
+        <span>CDPC</span>
       </Link>
       <div className="site-nav-links">
         {items.map((item) => <Link href={item.href} key={item.href}>{item.label}</Link>)}
