@@ -124,3 +124,52 @@ export async function setUserRole(formData: FormData) {
   if (!changed) redirect('/admin?error=concurrent_change')
   redirect('/admin?roleUpdated=1')
 }
+
+
+export async function setAdminAccess(formData: FormData) {
+  const actor = await requireActiveAdmin()
+  const targetId = String(formData.get('userId') ?? '').trim()
+  const operation = String(formData.get('operation') ?? '')
+  if (!targetId || targetId.length > 128 || !['grant', 'revoke'].includes(operation)) {
+    redirect('/admin?error=invalid_admin_request')
+  }
+  if (targetId === actor.id) redirect('/admin?error=cannot_change_own_admin_access')
+
+  const target = await prisma.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, role: true, status: true },
+  })
+  if (!target) redirect('/admin?error=user_not_found')
+  if (target.status !== 'ACTIVE') redirect('/admin?error=admin_target_inactive')
+
+  const granting = operation === 'grant'
+  if (granting && target.role === 'ADMIN') redirect('/admin?notice=already_admin')
+  if (!granting && target.role !== 'ADMIN') redirect('/admin?notice=not_admin')
+
+  const changed = await prisma.$transaction(async (tx) => {
+    // Re-check the last-admin invariant inside the transaction before demotion.
+    if (!granting) {
+      const activeAdmins = await tx.user.count({ where: { role: 'ADMIN', status: 'ACTIVE' } })
+      if (activeAdmins <= 1) return 'last_admin' as const
+    }
+
+    const result = await tx.user.updateMany({
+      where: { id: target.id, role: target.role, status: 'ACTIVE' },
+      data: { role: granting ? 'ADMIN' : 'USER' },
+    })
+    if (result.count !== 1) return 'concurrent_change' as const
+
+    await tx.auditLog.create({ data: {
+      actorId: actor.id,
+      action: granting ? 'ADMIN_ACCESS_GRANTED' : 'ADMIN_ACCESS_REVOKED',
+      targetType: 'User',
+      targetId: target.id,
+      details: { previousRole: target.role, nextRole: granting ? 'ADMIN' : 'USER' },
+    } })
+    return 'changed' as const
+  })
+
+  if (changed === 'last_admin') redirect('/admin?error=cannot_revoke_last_admin')
+  if (changed === 'concurrent_change') redirect('/admin?error=concurrent_change')
+  redirect('/admin?adminAccessUpdated=1')
+}
