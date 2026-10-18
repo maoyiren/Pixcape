@@ -42,7 +42,8 @@
     "mariadb": "^3.4.5",
     "@prisma/adapter-better-sqlite3": "^7.10.0",
     "better-sqlite3": "^13.0.3",
-    "nodemailer": "^10.0.6"
+    "nodemailer": "^10.0.6",
+    "@radix-ui/react-select": "^2.2.6"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
