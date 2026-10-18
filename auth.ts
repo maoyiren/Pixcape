@@ -9,9 +9,23 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { timingSafeEqual, scryptSync } from 'node:crypto'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
+import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 
 const authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
 const providers: NextAuthOptions['providers'] = []
+
+async function allowCredentialAttempt(request: { headers: Record<string, string | string[] | undefined> }): Promise<boolean> {
+  const configuredHeader = (process.env.LOGIN_RATE_LIMIT_IP_HEADER || 'x-real-ip').toLowerCase()
+  const raw = request.headers[configuredHeader]
+  const address = Array.isArray(raw) ? raw[0] : raw
+  try {
+    const result = await consumeLoginRateLimit(address || 'unknown')
+    return result.allowed
+  } catch {
+    // Fail closed when the persistent rate-limit store is unavailable.
+    return false
+  }
+}
 
 function safeEqual(left: string, right: string): boolean {
   const a = Buffer.from(left)
@@ -29,7 +43,8 @@ if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMI
       username: { label: '管理员用户名', type: 'text' },
       password: { label: '管理员密码', type: 'password' },
     },
-    async authorize(credentials) {
+    async authorize(credentials, request) {
+      if (!await allowCredentialAttempt(request)) return null
       const username = credentials?.username ?? ''
       const password = credentials?.password ?? ''
       if (!safeEqual(username, process.env.ADMIN_USERNAME!) || !safeEqual(password, process.env.ADMIN_PASSWORD!)) return null
@@ -55,7 +70,8 @@ providers.push(CredentialsProvider({
     email: { label: '邮箱', type: 'email' },
     password: { label: '密码', type: 'password' },
   },
-  async authorize(credentials) {
+  async authorize(credentials, request) {
+    if (!await allowCredentialAttempt(request)) return null
     const email = credentials?.email?.trim().toLowerCase()
     const password = credentials?.password ?? ''
     if (!email || !password || password.length > 256) return null
