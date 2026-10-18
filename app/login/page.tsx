@@ -26,9 +26,8 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
         <h2>进入你的创作空间</h2>
         {verificationMessage ? <p role="status">{verificationMessage}</p> : null}
         <p>选择一种已配置的登录方式。OAuth 或邮箱首次登录会创建普通用户；管理员登录使用单独的环境变量凭据。</p>
-        {(enabledMethods.length > 0 || adminEnabled) ? <LoginForm methods={enabledMethods.map(({id,label}) => ({id,label}))} adminEnabled={adminEnabled} /> : (
-          <p role="status">目前尚未启用登录方式。请配置 OAuth、SMTP 或管理员环境变量。</p>
-        )}
+        <LoginForm methods={enabledMethods.map(({id,label}) => ({id,label}))} adminEnabled={adminEnabled} />
+        {enabledMethods.length === 0 && !adminEnabled ? <p>OAuth、邮箱魔法链接和管理员登录尚未配置；已注册的邮箱密码账户仍可直接登录。</p> : null}
         <p>新账户默认是普通用户；管理员权限不能通过普通注册获得。</p>
       </section>
     </main>
