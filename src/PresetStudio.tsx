@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { Download, Shirt, Upload, RotateCcw, X, ExternalLink } from 'lucide-react'
+import * as Select from '@radix-ui/react-select'
+import { ChevronDown, Download, Shirt, Upload, RotateCcw, X, ExternalLink } from 'lucide-react'
 import ThreeCapePreview from './ThreeCapePreview'
 import PresetThumbnail from './PresetThumbnail'
 import './preset-studio.css'
@@ -305,7 +306,7 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
         <button type="button" onClick={onOpenAI} className="preset-nav-button">✦ {tr('AI 皮肤工坊', language)}</button>
         <button type="button" onClick={openEditorWithPreset} disabled={!ready} className="preset-nav-editor">{tr('3D 模型编辑', language)} ↗</button>
       </nav>
-      <div className="preset-top-actions"><span className="preset-workspace-label">{tr('Minecraft 皮肤与服装工作台', language)}</span><label className="preset-language-switch">{tr('选择语言', language)} <select aria-label="Language" value={language} onChange={event => { const next = event.target.value as StudioLanguage; setLanguage(next); localStorage.setItem('pixcape-language', next); document.documentElement.lang = next }}><option value="zh-CN">简体中文</option><option value="en-US">English</option></select></label></div>
+      <div className="preset-top-actions"><span className="preset-workspace-label">{tr('Minecraft 皮肤与服装工作台', language)}</span><label className="preset-language-switch">{tr('选择语言', language)} <Select.Root value={language} onValueChange={value => { const next = value as StudioLanguage; setLanguage(next); localStorage.setItem('pixcape-language', next); document.documentElement.lang = next }}><Select.Trigger className="preset-language-trigger" aria-label="Language"><Select.Value /><Select.Icon><ChevronDown size={13} /></Select.Icon></Select.Trigger><Select.Portal><Select.Content className="preset-language-content" position="popper" sideOffset={4}><Select.Viewport><Select.Item className="preset-language-item" value="zh-CN"><Select.ItemText>简体中文</Select.ItemText></Select.Item><Select.Item className="preset-language-item" value="en-US"><Select.ItemText>English</Select.ItemText></Select.Item></Select.Viewport></Select.Content></Select.Portal></Select.Root></label></div>
     </header>
     <aside role="note" aria-label="项目声明与素材署名" className="preset-asset-notice">
       {language === 'en-US' ? 'Unofficial Minecraft project · Coat & shawl assets: 邹陈云飞, Th千' : '非官方 Minecraft 项目 · 外套与披肩素材：邹陈云飞、Th千'}
