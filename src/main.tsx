@@ -2,6 +2,7 @@ import React, { Component, type ErrorInfo, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './styles.css'
+import './design-system.css'
 
 class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state: { error: Error | null } = { error: null }
@@ -11,7 +12,7 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Pixcape failed to render:', error, info.componentStack)
+    console.error('CDPC failed to render:', error, info.componentStack)
   }
 
   render() {
@@ -27,7 +28,7 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
             width: 'min(560px,100%)', padding: 20, background: '#c6c6c6',
             border: '4px solid #555', boxShadow: 'inset 4px 4px #fff,inset -4px -4px #777',
           }}>
-            <h1 style={{ marginTop: 0, fontSize: 20 }}>Pixcape 工作台加载失败</h1>
+            <h1 style={{ marginTop: 0, fontSize: 20 }}>CDPC 工作台加载失败</h1>
             <p>页面组件运行时发生错误。可以先重新加载；如果反复出现，请将下方错误信息反馈给开发者。</p>
             <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', padding: 10, background: '#a0a0a0', border: '2px solid #555', fontSize: 12 }}>
               {this.state.error.message}
