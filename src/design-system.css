@@ -155,3 +155,7 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .tool-button{background:var(--cdpc-surface-raised)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important}
 .tool-button.selected{background:#293244!important;border-color:var(--cdpc-accent)!important;color:var(--cdpc-text)!important}
 .primary-btn,.export-wide{background:var(--cdpc-accent)!important;color:#111827!important;border:1px solid var(--cdpc-accent)!important;border-radius:var(--cdpc-radius-sm)!important;box-shadow:none!important;font-weight:700!important}
+
+/* Shared notice treatment for asset credits and non-affiliation disclosures. */
+.preset-asset-notice { padding: 7px 16px; border-bottom: 1px solid var(--cdpc-border); background: var(--cdpc-surface); color: var(--cdpc-muted); font-size: 11px; line-height: 1.5; }
+.preset-asset-notice::selection { background: var(--cdpc-accent); color: #101318; }
