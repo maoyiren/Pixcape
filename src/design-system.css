@@ -162,3 +162,10 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 
 /* Keep the mounted studio state while the embedded model editor is active. */
 .cdpc-studio-hidden { display: none !important; }
+
+/* Shared accessible language picker, used across the main workspace. */
+.preset-language-trigger { min-height: 34px; max-width: 140px; padding: 0 9px; display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--cdpc-border); border-radius: var(--cdpc-radius-sm); color: var(--cdpc-text); background: var(--cdpc-surface-raised); font: inherit; cursor: pointer; }
+.preset-language-trigger:focus-visible { outline: 2px solid var(--cdpc-accent); outline-offset: 2px; }
+.preset-language-content { z-index: 120; min-width: var(--radix-select-trigger-width); overflow: hidden; border: 1px solid var(--cdpc-border); border-radius: var(--cdpc-radius-sm); background: var(--cdpc-surface-raised); color: var(--cdpc-text); box-shadow: var(--cdpc-shadow); }
+.preset-language-item { padding: 9px 12px; outline: none; font-size: 12px; cursor: pointer; }
+.preset-language-item[data-highlighted] { background: var(--cdpc-accent); color: #101318; }
