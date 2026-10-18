@@ -13,7 +13,7 @@ export async function SiteNav() {
   const isAdmin = session?.user?.role === 'ADMIN' && session.user.status === 'ACTIVE'
   return (
     <nav className="site-nav" aria-label="主导航">
-      <Link className="site-brand" href="/" aria-label="Pixcape 首页">
+      <Link className="site-brand" href="/" aria-label="CDPC 首页">
         <span className="site-brand-mark" aria-hidden="true">C</span>
         <span>CDPC</span>
       </Link>
