@@ -63,3 +63,17 @@
 .site-nav .site-nav-join{background:#e8f1e2;color:#284e1d!important;border-color:#b8d1a9!important}
 .site-nav a:focus-visible{outline:2px solid #a6d887;outline-offset:2px}
 @media(max-width:720px){.site-nav-user{max-width:110px}.site-nav-account{gap:2px}}
+
+
+.login-flow{display:grid;gap:20px;margin:20px 0}
+.login-methods{display:flex;flex-wrap:wrap;gap:12px}
+.login-methods .pixel-button{cursor:pointer}
+.login-email-form{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;max-width:520px;padding-top:18px;border-top:2px solid #858585}
+.login-email-form label{font-weight:800}
+.login-email-form input{width:100%;min-height:46px;padding:10px 12px;border:2px solid #343434;background:#f7f7f7;color:#202020;font:inherit}
+.login-email-form .pixel-button{justify-self:start;cursor:pointer}
+.login-flow button:disabled{cursor:wait;opacity:.65}
+.login-success,.login-error{padding:12px;border:2px solid #343434;line-height:1.65}
+.login-success{background:#e2f2d8;color:#204c18}
+.login-error{background:#f7dddd;color:#7d1717}
+@media(max-width:680px){.login-methods{display:grid;grid-template-columns:minmax(0,1fr)}.login-methods .pixel-button,.login-email-form .pixel-button{width:100%}}
