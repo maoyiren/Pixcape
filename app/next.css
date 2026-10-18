@@ -58,3 +58,8 @@
 .config-status{display:inline-flex;margin-top:6px;padding:5px 8px;border-radius:4px;background:#edf1e9;color:#58634f;font-size:11px;font-weight:800}
 @media(max-width:760px){.admin-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-filters{grid-template-columns:1fr 1fr}.admin-filters label:first-child{grid-column:1/-1}.admin-filter-actions{grid-column:1/-1}.admin-config-grid{grid-template-columns:1fr}.admin-subnav{top:0;position:relative;overflow-x:auto;flex-wrap:nowrap}.admin-subnav a{white-space:nowrap;flex-shrink:0}}
 @media(max-width:420px){.admin-filters{grid-template-columns:1fr}.admin-filters label:first-child,.admin-filter-actions{grid-column:auto}.admin-filter-actions>*{flex:1}}
+
+.site-nav-user{display:inline-block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dce8d5;font-size:12px;font-weight:700;padding:8px}
+.site-nav .site-nav-join{background:#e8f1e2;color:#284e1d!important;border-color:#b8d1a9!important}
+.site-nav a:focus-visible{outline:2px solid #a6d887;outline-offset:2px}
+@media(max-width:720px){.site-nav-user{max-width:110px}.site-nav-account{gap:2px}}
