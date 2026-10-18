@@ -153,9 +153,21 @@ export async function setAdminAccess(formData: FormData) {
       if (activeAdmins <= 1) return 'last_admin' as const
     }
 
+    let nextRole: 'ADMIN' | 'USER' | 'CREATOR' = 'ADMIN'
+    if (!granting) {
+      // Restore the role that was present before the most recent admin grant when available.
+      const priorGrant = await tx.auditLog.findFirst({
+        where: { targetType: 'User', targetId: target.id, action: 'ADMIN_ACCESS_GRANTED' },
+        orderBy: { createdAt: 'desc' },
+        select: { details: true },
+      })
+      const details = priorGrant?.details as { previousRole?: string } | null
+      nextRole = details?.previousRole === 'CREATOR' ? 'CREATOR' : 'USER'
+    }
+
     const result = await tx.user.updateMany({
       where: { id: target.id, role: target.role, status: 'ACTIVE' },
-      data: { role: granting ? 'ADMIN' : 'USER' },
+      data: { role: nextRole },
     })
     if (result.count !== 1) return 'concurrent_change' as const
 
@@ -164,7 +176,7 @@ export async function setAdminAccess(formData: FormData) {
       action: granting ? 'ADMIN_ACCESS_GRANTED' : 'ADMIN_ACCESS_REVOKED',
       targetType: 'User',
       targetId: target.id,
-      details: { previousRole: target.role, nextRole: granting ? 'ADMIN' : 'USER' },
+      details: { previousRole: target.role, nextRole },
     } })
     return 'changed' as const
   })
