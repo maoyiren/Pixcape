@@ -142,8 +142,7 @@ export default function ThreeCapePreview({
     viewer.controls.enableRotate = true
     viewer.controls.enableZoom = true
     viewer.controls.enablePan = false
-    viewer.controls.enableDamping = true
-    viewer.controls.dampingFactor = 0.08
+    viewer.controls.enableDamping = false
     viewer.controls.rotateSpeed = 0.85
     viewer.controls.minPolarAngle = 0
     viewer.controls.maxPolarAngle = Math.PI
