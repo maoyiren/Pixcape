@@ -63,3 +63,16 @@
 .site-nav .site-nav-join{background:#e8f1e2;color:#284e1d!important;border-color:#b8d1a9!important}
 .site-nav a:focus-visible{outline:2px solid #a6d887;outline-offset:2px}
 @media(max-width:720px){.site-nav-user{max-width:110px}.site-nav-account{gap:2px}}
+
+/* CDPC shared design tokens — Next.js account and creator surfaces */
+:root{color-scheme:dark;--cdpc-bg:#101318;--cdpc-surface:#191d24;--cdpc-surface-raised:#202630;--cdpc-border:#303844;--cdpc-text:#f0f2f5;--cdpc-muted:#a4adba;--cdpc-accent:#8ba8ff}
+html{color-scheme:dark;scroll-behavior:smooth}
+body{background:var(--cdpc-bg)!important;background-image:none!important;color:var(--cdpc-text)!important}
+.site-nav{background:rgba(25,29,36,.96)!important;border-bottom:1px solid var(--cdpc-border)!important;box-shadow:none!important}
+.site-brand-mark{background:var(--cdpc-surface-raised)!important;border:1px solid var(--cdpc-border)!important;box-shadow:none!important;border-radius:7px!important}
+.site-nav a:not(.site-brand){border-radius:6px!important}
+.site-nav a:not(.site-brand):hover,.site-nav a:not(.site-brand):focus-visible{background:var(--cdpc-surface-raised)!important;border-color:var(--cdpc-border)!important}
+.site-nav .site-nav-join{background:var(--cdpc-accent)!important;color:#111827!important;border-color:var(--cdpc-accent)!important}
+.cdpc-site-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:18px max(18px,calc((100vw - 1180px)/2));margin-top:36px;border-top:1px solid var(--cdpc-border);background:var(--cdpc-surface);color:var(--cdpc-muted);font-size:12px}
+@media(max-width:720px){.cdpc-site-footer{align-items:flex-start;flex-direction:column;padding:16px 12px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
