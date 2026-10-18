@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
-import { reviewCreatorApplication, setUserStatus } from './actions'
+import { reviewCreatorApplication, setUserRole, setUserStatus } from './actions'
 
 type HealthCheck = {
   name: string
@@ -85,7 +85,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 
 export default async function AdminPage() {
   const admin = await requireRole('ADMIN')
-  const [healthChecks, adminData] = await Promise.all([
+  const [healthChecks, adminData, auditLogs] = await Promise.all([
     getHealthChecks(),
     Promise.all([
       prisma.creatorProfile.findMany({
@@ -100,6 +100,11 @@ export default async function AdminPage() {
         select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
       }),
     ]).catch(() => null),
+    prisma.auditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      include: { actor: { select: { name: true, email: true } } },
+    }).catch(() => []),
   ])
   const pending = adminData?.[0] ?? []
   const users = adminData?.[1] ?? []
@@ -134,8 +139,12 @@ export default async function AdminPage() {
     <section className="hero inventory-panel"><h2>用户管理</h2><p>最近注册的 50 个账户。为防止误操作，管理员账户不能从此处封禁，也不能封禁当前登录账号。</p>
       {!adminData ? <p>用户列表暂不可用。</p> : <div className="application-list">{users.map((user) => <article className="application-card" key={user.id}>
         <h3>{user.name ?? '未设置名称'}</h3><p>{user.email ?? user.id}</p><p>角色：{user.role} · 状态：{user.status} · 注册：{user.createdAt.toISOString().slice(0, 10)}</p>
+        {user.role !== 'ADMIN' && user.status === 'ACTIVE' ? <form action={setUserRole} className="actions"><input type="hidden" name="userId" value={user.id} /><label htmlFor={`role-${user.id}`}>调整角色</label><select id={`role-${user.id}`} name="role" defaultValue={user.role} aria-label={`为 ${user.name ?? user.email ?? user.id} 设置角色`}><option value="USER">普通用户</option><option value="CREATOR">创作者</option></select><button className="pixel-button primary" type="submit">保存角色</button></form> : null}
         {user.role !== 'ADMIN' && user.status !== 'DELETED' ? <form action={setUserStatus} className="actions"><input type="hidden" name="userId" value={user.id} />{user.status === 'SUSPENDED' ? <button className="pixel-button primary" type="submit" name="status" value="ACTIVE">恢复账户</button> : <button className="pixel-button" type="submit" name="status" value="SUSPENDED">封禁账户</button>}</form> : null}
       </article>)}</div>}
+    </section>
+    <section className="hero inventory-panel"><h2>操作审计日志</h2><p>最近 30 条管理操作，用于追踪账号状态、角色调整和创作者审核。敏感凭据不会写入日志。</p>
+      {auditLogs.length === 0 ? <p>暂无日志，或日志暂时无法读取。</p> : <div className="application-list">{auditLogs.map((entry) => <article className="application-card" key={entry.id}><h3>{entry.action}</h3><p>操作者：{entry.actor.name ?? entry.actor.email ?? '管理员账号'}</p><p>目标：{entry.targetType} · {entry.targetId}</p><p>时间：{entry.createdAt.toISOString().replace('T', ' ').slice(0, 19)} UTC</p><p>详情：{entry.details ? JSON.stringify(entry.details) : '无附加详情'}</p></article>)}</div>}
     </section>
   </main>
 }
