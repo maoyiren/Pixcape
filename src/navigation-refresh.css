@@ -38,3 +38,36 @@
   .preset-current-actions > button { width: 100%; min-width: 0; padding: 9px 7px; font-size: 11px; }
   .preset-current-actions > button:last-child { grid-column: 1 / -1; }
 }
+
+/* Keep the header from clipping when navigation wraps to a second row. */
+.preset-topbar {
+  height: auto;
+  min-height: 66px;
+  flex-wrap: wrap;
+  align-content: center;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.preset-brand { flex: 0 0 auto; }
+.preset-top-actions { flex: 0 1 auto; min-width: 0; }
+.preset-main-nav { min-width: 0; }
+@media (max-width: 1080px) {
+  .preset-topbar { height: auto; min-height: 66px; }
+  .preset-top-actions { margin-left: auto; }
+}
+@media (max-width: 700px) {
+  .preset-topbar { padding: 10px; gap: 8px; }
+  .preset-brand { font-size: 16px; }
+  .preset-brand small { font-size: 8px; letter-spacing: 1px; }
+  .preset-top-actions { flex: 1 1 100%; margin-left: 0; }
+  .preset-language-switch { margin-left: auto; }
+  .preset-current-skin-title > div { min-width: 0; }
+  .preset-current-skin-title h2 { font-size: 15px; }
+  .preset-skin-meta { min-width: 0; overflow-wrap: anywhere; }
+  .preset-layout { grid-template-columns: minmax(0, 1fr) !important; }
+  .preset-model-stage { min-height: 320px; }
+}
+@media (min-width: 701px) and (max-width: 1080px) {
+  .preset-layout { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) !important; }
+  .preset-properties { grid-column: 1 / -1; }
+}
