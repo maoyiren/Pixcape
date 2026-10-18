@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ImagePlus, LoaderCircle, Sparkles, WandSparkles } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ImagePlus, LoaderCircle, Sparkles, WandSparkles } from 'lucide-react'
+import * as Select from '@radix-ui/react-select'
+import * as Tabs from '@radix-ui/react-tabs'
 import { SkinViewer } from 'skinview3d'
 import './ai-skin-studio.css'
 
@@ -105,7 +107,7 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
     <main className="ai-studio">
       <header className="ai-studio__topbar">
         <button className="ai-studio__back" onClick={onBack}><ArrowLeft size={17} /> 返回皮肤工作台</button>
-        <div className="ai-studio__brand"><span className="ai-studio__brand-icon"><img src="/pixcape-icon.svg" alt="" /></span><div><strong>CDPC AI 工坊</strong><small>多模型图像生成 · 实验功能</small></div></div>
+        <div className="ai-studio__brand"><span className="ai-studio__brand-icon"><img src="/cdpc-icon.svg" alt="" /></span><div><strong>CDPC AI 工坊</strong><small>多模型图像生成 · 实验功能</small></div></div>
         <span className="ai-studio__pill">预览版</span>
       </header>
 
@@ -115,18 +117,30 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
 
           <div className="ai-studio__field">
             <label>生成方式</label>
-            <div className="ai-studio__segmented">
-              <button className={task === 'text-to-image' ? 'active' : ''} onClick={() => setTask('text-to-image')}><WandSparkles size={16} /> 文字生成</button>
-              <button className={task === 'image-to-image' ? 'active' : ''} onClick={() => setTask('image-to-image')}><ImagePlus size={16} /> 参考图转换</button>
-            </div>
+            <Tabs.Root className="ai-studio__segmented" value={task} onValueChange={(value) => setTask(value as 'text-to-image' | 'image-to-image')}>
+              <Tabs.List aria-label="生成方式">
+                <Tabs.Trigger value="text-to-image"><WandSparkles size={16} /> 文字生成</Tabs.Trigger>
+                <Tabs.Trigger value="image-to-image"><ImagePlus size={16} /> 参考图转换</Tabs.Trigger>
+              </Tabs.List>
+            </Tabs.Root>
           </div>
 
           <div className="ai-studio__field">
             <label htmlFor="ai-model">图像模型</label>
-            <select id="ai-model" value={model} onChange={event => setModel(event.target.value)} disabled={!models.length}>
-              <option value="auto">自动选择可用模型</option>
-              {models.map(item => <option key={item.id} value={item.id}>{item.label} · {item.model} · {item.imageToImage ? '支持参考图' : '文字生成'}</option>)}
-            </select>
+            <Select.Root value={model} onValueChange={setModel} disabled={!models.length}>
+              <Select.Trigger id="ai-model" className="ai-studio__select-trigger" aria-label="图像模型">
+                <Select.Value placeholder="选择图像模型" />
+                <Select.Icon><ChevronDown size={16} /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content className="ai-studio__select-content" position="popper" sideOffset={5}>
+                  <Select.Viewport>
+                    <Select.Item className="ai-studio__select-item" value="auto"><Select.ItemText>自动选择可用模型</Select.ItemText></Select.Item>
+                    {models.map(item => <Select.Item className="ai-studio__select-item" key={item.id} value={item.id}><Select.ItemText>{item.label} · {item.model} · {item.imageToImage ? '支持参考图' : '文字生成'}</Select.ItemText></Select.Item>)}
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
             <small>仅显示服务端已配置的模型。不同模型的费用、速度和图像能力可能不同。</small>
           </div>
 
@@ -139,10 +153,20 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
 
           <div className="ai-studio__field">
             <label htmlFor="ai-variant">皮肤模型</label>
-            <select id="ai-variant" value={variant} onChange={event => setVariant(event.target.value as 'classic' | 'slim')}>
-              <option value="classic">Classic / Steve（4 像素手臂）</option>
-              <option value="slim">Slim / Alex（3 像素手臂）</option>
-            </select>
+            <Select.Root value={variant} onValueChange={value => setVariant(value as 'classic' | 'slim')}>
+              <Select.Trigger id="ai-variant" className="ai-studio__select-trigger" aria-label="皮肤模型">
+                <Select.Value />
+                <Select.Icon><ChevronDown size={16} /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content className="ai-studio__select-content" position="popper" sideOffset={5}>
+                  <Select.Viewport>
+                    <Select.Item className="ai-studio__select-item" value="classic"><Select.ItemText>Classic / Steve（4 像素手臂）</Select.ItemText></Select.Item>
+                    <Select.Item className="ai-studio__select-item" value="slim"><Select.ItemText>Slim / Alex（3 像素手臂）</Select.ItemText></Select.Item>
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
             <small>输出为 64×64 UV 纹理；正背面映射仍需在 3D 预览中检查。</small>
           </div>
 
@@ -167,10 +191,14 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
               <div className="ai-studio__empty"><div className="ai-studio__empty-art"><Sparkles size={34} /></div><strong>你的角色会出现在这里</strong><span>选择模型、写下想法，然后开始生成。</span></div>}
           </div>
           {result?.outputKind === 'minecraft-skin' && <div className="ai-studio__3d-preview"><div><strong>可交互 3D 预览</strong><small>拖动旋转 · 滚轮缩放 · 右键平移</small></div><canvas ref={previewCanvasRef} aria-label="Minecraft 皮肤 3D 预览" /></div>}
-          {result && <div className="ai-studio__result-info"><div><strong>{result.provider} / {result.model}</strong><small>{result.outputKind === 'minecraft-skin' ? `Minecraft 64×64 UV 纹理 · ${variant === 'slim' ? 'Slim' : 'Classic'}` : '概念图'}</small></div><a href={result.imageDataUrl} download="pixcape-ai-skin.png">下载皮肤 PNG</a><p>{result.notice}</p></div>}
+          {result && <div className="ai-studio__result-info"><div><strong>{result.provider} / {result.model}</strong><small>{result.outputKind === 'minecraft-skin' ? `Minecraft 64×64 UV 纹理 · ${variant === 'slim' ? 'Slim' : 'Classic'}` : '概念图'}</small></div><a href={result.imageDataUrl} download="cdpc-ai-skin.png">下载皮肤 PNG</a><p>{result.notice}</p></div>}
           <div className="ai-studio__disclaimer"><strong>生成后请检查 3D 预览</strong><p>服务端会将左右双视图投影到标准 64×64 UV 纹理，并强制基础层不透明、未使用区域透明。图像模型的正背面一致性仍可能有误差；导入游戏前请先检查脸部、服装和 Classic / Slim 手臂效果。</p></div>
         </section>
       </div>
+      <footer className="cdpc-site-footer">
+        <span>CDPC · 皮肤与像素创作工具</span>
+        <span>非官方 Minecraft 项目 · 不隶属于 Mojang 或 Microsoft</span>
+      </footer>
     </main>
   )
 }
