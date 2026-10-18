@@ -76,3 +76,27 @@ body{background:var(--cdpc-bg)!important;background-image:none!important;color:v
 .cdpc-site-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:18px max(18px,calc((100vw - 1180px)/2));margin-top:36px;border-top:1px solid var(--cdpc-border);background:var(--cdpc-surface);color:var(--cdpc-muted);font-size:12px}
 @media(max-width:720px){.cdpc-site-footer{align-items:flex-start;flex-direction:column;padding:16px 12px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Apply the same restrained surfaces to home, creator, account and admin pages. */
+.inventory-shell{max-width:1180px}
+.inventory-panel,.application-card,.health-card,.health-summary>div,.admin-config-grid article{
+  color:var(--cdpc-text)!important;background:var(--cdpc-surface)!important;border:1px solid var(--cdpc-border)!important;border-radius:10px!important;box-shadow:none!important
+}
+.topbar{background:var(--cdpc-surface)!important;border:1px solid var(--cdpc-border)!important;border-radius:10px!important;box-shadow:none!important}
+.grass-icon,.slot{background:var(--cdpc-surface-raised)!important;border:1px solid var(--cdpc-border)!important;box-shadow:none!important;border-radius:7px!important}
+.eyebrow{color:var(--cdpc-muted)!important}
+.pixel-button{background:var(--cdpc-surface-raised)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important;border-radius:6px!important;box-shadow:none!important;font-weight:650!important}
+.pixel-button.primary{background:var(--cdpc-accent)!important;color:#111827!important;border-color:var(--cdpc-accent)!important}
+.role-card h3,.inventory-panel h1,.inventory-panel h2,.inventory-panel h3{color:var(--cdpc-text)}
+.application-form input,.application-form textarea,.application-card select,.admin-filters input,.admin-filters select{
+  background:var(--cdpc-bg)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important;border-radius:6px!important
+}
+.admin-subnav{background:transparent!important}
+.admin-subnav a{background:var(--cdpc-surface)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important;border-radius:6px!important}
+.admin-subnav a:hover,.admin-subnav a:focus-visible{background:var(--cdpc-surface-raised)!important;border-color:var(--cdpc-accent)!important}
+.admin-overview article{background:var(--cdpc-surface)!important;border:1px solid var(--cdpc-border)!important;border-radius:9px!important;box-shadow:none!important}
+.admin-overview span,.admin-overview small{color:var(--cdpc-muted)!important}
+.admin-overview strong{color:var(--cdpc-text)!important}
+.admin-filters{background:var(--cdpc-surface)!important;border:1px solid var(--cdpc-border)!important;border-radius:8px!important}
+.health-status,.health-dot{border:1px solid var(--cdpc-border)!important;border-radius:5px!important}
+@media(max-width:680px){.inventory-shell{padding:12px 10px 28px}.topbar{padding:12px!important}}
