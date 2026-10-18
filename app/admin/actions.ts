@@ -85,3 +85,42 @@ export async function setUserStatus(formData: FormData) {
   if (!changed) redirect('/admin?error=concurrent_change')
   redirect('/admin?userUpdated=1')
 }
+
+
+export async function setUserRole(formData: FormData) {
+  const actor = await requireActiveAdmin()
+  const targetId = String(formData.get('userId') ?? '').trim()
+  const requestedRole = String(formData.get('role') ?? '')
+  if (!targetId || targetId.length > 128 || !['USER', 'CREATOR'].includes(requestedRole)) {
+    redirect('/admin?error=invalid_role_request')
+  }
+  if (targetId === actor.id) redirect('/admin?error=cannot_change_own_role')
+
+  const target = await prisma.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, role: true, status: true },
+  })
+  if (!target) redirect('/admin?error=user_not_found')
+  if (target.role === 'ADMIN') redirect('/admin?error=admin_role_protected')
+  if (target.status !== 'ACTIVE') redirect('/admin?error=inactive_user_role')
+  const nextRole = requestedRole as 'USER' | 'CREATOR'
+  if (target.role === nextRole) redirect('/admin?notice=no_role_change')
+
+  const changed = await prisma.$transaction(async (tx) => {
+    const result = await tx.user.updateMany({
+      where: { id: target.id, role: target.role, status: 'ACTIVE' },
+      data: { role: nextRole },
+    })
+    if (result.count !== 1) return false
+    await tx.auditLog.create({ data: {
+      actorId: actor.id,
+      action: 'USER_ROLE_CHANGED',
+      targetType: 'User',
+      targetId: target.id,
+      details: { previousRole: target.role, nextRole },
+    } })
+    return true
+  })
+  if (!changed) redirect('/admin?error=concurrent_change')
+  redirect('/admin?roleUpdated=1')
+}
