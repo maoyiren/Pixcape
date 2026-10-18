@@ -847,3 +847,7 @@
   .preset-current-actions button { min-height: 44px; }
   .preset-category-tabs .preset-category-tab { min-height: 48px; }
 }
+
+/* Unified CDPC brand mark */
+.preset-brand > img{display:block;width:32px;height:32px;object-fit:contain;image-rendering:pixelated;border-radius:6px;flex-shrink:0}
+@media(max-width:700px){.preset-brand > img{width:30px;height:30px}}
