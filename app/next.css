@@ -78,3 +78,70 @@
 .auth-form [role=alert]{color:#9b2828;font-weight:700}
 .auth-form [role=status]{color:#2d6328;font-weight:700}
 @media(max-width:560px){.auth-email-form{padding:12px}.auth-form{width:100%}}
+
+
+/* CDPC shared design tokens — Next.js account and creator surfaces */
+:root{color-scheme:dark;--cdpc-bg:#101318;--cdpc-surface:#191d24;--cdpc-surface-raised:#202630;--cdpc-border:#303844;--cdpc-text:#f0f2f5;--cdpc-muted:#a4adba;--cdpc-accent:#8ba8ff}
+html{color-scheme:dark;scroll-behavior:smooth}
+body{background:var(--cdpc-bg)!important;background-image:none!important;color:var(--cdpc-text)!important}
+.site-nav{background:rgba(25,29,36,.96)!important;border-bottom:1px solid var(--cdpc-border)!important;box-shadow:none!important}
+.site-brand-mark{background:var(--cdpc-surface-raised)!important;border:1px solid var(--cdpc-border)!important;box-shadow:none!important;border-radius:7px!important}
+.site-nav a:not(.site-brand){border-radius:6px!important}
+.site-nav a:not(.site-brand):hover,.site-nav a:not(.site-brand):focus-visible{background:var(--cdpc-surface-raised)!important;border-color:var(--cdpc-border)!important}
+.site-nav .site-nav-join{background:var(--cdpc-accent)!important;color:#111827!important;border-color:var(--cdpc-accent)!important}
+.cdpc-site-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:18px max(18px,calc((100vw - 1180px)/2));margin-top:36px;border-top:1px solid var(--cdpc-border);background:var(--cdpc-surface);color:var(--cdpc-muted);font-size:12px}
+@media(max-width:720px){.cdpc-site-footer{align-items:flex-start;flex-direction:column;padding:16px 12px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Apply the same restrained surfaces to home, creator, account and admin pages. */
+.inventory-shell{max-width:1180px}
+.inventory-panel,.application-card,.health-card,.health-summary>div,.admin-config-grid article{
+  color:var(--cdpc-text)!important;background:var(--cdpc-surface)!important;border:1px solid var(--cdpc-border)!important;border-radius:10px!important;box-shadow:none!important
+}
+.topbar{background:var(--cdpc-surface)!important;border:1px solid var(--cdpc-border)!important;border-radius:10px!important;box-shadow:none!important}
+.grass-icon,.slot{background:var(--cdpc-surface-raised)!important;border:1px solid var(--cdpc-border)!important;box-shadow:none!important;border-radius:7px!important}
+.eyebrow{color:var(--cdpc-muted)!important}
+.pixel-button{background:var(--cdpc-surface-raised)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important;border-radius:6px!important;box-shadow:none!important;font-weight:650!important}
+.pixel-button.primary{background:var(--cdpc-accent)!important;color:#111827!important;border-color:var(--cdpc-accent)!important}
+.role-card h3,.inventory-panel h1,.inventory-panel h2,.inventory-panel h3{color:var(--cdpc-text)}
+.application-form input,.application-form textarea,.application-card select,.admin-filters input,.admin-filters select{
+  background:var(--cdpc-bg)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important;border-radius:6px!important
+}
+.admin-subnav{background:transparent!important}
+.admin-subnav a{background:var(--cdpc-surface)!important;color:var(--cdpc-text)!important;border:1px solid var(--cdpc-border)!important;border-radius:6px!important}
+.admin-subnav a:hover,.admin-subnav a:focus-visible{background:var(--cdpc-surface-raised)!important;border-color:var(--cdpc-accent)!important}
+.admin-overview article{background:var(--cdpc-surface)!important;border:1px solid var(--cdpc-border)!important;border-radius:9px!important;box-shadow:none!important}
+.admin-overview span,.admin-overview small{color:var(--cdpc-muted)!important}
+.admin-overview strong{color:var(--cdpc-text)!important}
+.admin-filters{background:var(--cdpc-surface)!important;border:1px solid var(--cdpc-border)!important;border-radius:8px!important}
+.health-status,.health-dot{border:1px solid var(--cdpc-border)!important;border-radius:5px!important}
+@media(max-width:680px){.inventory-shell{padding:12px 10px 28px}.topbar{padding:12px!important}}
+
+
+/* Final consistency and accessibility pass for legacy Next.js route components. */
+:where(button,a,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid var(--cdpc-accent)!important;
+  outline-offset:2px;
+}
+:where(button,a,input,select,textarea){-webkit-tap-highlight-color:transparent}
+:where(button,input,select,textarea){font:inherit}
+:where(button:disabled){cursor:not-allowed!important;opacity:.55}
+::selection{background:rgb(139 168 255 / 28%)}
+.inventory-shell,.health-panel{min-width:0}
+.inventory-panel,.application-card,.health-card,.admin-overview article,.admin-config-grid article{min-width:0;overflow-wrap:anywhere}
+.inventory-panel p,.application-card p,.health-card p,.admin-config-grid p{line-height:1.65}
+.inventory-panel a:not(.pixel-button),.application-card a:not(.pixel-button){color:var(--cdpc-accent)}
+.application-form button,.admin-filter-actions button,.health-footer .pixel-button{min-height:42px}
+.admin-filters button{min-height:42px;padding:9px 14px;border:1px solid var(--cdpc-border);border-radius:6px;background:var(--cdpc-surface-raised);color:var(--cdpc-text);font-weight:650}
+.admin-filters button:hover{border-color:var(--cdpc-accent)}
+@media(max-width:720px){
+  .site-nav{gap:6px}
+  .site-nav-links{scrollbar-width:thin}
+  .site-nav-links a{flex-shrink:0}
+  .site-nav-account{min-width:0}
+  .site-nav-user{max-width:90px}
+  .inventory-panel{overflow-wrap:anywhere}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
