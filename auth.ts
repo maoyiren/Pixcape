@@ -14,9 +14,9 @@ import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 const authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
 const providers: NextAuthOptions['providers'] = []
 
-async function allowCredentialAttempt(request: { headers: unknown }): Promise<boolean> {
+async function allowCredentialAttempt(request: { headers?: unknown }): Promise<boolean> {
   const configuredHeader = (process.env.LOGIN_RATE_LIMIT_IP_HEADER || 'x-real-ip').toLowerCase()
-  const headers = request.headers as Record<string, string | string[] | undefined>
+  const headers = (request.headers ?? {}) as Record<string, string | string[] | undefined>
   const raw = headers[configuredHeader]
   const address = Array.isArray(raw) ? raw[0] : raw
   try {
