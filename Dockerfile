@@ -50,7 +50,7 @@ FROM node:24-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends bash nginx ca-certificates wget \
     && rm -f /etc/nginx/sites-enabled/default \
     && rm -rf /var/lib/apt/lists/*
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=127.0.0.1
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=127.0.0.1 NEXTAUTH_URL=https://cdpc.cc
 WORKDIR /opt/pixcape-next
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=vite-build /app/dist /usr/share/nginx/html/studio/
