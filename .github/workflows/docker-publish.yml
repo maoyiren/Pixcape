@@ -26,6 +26,11 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+# Keep only the newest image build active for each branch; stale runs must not publish over latest.
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   packages: write
