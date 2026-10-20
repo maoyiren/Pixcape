@@ -15,12 +15,13 @@ export default function StudioHandoffPage() {
   })()
 
   return <main className="inventory-shell">
-    <header className="topbar"><div><p className="eyebrow">PIX CAPE STUDIO</p><h1>像素编辑工作台</h1></div><Link className="pixel-button" href="/">返回首页</Link></header>
+    <header className="topbar"><div><p className="eyebrow">CREATION TOOLS</p><h1>创作工具</h1></div><Link className="pixel-button" href="/">返回首页</Link></header>
     <section className="hero inventory-panel">
-      <h2>{validEditorUrl ? '打开 Pixcape 编辑器' : '编辑器地址尚未配置'}</h2>
+      <p className="eyebrow" style={{ color: '#315a24' }}>皮肤 · 披肩 · 外套 · 披风</p>
+      <h2>{validEditorUrl ? '打开像素编辑器' : '连接你的像素编辑器'}</h2>
       {validEditorUrl
-        ? <><p>编辑器由独立的 Vite 工作台提供。点击下方按钮打开工作台，Next.js 负责账户与管理功能。</p><a className="pixel-button primary" href={validEditorUrl} rel="noreferrer">打开像素编辑器 ↗</a></>
-        : <><p>当前 Next.js 服务没有检测到有效的 Vite 编辑器地址，因此不会展示一个失效的编辑器入口。</p><p>在部署配置中设置 NEXT_PUBLIC_EDITOR_URL 为实际编辑器地址后，此入口会自动启用。</p><Link className="pixel-button primary" href="/">返回创作中心</Link></>}
+        ? <><p>导入 Minecraft 皮肤，搭配像素配件，并在角色预览中检查效果。准备好后，打开编辑器继续创作。</p><a className="pixel-button primary" href={validEditorUrl} rel="noreferrer">进入编辑器 ↗</a></>
+        : <><p>编辑器目前由独立工作台提供。连接完成后，你可以从这里进入皮肤与配件编辑器；此处不会显示无效的跳转按钮。</p><div className="application-card"><h3>部署连接状态</h3><p>尚未检测到有效的编辑器地址。请在 Zeabur 服务环境变量中将 NEXT_PUBLIC_EDITOR_URL 设置为已部署的编辑器 HTTPS 地址，然后重新部署。</p></div><Link className="pixel-button primary" href="/">返回创作首页</Link></>}
     </section>
   </main>
 }
