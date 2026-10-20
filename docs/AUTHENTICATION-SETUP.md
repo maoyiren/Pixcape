@@ -6,27 +6,30 @@
 
 ## 1. 配置前准备
 
-1. 确认主站使用 HTTPS，并记下公开网址，例如 `https://pixcape.example.com`。
+1. **CDPC 生产主域名固定使用 `https://cdpc.cc`。** 本部署目标是 Zeabur 上的 Pixcape 单镜像服务，不再使用 Vercel `home` 项目作为应用入口。
 2. 在部署平台配置数据库，先阅读[单镜像生产部署](./SINGLE-IMAGE-PRODUCTION.md)。数据库必须使用持久化存储；不要在生产环境使用临时 SQLite 文件。
 3. 配置稳定的 `NEXTAUTH_SECRET`。可使用密码管理器生成至少 32 字节随机值；也可在可信终端运行：
    ```bash
    openssl rand -base64 48
    ```
    把输出保存到部署平台 Secret 中。**不要每次启动时重新生成**，否则会影响会话和加密相关配置。
-4. 设置 `NEXTAUTH_URL` 为主站的完整公开 URL，不要带末尾路径，例如 `https://pixcape.example.com`。
+4. 在 Zeabur 的 Pixcape 服务环境变量中设置 `NEXTAUTH_URL=https://cdpc.cc`（不要带末尾路径），并设置持久的 `NEXTAUTH_SECRET`。修改环境变量后重新部署服务。
 5. 只启用你已完成配置的登录方式。对应 ID 和 Secret 必须成对填写；未配置完整的提供商不会显示在登录页。
 
 本地开发时可以把 `.env.example` 复制为未提交的 `.env.local`。不要把真实密钥提交到 Git。
 
 ## 2. OAuth 提供商设置
 
-所有提供商的回调地址均使用：
+CDPC 生产环境使用以下**精确回调地址**。在启用的每个 OAuth 提供商控制台登记对应地址，协议、域名和路径必须完全一致：
 
-```text
-https://你的主站域名/api/auth/callback/提供商ID
-```
+| 提供商 | OAuth 回调 URL |
+| --- | --- |
+| GitHub | `https://cdpc.cc/api/auth/callback/github` |
+| Google | `https://cdpc.cc/api/auth/callback/google` |
+| Microsoft Entra ID | `https://cdpc.cc/api/auth/callback/azure-ad` |
+| Apple | `https://cdpc.cc/api/auth/callback/apple` |
 
-在各提供商后台登记的地址必须与实际主站 URL 完全匹配，包括 HTTPS、域名和路径。不要使用下面的示例域名作为真实地址。
+不要把登录发起地址、主页 URL 或 Zeabur 的临时域名误填成回调地址。若还要用临时域名测试，可额外登记对应的临时回调 URL，但生产登录必须回到 `cdpc.cc`。
 
 ### GitHub
 
@@ -142,9 +145,9 @@ LOGIN_RATE_LIMIT_IP_HEADER="x-real-ip"
 
 ## 6. 部署验证清单
 
-- [ ] `NEXTAUTH_URL` 与实际公开主站地址一致，生产环境使用 HTTPS。
+- [ ] Zeabur 服务环境变量 `NEXTAUTH_URL` 精确为 `https://cdpc.cc`，生产环境使用 HTTPS。
 - [ ] `NEXTAUTH_SECRET` 是随机、持久的 Secret，且没有提交到 Git。
-- [ ] OAuth 控制台回调 URL 与 `/api/auth/callback/<provider>` 完全一致。
+- [ ] OAuth 控制台已登记上表中对应的 `https://cdpc.cc/api/auth/callback/<provider>` 回调 URL。
 - [ ] 登录页只显示已配置的提供商；未配置的方式不会显示。
 - [ ] OAuth 登录能完成授权、回调、数据库用户创建与会话建立。
 - [ ] 邮箱魔法链接可投递、15 分钟内可使用，过期后不可再用于登录。
@@ -157,7 +160,7 @@ LOGIN_RATE_LIMIT_IP_HEADER="x-real-ip"
 
 **登录页没有显示某个提供商？** 检查其 ID 与 Secret 是否都已设置，变量名是否完全匹配，修改后是否重启/重新部署。
 
-**回调 URL 错误或反复跳转？** 核对 `NEXTAUTH_URL`、部署域名、HTTPS、提供商控制台回调 URL 以及代理的 HTTPS 转发设置。
+**出现 `redirect_uri is not associated with this application`？** 检查触发登录的具体提供商，并将其控制台回调地址精确设为上表中对应的 `https://cdpc.cc/api/auth/callback/<provider>`。同时核对 Zeabur 的 `NEXTAUTH_URL=https://cdpc.cc`，保存 OAuth 控制台配置后重新部署/重试。
 
 **邮箱收不到链接？** 检查 SMTP 主机、端口、TLS、凭据、发件人域名验证、服务商发送限制和垃圾邮件文件夹；不要公开粘贴包含凭据的 SMTP URL。
 
@@ -199,3 +202,17 @@ npm run db:generate:all
 `db:push` 会依据 `DATABASE_PROVIDER` 选择 PostgreSQL、MySQL 或 SQLite schema。请先在测试数据库验证；生产环境不要在未备份时执行 schema 变更。PostgreSQL 部署也可按项目现有 migration 流程运行 `npm run db:migrate`，并确认新 migration 已包含在部署版本中。
 
 普通邮箱注册不会自动授予管理员权限。管理员登录凭据应与普通账户登录流程分开保管。管理员可在“系统配置中心”开启邮箱验证。开启后，新注册账户必须点击有效期 30 分钟的一次性邮件链接才能使用邮箱密码登录；关闭时（默认）无需邮箱验证码。开启前必须配置并测试 EMAIL_SERVER、EMAIL_FROM 与 NEXTAUTH_URL。
+
+
+## 10. CDPC 主域名切换到 Zeabur
+
+生产应用目标域名为 `https://cdpc.cc`。切换时请按以下顺序，避免先改 DNS 导致网站暂时不可用：
+
+1. 在 Zeabur 中打开正在运行 Pixcape 单镜像的 HTTP 服务，先确认服务端口、健康状态和 `ghcr.io/maoyiren/pixcape:latest` 镜像版本。
+2. 在该服务的 **Domains / Custom Domain** 中添加 `cdpc.cc`，让 Zeabur 显示本次绑定所要求的 DNS 记录目标。
+3. 在 Cloudflare DNS 中，将根域名现有的旧站记录切换为 Zeabur 控制台给出的记录。**不要猜测 CNAME 目标或使用固定 IP**；Zeabur 为服务显示的目标才是依据。Cloudflare 的根域名支持 CNAME flattening。
+4. 原来的 `www.cdpc.cc` 记录当前指向 Vercel；如果希望 `www.cdpc.cc` 也进入 Pixcape，可在 Zeabur 另外绑定该域名，并按 Zeabur 给出的 DNS 目标更新记录；否则先保留原有 www 行为。
+5. 在 Zeabur 设置 `NEXTAUTH_URL=https://cdpc.cc`，并检查 `NEXTAUTH_SECRET`、`DATABASE_PROVIDER`、`DATABASE_URL` 等生产环境变量。重新部署后验证 `https://cdpc.cc/login`、`/register` 和 `/api/auth/providers`。
+6. 在所启用的 OAuth 提供商后台逐一登记本指南列出的回调 URL，并执行完整登录/登出测试。
+
+注意：代码仓库可以提供镜像和正确的回调地址，但不能代替 Zeabur 服务绑定，也不能自动修改 Google、Microsoft 或 Apple 开发者控制台中的 OAuth 应用设置。DNS 记录只有在 Zeabur 控制台显示确切目标后才能安全切换。
