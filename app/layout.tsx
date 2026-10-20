@@ -4,17 +4,34 @@ import { SiteNav } from './components/site-nav'
 import './next.css'
 
 export const metadata: Metadata = {
-  title: 'CDPC｜我的世界皮肤与像素创作工坊',
-  description: 'CDPC 皮肤、披肩、外套、披风与像素创作工作台。',
+  metadataBase: new URL('https://cdpc.cc'),
+  title: {
+    default: 'CDPC｜像素角色创作平台',
+    template: '%s｜CDPC',
+  },
+  description: '编辑 Minecraft 皮肤，搭配披肩、披风与服饰配件；预览角色效果，开启你的像素创作。',
   applicationName: 'CDPC',
+  openGraph: {
+    type: 'website',
+    url: 'https://cdpc.cc',
+    siteName: 'CDPC',
+    title: 'CDPC｜像素角色创作平台',
+    description: '从皮肤到配件，搭配、预览并继续创作。',
+    locale: 'zh_CN',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CDPC｜像素角色创作平台',
+    description: '从皮肤到配件，搭配、预览并继续创作。',
+  },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#101318',
+  themeColor: '#171d17',
   width: 'device-width',
   initialScale: 1,
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="zh-CN"><body><SiteNav />{children}<footer className="cdpc-site-footer"><span>CDPC · 皮肤与像素创作工具</span><span>非官方 Minecraft 项目 · 不隶属于 Mojang 或 Microsoft</span></footer></body></html>
+  return <html lang="zh-CN"><body><SiteNav />{children}<footer className="cdpc-site-footer"><span>CDPC · 像素角色创作工具</span><span>独立项目 · 非 Minecraft 官方产品</span></footer></body></html>
 }
