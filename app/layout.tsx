@@ -33,5 +33,5 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="zh-CN"><body><SiteNav />{children}<footer className="cdpc-site-footer"><span>CDPC · 像素角色创作工具</span><span>独立项目 · 非 Minecraft 官方产品</span></footer></body></html>
+  return <html lang="zh-CN"><body><SiteNav />{children}<footer className="cdpc-site-footer"><span>CDPC · 像素角色创作工具</span><span>本项目独立运营，不隶属于 Mojang 或 Microsoft，也非 Minecraft 官方产品。</span></footer></body></html>
 }

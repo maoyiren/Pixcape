@@ -13,15 +13,15 @@ export default async function CreatorPage() {
   const profile = await prisma.creatorProfile.findUnique({ where: { userId: user.id } })
 
   return <main className="inventory-shell">
-    <header className="topbar"><div><p className="eyebrow">CREATOR WORKSHOP</p><h1>创作者工作台</h1></div><Link className="pixel-button" href="/">返回</Link></header>
-    {user.role === 'CREATOR' || user.role === 'ADMIN' ? <section className="hero inventory-panel"><h2>欢迎回来，创作者</h2><p>账户：{user.name ?? user.email ?? user.id}</p><p>创作者身份已通过服务端数据库校验。作品编辑和发布功能会在后续接入。</p></section> : <section className="hero inventory-panel">
-      <h2>申请成为创作者</h2><p>填写展示名称与简介，管理员审核通过后才会授予创作者权限。提交申请不会立即提升账户角色。</p>
-      {profile?.reviewStatus === 'PENDING' ? <p role="status">申请已提交，正在等待管理员审核。你可以更新资料后重新提交。</p> : null}
-      {profile?.reviewStatus === 'REJECTED' ? <p role="status">上次申请未通过。你可以修改资料后再次申请。</p> : null}
+    <header className="topbar"><div><p className="eyebrow">CREATOR PROGRAM</p><h1>创作者中心</h1></div><Link className="pixel-button" href="/">返回首页</Link></header>
+    {user.role === 'CREATOR' || user.role === 'ADMIN' ? <section className="hero inventory-panel"><h2>创作者账户已启用</h2><p>当前账户：{user.name ?? user.email ?? user.id}</p><p>你的创作者身份已生效。当前页面支持账户资料与身份状态确认，作品发布功能仍在建设中。</p></section> : <section className="hero inventory-panel">
+      <h2>申请加入创作者计划</h2><p>填写展示名称和创作简介。提交后由管理员审核，审核通过前不会改变你的账户权限。</p>
+      {profile?.reviewStatus === 'PENDING' ? <p role="status">申请已收到，正在等待审核。你可以修改资料后再次提交。</p> : null}
+      {profile?.reviewStatus === 'REJECTED' ? <p role="status">上次申请未通过。请完善资料后重新提交。</p> : null}
       <form action={applyForCreator} className="application-form">
-        <label htmlFor="displayName">创作者展示名称</label><input id="displayName" name="displayName" required minLength={2} maxLength={48} defaultValue={profile?.displayName ?? user.name ?? ''} />
-        <label htmlFor="bio">创作简介（最多 500 字）</label><textarea id="bio" name="bio" rows={4} maxLength={500} defaultValue={profile?.bio ?? ''} />
-        <button className="pixel-button primary" type="submit">提交 / 更新申请</button>
+        <label htmlFor="displayName">展示名称</label><input id="displayName" name="displayName" required minLength={2} maxLength={48} defaultValue={profile?.displayName ?? user.name ?? ''} />
+        <label htmlFor="bio">创作简介 <span>（最多 500 字）</span></label><textarea id="bio" name="bio" rows={4} maxLength={500} defaultValue={profile?.bio ?? ''} placeholder="介绍你擅长的像素创作类型或作品方向" />
+        <button className="pixel-button primary" type="submit">提交申请 / 更新资料</button>
       </form>
     </section>}
   </main>

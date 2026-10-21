@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 
 const items = [
-  { href: '/studio', label: '创作工具' },
+  { href: '/studio', label: '编辑器' },
   { href: '/creator', label: '创作者中心' },
   { href: '/account', label: '我的账户' },
 ]
@@ -19,11 +19,11 @@ export async function SiteNav() {
       </Link>
       <div className="site-nav-links">
         {items.map((item) => <Link href={item.href} key={item.href}>{item.label}</Link>)}
-        {isAdmin ? <Link href="/admin">管理后台</Link> : null}
+        {isAdmin ? <Link className="site-nav-admin" href="/admin">管理后台</Link> : null}
       </div>
       <div className="site-nav-account">
         {session?.user ? <Link className="site-nav-user" href="/account">{session.user.name || session.user.email || '我的账户'}</Link> : <Link href="/login">登录</Link>}
-        {!session?.user ? <Link className="site-nav-join" href="/register">免费注册</Link> : null}
+        {!session?.user ? <Link className="site-nav-join" href="/register">注册账户</Link> : null}
       </div>
     </nav>
   )
