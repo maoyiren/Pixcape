@@ -1,0 +1,43 @@
+name: Bootstrap npm lockfiles
+
+on:
+  push:
+    branches:
+      - feat/reproducible-deps-auth-e2e
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-lockfiles-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate-lockfiles:
+    if: ${{ github.ref == 'refs/heads/feat/reproducible-deps-auth-e2e' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Generate root npm lockfile without running lifecycle scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Generate AI API npm lockfile without running lifecycle scripts
+        run: npm --prefix ai-api install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit lockfiles if they changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add package-lock.json ai-api/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfiles are already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build: add npm lockfiles for reproducible installs"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
