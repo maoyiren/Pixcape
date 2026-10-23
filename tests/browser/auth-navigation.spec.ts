@@ -24,10 +24,11 @@ test('registration validates invalid email and short password before sending a r
     if (request.url().endsWith('/api/register') && request.method() === 'POST') registerRequests += 1
   })
   await page.goto('/register')
-  await page.getByLabel('邮箱地址').fill('tester@example.com')
+  await page.getByLabel('邮箱地址').fill('not-an-email')
   await page.getByLabel('设置密码').fill('short')
   await page.getByRole('button', { name: '创建账户' }).click()
-  await expect(page.getByText('密码至少需要 10 位字符')).toBeVisible()
+  await expect(page.getByLabel('邮箱地址')).toHaveAttribute('aria-invalid', 'true')
+  await expect(page.getByLabel('设置密码')).toHaveAttribute('aria-invalid', 'true')
   expect(registerRequests).toBe(0)
 })
 
