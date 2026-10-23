@@ -127,8 +127,10 @@ export default function DressUpStudio() {
           context.restore()
         }
         await viewer.loadSkin(canvas, { model: model === 'alex' ? 'slim' : 'default' })
+        if (cancelled) return
         if (cape) {
-          await viewer.loadCape(ASSET_ROOT + cape.texture, { makeVisible: true })
+          await viewer.loadCape(ASSET_ROOT + cape.texture, { makeVisible: false })
+          if (cancelled) return
           viewer.playerObject.backEquipment = 'cape'
         } else {
           viewer.playerObject.backEquipment = null
