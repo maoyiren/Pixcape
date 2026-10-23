@@ -43,5 +43,10 @@ test('registration renders mobile layout without horizontal page overflow', asyn
 test('Vite skin editor app starts and renders its interactive surface', async ({ page }) => {
   await page.goto('http://127.0.0.1:5173/')
   await expect(page.locator('#root')).toBeVisible()
-  await expect(page.locator('#root')).not.toBeEmpty()
+  await expect(page.getByText('Minecraft 皮肤与服装工作台')).toBeVisible()
+  await expect(page.getByText('角色预览')).toBeVisible()
+  await expect(page.getByText('披肩', { exact: true })).toBeVisible()
+  await expect(page.getByText('外套', { exact: true })).toBeVisible()
+  await expect(page.getByText('披风', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '发送到 Blockbench 编辑' })).toBeVisible()
 })
