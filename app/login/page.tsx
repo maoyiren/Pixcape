@@ -17,18 +17,18 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
   const enabledMethods = methods.filter((method) => method.enabled)
   const adminEnabled = Boolean(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL)
   return (
-    <main className="inventory-shell">
+    <main className="inventory-shell auth-page-shell">
       <header className="topbar">
-        <div><p className="eyebrow">CDPC ACCOUNT</p><h1>登录 CDPC</h1></div>
+        <div><p className="eyebrow">CDPC ACCOUNT</p><h1>登录 / 创建账户</h1></div>
         <Link className="pixel-button" href="/">返回首页</Link>
       </header>
-      <section className="hero inventory-panel">
-        <h2>回来继续你的创作</h2>
+      <section className="hero inventory-panel auth-panel">
+        <h2>一个入口，继续你的创作</h2>
         {verificationMessage ? <p role="status">{verificationMessage}</p> : null}
-        <p>选择当前可用的登录方式。首次使用第三方账号登录时，系统可能会为你创建普通账户。</p>
+        <p>使用邮箱和密码、管理员账号，或已启用的第三方平台登录。系统会根据账号权限决定可访问的区域。</p>
         <LoginForm methods={enabledMethods.map(({id,label}) => ({id,label}))} adminEnabled={adminEnabled} />
-        {enabledMethods.length === 0 && !adminEnabled ? <p>目前还没有启用登录方式。请管理员在部署设置中配置登录服务后重试。</p> : null}
-        <p>第一次来？<Link href="/register">创建账户</Link>。注册不会自动获得创作者或管理员权限。</p>
+        {enabledMethods.length === 0 && !adminEnabled ? <p>目前还没有启用第三方或管理员登录方式；邮箱密码登录仍可用于已有账户。请检查部署配置。</p> : null}
+        <p className="auth-switch-copy">还没有账户？<Link href="/register">创建账户</Link>。新注册账号默认不会获得管理员权限。</p>
       </section>
     </main>
   )
