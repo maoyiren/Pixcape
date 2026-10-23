@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: bootstrap-lockfiles-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   generate-lockfiles:
