@@ -52,6 +52,7 @@ export default function DressUpStudio() {
   const [loadError, setLoadError] = useState('')
   const [background, setBackground] = useState('#182437')
   const [isBusy, setIsBusy] = useState(false)
+  const [retryVersion, setRetryVersion] = useState(0)
 
   const filtered = useMemo(() => catalog.filter(item =>
     (category === '全部' || item.category === category) &&
@@ -139,7 +140,7 @@ export default function DressUpStudio() {
     }
     void updatePreview()
     return () => { cancelled = true }
-  }, [skinUrl, model, selected, background])
+  }, [skinUrl, model, selected, background, retryVersion])
 
   function toggleItem(item: CatalogItem) {
     setSelected(current => {
@@ -222,7 +223,7 @@ export default function DressUpStudio() {
             <button type="button" onClick={() => skinFileRef.current?.click()}>导入 64×64 PNG</button>
             <input ref={skinFileRef} hidden type="file" accept="image/png,.png" onChange={event => importSkin(event.target.files?.[0])} />
           </div>
-          {loadError && <div className="dressup-error" role="alert"><span>{loadError}</span><button type="button" onClick={() => { setLoadError(''); setSkinUrl(current => current) }}>重试</button></div>}
+          {loadError && <div className="dressup-error" role="alert"><span>{loadError}</span><button type="button" onClick={() => { setLoadError(''); setRetryVersion(version => version + 1) }}>重试</button></div>}
           <p className="dressup-preview-note">拖动角色可旋转，滚轮可缩放。当前使用真实 3D 模型；已接入素材的贴图会合成到皮肤，披风单独作为背部装备加载。</p>
         </section>
 
