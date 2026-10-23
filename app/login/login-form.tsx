@@ -16,9 +16,28 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
   const [message, setMessage] = useState('')
 
   async function oauth(provider: string) {
-    setBusy(true); setError('')
-    try { await signIn(provider, { callbackUrl: '/account' }) }
-    catch { setError('无法启动登录，请检查服务配置后重试。'); setBusy(false) }
+    setBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      // Handle the returned result explicitly so a failed auth request never
+      // leaves every login button disabled with no visible feedback.
+      const result = await signIn(provider, { callbackUrl: '/account', redirect: false })
+      if (result?.error) {
+        setError('第三方登录启动失败，请检查认证服务配置后重试。')
+        setBusy(false)
+        return
+      }
+      if (result?.url) {
+        window.location.assign(result.url)
+        return
+      }
+      setError('认证服务没有返回登录地址，请稍后重试。')
+      setBusy(false)
+    } catch {
+      setError('无法连接认证服务，请稍后重试。')
+      setBusy(false)
+    }
   }
 
   async function adminLogin(event: FormEvent<HTMLFormElement>) {
@@ -57,7 +76,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
   const emailEnabled = methods.some((method) => method.id === 'email')
   return <div className="auth-form">
     {methods.filter((method) => method.id !== 'email').map((method) =>
-      <button className="pixel-button" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)}>{method.label}</button>
+      <button className="pixel-button" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)}>{busy ? '正在连接…' : method.label}</button>
     )}
     <form onSubmit={(e) => void passwordLogin(e)} className="auth-email-form">
       <label htmlFor="auth-email">邮箱账号</label>
