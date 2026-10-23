@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 const tools = [
+  { number: '00', title: '衣服选装', tag: '独立搭配', description: '按上衣、外套、裤子、鞋子、帽子、披肩和披风分别选择，先搭配再进入创作。', href: '/dress-up', action: '开始选装', featured: true },
   { number: '01', title: '皮肤与配件编辑', tag: '编辑器', description: '导入现有皮肤，分别选择披肩、外套或披风素材，搭配后查看角色效果。', href: '/studio', action: '打开编辑器', featured: true },
   { number: '02', title: '角色预览与导出', tag: '预览工作流', description: '在编辑器中检查搭配结果，确认后导出皮肤 PNG，方便带回游戏使用。', href: '/studio', action: '开始搭配', featured: false },
   { number: '03', title: '创作者中心', tag: '创作者计划', description: '提交创作者申请，完善展示名称与简介；通过审核后再逐步开放创作者功能。', href: '/creator', action: '了解创作者入口', featured: false },
