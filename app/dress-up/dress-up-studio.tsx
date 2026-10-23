@@ -117,11 +117,17 @@ export default function DressUpStudio() {
           const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
           const overlay = await loadImage(ASSET_ROOT + textureName)
           if (cancelled) return
+          context.save()
+          context.beginPath()
+          const uvRegions = [{ x: 16, y: 16, width: 24, height: 16 }, { x: 16, y: 32, width: 24, height: 16 }, { x: 40, y: 16, width: 16, height: 16 }, { x: 40, y: 32, width: 16, height: 16 }, { x: 32, y: 48, width: 16, height: 16 }, { x: 48, y: 48, width: 16, height: 16 }]
+          uvRegions.forEach(region => context.rect(region.x, region.y, region.width, region.height))
+          context.clip()
           context.drawImage(overlay, 0, 0, 64, 64)
+          context.restore()
         }
         await viewer.loadSkin(canvas, { model: model === 'alex' ? 'slim' : 'default' })
         if (cape) {
-          await viewer.loadCape(ASSET_ROOT + cape.texture, { backEquipment: 'cape' } as never)
+          await viewer.loadCape(ASSET_ROOT + cape.texture, { makeVisible: true })
           viewer.playerObject.backEquipment = 'cape'
         } else {
           viewer.playerObject.backEquipment = null
