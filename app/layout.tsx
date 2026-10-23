@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { SiteNav } from './components/site-nav'
 import './next.css'
 
@@ -27,11 +28,33 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#171d17',
+  themeColor: '#171D2A',
   width: 'device-width',
   initialScale: 1,
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="zh-CN"><body><SiteNav />{children}<footer className="cdpc-site-footer"><span>CDPC · 像素角色创作工具</span><span>本项目独立运营，不隶属于 Mojang 或 Microsoft，也非 Minecraft 官方产品。</span></footer></body></html>
+  return (
+    <html lang="zh-CN">
+      <body>
+        <SiteNav />
+        {children}
+        <footer className="cdpc-site-footer">
+          <div className="cdpc-footer-inner">
+            <div className="cdpc-footer-brand">
+              <span className="site-brand-mark" aria-hidden="true">▦</span>
+              <span><strong>cdpc</strong><small>像素角色创作工具</small></span>
+            </div>
+            <nav className="cdpc-footer-links" aria-label="页脚导航">
+              <Link href="/studio">创作工坊</Link>
+              <Link href="/creator">创作者中心</Link>
+              <Link href="/account">我的账户</Link>
+              <Link href="/login">登录 / 注册</Link>
+            </nav>
+            <p>CDPC 为独立社区工具项目，不隶属于 Mojang Studios 或 Microsoft，也非 Minecraft 官方产品。</p>
+          </div>
+        </footer>
+      </body>
+    </html>
+  )
 }

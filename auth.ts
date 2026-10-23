@@ -131,11 +131,12 @@ export const authOptions: NextAuthOptions = {
           where: { id: token.sub },
           select: { role: true, status: true, email: true, name: true },
         })
-        if (!record || record.status !== 'ACTIVE') {
+        const status = typeof record?.status === 'string' ? record.status.trim().toUpperCase() : ''
+        if (!record || status !== 'ACTIVE') {
           token.authDisabled = true
         } else {
           token.role = record.role
-          token.status = record.status
+          token.status = 'ACTIVE'
           token.email = record.email ?? token.email
           token.name = record.name ?? token.name
           token.authDisabled = false
@@ -154,9 +155,16 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async signIn({ user, account }) {
-      if (!user.id) return false
+      if (!user.id) {
+        console.warn('[auth] signIn denied: adapter returned no user id')
+        return false
+      }
       const record = await prisma.user.findUnique({ where: { id: user.id }, select: { status: true, email: true } })
-      if (record?.status !== 'ACTIVE') return false
+      const status = typeof record?.status === 'string' ? record.status.trim().toUpperCase() : ''
+      if (!record || status !== 'ACTIVE') {
+        console.warn('[auth] signIn denied: user record missing or status is not ACTIVE')
+        return false
+      }
       if (account?.provider === 'email' && record.email) {
         await prisma.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } })
       }
