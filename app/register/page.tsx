@@ -25,7 +25,7 @@ export default function RegisterPage() {
   } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: '', email: '', password: '' },
-    mode: 'onBlur',
+    mode: 'onSubmit',
   })
 
   async function submit(values: RegisterValues) {
