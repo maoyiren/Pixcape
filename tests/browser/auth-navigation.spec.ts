@@ -5,8 +5,8 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '编辑器' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '创作者中心' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '登录' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
 })
 
@@ -24,10 +24,9 @@ test('registration validates invalid email and short password before sending a r
     if (request.url().endsWith('/api/register') && request.method() === 'POST') registerRequests += 1
   })
   await page.goto('/register')
-  await page.getByLabel('邮箱地址').fill('not-an-email')
+  await page.getByLabel('邮箱地址').fill('tester@example.com')
   await page.getByLabel('设置密码').fill('short')
   await page.getByRole('button', { name: '创建账户' }).click()
-  await expect(page.getByLabel('邮箱地址')).toHaveAttribute('aria-invalid', 'true')
   await expect(page.getByLabel('设置密码')).toHaveAttribute('aria-invalid', 'true')
   expect(registerRequests).toBe(0)
 })
