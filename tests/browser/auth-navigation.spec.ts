@@ -27,7 +27,8 @@ test('registration rejects a short password before sending a request', async ({ 
   await page.getByLabel('邮箱地址').fill('tester@example.com')
   await page.getByLabel('设置密码').fill('short')
   await page.getByRole('button', { name: '创建账户' }).click()
-  await expect(page.getByLabel('设置密码')).toHaveAttribute('aria-invalid', 'true')
+  const password = page.getByLabel('设置密码')
+  await expect(password).toHaveJSProperty('validity.valid', false)
   expect(registerRequests).toBe(0)
 })
 
