@@ -21,7 +21,7 @@ ENV VITE_AI_API_BASE_URL=$VITE_AI_API_BASE_URL VITE_BASE_PATH=/studio/
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build:app && test -s dist/index.html
 
@@ -34,15 +34,14 @@ WORKDIR /app
 # This reduces peak disk usage on constrained CI runners.
 COPY --from=vite-build /app/dist /tmp/pixcape-vite-dist
 COPY package*.json ./
-RUN npm install --no-audit --no-fund && npm cache clean --force
+RUN npm ci --no-audit --no-fund && npm cache clean --force
 COPY . .
 RUN rm -rf /tmp/pixcape-vite-dist && npm run next:build
 
 FROM node:24-bookworm-slim AS ai-api-build
 WORKDIR /ai-api
 COPY ai-api/package*.json ./
-RUN npm install --omit=dev --include=optional --no-audit --no-fund \
-    && npm install --omit=dev --include=optional --no-save --os=linux --cpu=x64 --libc=glibc sharp@^0.34.5 --no-audit --no-fund
+RUN npm ci --omit=dev --include=optional --no-audit --no-fund
 COPY ai-api/ ./
 
 # Debian runtime matches the native Prisma SQLite addon built in next-build.

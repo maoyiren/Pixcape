@@ -51,7 +51,7 @@ jobs:
         with:
           node-version: 24
           check-latest: true
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - name: Run unit tests
         run: npm run test:unit
       - name: Migrate PostgreSQL and run security integration tests
@@ -89,8 +89,17 @@ jobs:
       - name: Fail on high or critical dependency advisories
         run: npm audit --audit-level=high
       - run: npm run build
+      - name: Install Chromium for browser regression tests
+        run: npx playwright install --with-deps chromium
+      - name: Run browser regression tests
+        env:
+          NEXTAUTH_SECRET: cdpc-browser-test-secret-not-for-production-0123456789
+          NEXTAUTH_URL: http://127.0.0.1:3000
+          DATABASE_PROVIDER: sqlite
+          DATABASE_URL: file:/tmp/cdpc-browser-test.db
+        run: npm run test:browser
       - name: Install and test AI API
-        run: npm --prefix ai-api install && npm --prefix ai-api test
+        run: npm --prefix ai-api ci && npm --prefix ai-api test
       - name: Build AI API container
         run: docker build --tag pixcape-ai-api-test ./ai-api
       - name: Build complete Pixcape image including Blockbench
