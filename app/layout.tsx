@@ -46,6 +46,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <span><strong>cdpc</strong><small>像素角色创作工具</small></span>
             </div>
             <nav className="cdpc-footer-links" aria-label="页脚导航">
+              <Link href="/dress-up">衣服选装</Link>
               <Link href="/studio">创作工坊</Link>
               <Link href="/creator">创作者中心</Link>
               <Link href="/account">我的账户</Link>
