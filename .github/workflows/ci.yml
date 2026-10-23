@@ -89,6 +89,15 @@ jobs:
       - name: Fail on high or critical dependency advisories
         run: npm audit --audit-level=high
       - run: npm run build
+      - name: Install Chromium for browser regression tests
+        run: npx playwright install --with-deps chromium
+      - name: Run browser regression tests
+        env:
+          NEXTAUTH_SECRET: cdpc-browser-test-secret-not-for-production-0123456789
+          NEXTAUTH_URL: http://127.0.0.1:3000
+          DATABASE_PROVIDER: sqlite
+          DATABASE_URL: file:/tmp/cdpc-browser-test.db
+        run: npm run test:browser
       - name: Install and test AI API
         run: npm --prefix ai-api install && npm --prefix ai-api test
       - name: Build AI API container
