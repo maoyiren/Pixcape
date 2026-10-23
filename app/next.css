@@ -416,3 +416,9 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
   .cdpc-footer-inner > p { grid-column: 1; }
 }
 @media(prefers-reduced-motion:reduce) { .site-nav a { transition: none; } }
+
+
+.auth-account-type { display:flex; gap:6px; padding:4px; margin:0 0 6px; border:1px solid var(--cdpc-border); border-radius:8px; background:#eef1f7; }
+.auth-account-type button { flex:1; min-height:38px; padding:8px 12px; border:1px solid transparent; border-radius:5px; background:transparent; color:var(--cdpc-muted); font:inherit; font-size:13px; font-weight:750; cursor:pointer; }
+.auth-account-type button.is-selected { background:#fff; color:var(--cdpc-ink); border-color:#d9deea; box-shadow:0 1px 3px rgba(23,29,42,.08); }
+.auth-account-type button:focus-visible { outline:2px solid var(--cdpc-action); outline-offset:2px; }
