@@ -271,3 +271,59 @@
 - Pino: https://getpino.io/
 - React Email: https://react.email/
 - Cloudflare Turnstile: https://developers.cloudflare.com/turnstile/
+
+
+## 13. 基于当前主分支 package.json 的初步依赖盘点
+
+本盘点仅依据当前可读取的 `package.json`，不能证明某个库完全没有被源码间接使用；真正安装前仍需搜索 import、锁文件、CI 和 Dockerfile。
+
+### 13.1 当前已声明的关键依赖
+
+| 已声明依赖 | 当前用途/意义 | 行动 |
+|---|---|---|
+| React 19、React DOM、TypeScript | UI 与类型系统 | 保留 |
+| Vite、@vitejs/plugin-react | 现有 SPA/编辑器构建 | 保留 |
+| Next.js 16、NextAuth 4 | Next.js 页面、认证与会话 | 保留并优先检查版本兼容和认证配置 |
+| Prisma 7、PostgreSQL/MariaDB/SQLite adapters | 多数据库持久化 | 保留；测试不同 provider 的迁移与启动路径 |
+| Radix Tabs/Tooltip/Select | 基础交互组件 | 已有使用价值；先盘点，不立即整体替换 |
+| lucide-react | 图标 | 全站统一使用 |
+| Three.js、skinview3d | 3D 角色预览 | 保留并针对披风、鞘翅、旋转和动作做回归 |
+| Nodemailer | 邮件发送 | 保留并检查邮件发送错误、配置和限流 |
+| vite-plugin-pwa | PWA 能力 | 保留并审计缓存更新、登录态页面缓存和离线行为 |
+| Node 内建测试 | 当前 unit/integration/E2E 命令基础 | 先扩展现有测试，避免无必要地替换测试入口 |
+
+### 13.2 package.json 中尚未直接声明、可优先评估的依赖
+
+| 依赖候选 | 当前建议 | 理由 |
+|---|---|---|
+| React Hook Form | 优先评估 | package.json 未见声明，适合复杂登录、注册、管理员配置和投稿表单 |
+| Zod | 优先评估 | package.json 未见声明，可统一 API 输入、表单、AI 参数和环境配置 schema |
+| Mantine | 先做试点，不立即全面安装 | 当前已有 Radix；先比较组件覆盖、样式冲突、包体积和迁移成本，决定主体系后再推广 |
+| Vitest + Testing Library | 按测试缺口评估 | 当前 scripts 使用 Node 内建测试；先确认现有测试是否难以覆盖组件交互 |
+| Playwright | 按现有 E2E 缺口评估 | scripts 存在 test:e2e，但命令使用 Node test runner；先确认是否已有浏览器级测试，不要把它误认为真实浏览器 E2E |
+| TanStack Query / Table / Virtual | 随素材库和后台页面落地时评估 | 当前 package.json 未见声明；先有真实列表、缓存或复杂表格需求再加入 |
+| react-dropzone | 编辑器上传体验需要时评估 | 可复用拖放上传体验，但必须保留服务端文件校验 |
+| react-markdown + isomorphic-dompurify | 社区支持 Markdown/富文本时评估 | 在确定内容模型与渲染策略后使用；避免危险 HTML/XSS |
+| date-fns | 时间格式需求统一时评估 | 先确认当前代码是否已使用原生 Intl 或其他日期工具 |
+| Recharts | 后台真实统计 API 准备后评估 | 不在真实数据接口前先做演示图表 |
+| Sentry / Pino | 有隐私策略和运维方案后评估 | 先统一日志字段、脱敏和保留期限 |
+| Redis / BullMQ | 暂缓 | 需先明确是否多实例、是否有独立 worker、队列失败恢复和 Redis 运维能力 |
+| Sharp / 对象存储 SDK | 按实际上传和存储规模评估 | 不应为了缩略图直接覆盖原始 64×64 皮肤纹理 |
+
+### 13.3 特别需要先澄清的架构事项
+
+1. **Vite 与 Next.js 双入口：** 当前 package.json 同时存在 Vite build 与 Next.js build/start。新增 UI、表单和数据请求库前，必须明确哪些路由属于哪一个应用，以及 Docker/Zeabur 实际启动哪个入口。
+2. **NextAuth 版本：** 当前声明的是 NextAuth 4 系列；新代码必须使用与实际安装版本兼容的 API，不可照抄其他主版本文档。
+3. **E2E 名称：** 当前 `test:e2e` 使用 Node test runner 执行 `tests/e2e/*.test.mjs`，这不自动代表已配置浏览器驱动。应先检查测试内容，再决定是否引入 Playwright。
+4. **数据库兼容：** 新 schema、限流、队列和后台查询必须考虑 PostgreSQL、MariaDB/MySQL 与 SQLite 的差异，不能只验证一种数据库。
+5. **皮肤像素精度：** 图片缩略图/格式处理库不得介入原始纹理导出链路，除非有像素级测试证明不会改变尺寸、颜色和透明度。
+
+### 13.4 建议的第一批实际接入范围
+
+先不同时安装十几个库。建议第一批最多做三类工作：
+
+- **表单和输入校验：** React Hook Form + Zod，前提是审计确认当前表单没有统一方案。
+- **组件测试：** 先补现有 Node 测试；仅在 UI 行为难以覆盖时加入 Vitest + Testing Library。
+- **浏览器回归：** 检查现有 E2E 内容；只有缺少真实浏览器交互验证时才加入 Playwright。
+
+Mantine 主体系决策应单独完成试点和视觉验收，避免与认证修复、业务页面迁移同时大范围改动，增加故障定位难度。
