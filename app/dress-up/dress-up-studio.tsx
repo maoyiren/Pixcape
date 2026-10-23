@@ -83,7 +83,8 @@ export default function DressUpStudio() {
     }
     const resize = () => {
       if (!previewHost.current || !viewerRef.current) return
-      viewerRef.current.setSize(Math.max(previewHost.current.clientWidth, 280), Math.max(previewHost.current.clientHeight, 320))
+      viewerRef.current.width = Math.max(previewHost.current.clientWidth, 280)
+      viewerRef.current.height = Math.max(previewHost.current.clientHeight, 320)
     }
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null
     if (observer) observer.observe(host)
@@ -133,7 +134,7 @@ export default function DressUpStudio() {
           viewer.playerObject.backEquipment = null
         }
         if (cancelled) return
-        viewer.background = background
+        viewer.background = Number.parseInt(background.replace('#', ''), 16)
         setStatus('预览已更新')
       } catch (error) {
         if (!cancelled) {
