@@ -38,6 +38,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          TARGET_BRANCH="${{ github.event.pull_request.head.ref || github.ref_name }}"
+          git pull --rebase origin "$TARGET_BRANCH"
           git add package-lock.json ai-api/package-lock.json
           if git diff --cached --quiet; then
             echo "Lockfiles are already current."
