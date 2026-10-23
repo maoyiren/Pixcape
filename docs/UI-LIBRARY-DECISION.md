@@ -1,41 +1,38 @@
-# CDPC UI 与表单库接入决策
+# CDPC UI 技术栈决策（更新版）
 
-日期：2026-10-23
+日期：2026-10-23  
+适用范围：Next.js 主站与 Vite 创作工坊  
+状态：分阶段迁移；以每个 PR 的锁文件、构建与回归结果为准。
 
-## 决策摘要
+## 用户确认的目标技术栈
 
-- **UI 原语：继续扩展 Radix UI + Lucide React + 现有 CDPC 设计令牌。**
-- **不引入 Mantine 作为第二套完整 UI 体系。**
-- **复杂表单：React Hook Form + Zod + `@hookform/resolvers`。**
-- **浏览器回归：Playwright。**
-- 以上是代码与依赖层面的接入方案；只有 CI 成功后，才算完成验证。
+- **Mantine**：主要通用交互组件，包括表单控件、弹窗、抽屉、通知、菜单、标签页、表格和加载状态。
+- **Tailwind CSS v4**：布局、响应式、间距、网格与页面级样式。先在明确边界内接入，避免和既有 CSS 全局冲突。
+- **shadcn/ui**：作为精选的补充组件来源，优先考虑 Command、需要 Radix 的定制菜单等。不得将所有组件无差别复制进项目。
+- **Lucide React**：统一图标。
+- **React Hook Form + Zod**：复杂表单校验；保留服务端校验与既有 API 契约。
+- **Playwright**：浏览器级回归测试。
 
-## 代码盘点证据
+## 迁移原则
 
-- `src/AiSkinStudio.tsx` 已直接使用 `@radix-ui/react-tabs` 与 `@radix-ui/react-select`。
-- `src/main.tsx` 加载 `src/styles.css` 和 `src/design-system.css`；设计系统已有颜色/边框等 CDPC token 与响应式编辑器 chrome。
-- Next.js 有独立的 `app/next.css` 与共享导航 `app/components/site-nav.tsx`。
-- `app/login/login-form.tsx` 与 `app/register/page.tsx` 原本大量使用手写 `useState` / 表单提交处理。
-- `tests/unit/ui-design-system.test.ts` 已对共享 token、导航、无障碍焦点和窄屏规则进行静态回归检查。
-- `tests/e2e/security.e2e.test.mjs` 是 Node `fetch` 请求级安全测试，不是浏览器自动化。
+1. 不在一个 PR 内无差别替换全站所有控件。
+2. 先检查根目录与 `ai-api` 的包管理和锁文件；两者保持独立、可重复安装。
+3. Tailwind CSS v4 使用对应的 Vite 或 PostCSS 集成方式，确认与 Next.js、Vite 双入口的兼容性后再落地。
+4. Mantine 主题与 CSS reset 必须明确加载位置，避免覆盖皮肤编辑器画布和 Blockbench iframe 外壳。
+5. shadcn/ui 仅在有明确场景时加入；同类控件确定单一默认实现，避免维护两套按钮、表单或弹窗。
+6. UI 迁移不得修改 NextAuth、OAuth 回调、数据模型或导出协议，除非另有独立修复任务。
+7. 每一阶段运行 TypeScript、测试、Next.js 构建、Vite 构建及可执行的浏览器测试；未执行的项目标记为未验证。
 
-## 为什么继续使用 Radix
+## 实施顺序
 
-1. AI 创作模块已依赖 Radix Tabs 和 Select；整套切换会引入额外迁移和回归风险。
-2. 现有 CSS 已形成两端各自的样式边界；直接叠加 Mantine 容易产生主题、间距、控件行为和打包体积的双重维护。
-3. Radix 提供无样式原语，可沿用现有像素视觉风格，同时保持键盘操作、焦点和语义行为。
-4. 先补齐常用原语的统一封装与导入规范；只有当现有原语无法经济满足复杂组件时，才针对单个组件做决策。
+1. 统一全站导航、按钮语义和响应式布局。
+2. 独立衣服选装入口已连接项目现有 skinview3d 和已知披肩/外套/披风素材；尚未接入的服装分类必须保持不可用状态。
+3. 以 Mantine 迁移登录/注册和设置表单作为首个组件试点。
+4. 建立 Tailwind CSS v4 token/布局约定，并逐页迁移。
+5. 在明确场景引入 shadcn/ui 组件。
+6. 创作工坊、AI、素材库、社区与后台逐模块迁移。
+7. 认证、导入导出、穿搭保存、移动端与生产镜像全量回归。
 
-## 本批接入边界
+## 本次实现边界
 
-- React Hook Form + Zod 首先用于注册表单；保留 `POST /api/register` 数据契约、服务端响应文案、默认普通用户权限，以及现有 NextAuth 认证流程。
-- 客户端 schema 仅用于更早、更一致的用户反馈；服务端仍必须独立执行校验、密码处理、邮箱验证策略和限流。
-- Playwright 运行真实 Chromium 浏览器，覆盖导航、登录页表单、注册字段校验、移动端横向溢出和 Vite 编辑器入口。
-- 不更换 Three.js、skinview3d、Blockbench 或现有认证框架。
-
-## 依赖安装与验收
-
-- 根项目与 `ai-api` 各自生成独立 npm lockfile。
-- 在 lockfile 落入分支后，将 CI 和 Docker 中对应的 `npm install` 改为 `npm ci`。
-- 浏览器测试必须在 GitHub Actions 实际跑过；测试源码存在并不等于测试通过。
-- 合并前确认单元/集成测试、生产构建、浏览器回归与 Docker smoke test 均通过；失败时先修复，不绕过检查。
+本分支已建立独立衣服选装页面，并将已知披肩、外套和披风素材接入 skinview3d 实时预览，支持本地 64×64 PNG 导入、Steve/Alex 模型、旋转/缩放和背景色调整。上衣、裤子、鞋子和帽子当前没有确认可用的正式素材，页面明确显示尚未接入。穿搭持久化和本页导出仍未实现。Mantine/Tailwind CSS v4/shadcn 的依赖迁移尚未完成；需要在具备 npm registry 的开发环境中更新锁文件并通过双入口构建后再扩大迁移。
