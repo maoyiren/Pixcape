@@ -62,10 +62,10 @@ export default function RegisterPage() {
         <input id="register-name" autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} {...register('name')} />
         {errors.name && <p id="register-name-error" role="alert">{errors.name.message}</p>}
         <label htmlFor="register-email">邮箱地址</label>
-        <input id="register-email" type="email" maxLength={254} required autoComplete="email" placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} {...register('email')} />
+        <input id="register-email" type="email" maxLength={254} aria-required="true" autoComplete="email" placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} {...register('email')} />
         {errors.email && <p id="register-email-error" role="alert">{errors.email.message}</p>}
         <label htmlFor="register-password">设置密码</label>
-        <input id="register-password" type="password" minLength={10} maxLength={256} required autoComplete="new-password" placeholder="至少 10 位字符" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'register-password-error' : undefined} {...register('password')} />
+        <input id="register-password" type="password" maxLength={256} aria-required="true" autoComplete="new-password" placeholder="至少 10 位字符" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'register-password-error' : undefined} {...register('password')} />
         {errors.password && <p id="register-password-error" role="alert">{errors.password.message}</p>}
         <button className="pixel-button primary" disabled={busy} type="submit">{busy ? '正在创建账户…' : '创建账户'}</button>
       </form>
