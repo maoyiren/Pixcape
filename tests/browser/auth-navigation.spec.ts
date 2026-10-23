@@ -18,7 +18,7 @@ test('login page exposes email credentials and account registration', async ({ p
   await expect(page.getByRole('link', { name: '没有账户？立即注册' })).toBeVisible()
 })
 
-test('registration validates invalid email and short password before sending a request', async ({ page }) => {
+test('registration rejects a short password before sending a request', async ({ page }) => {
   let registerRequests = 0
   page.on('request', request => {
     if (request.url().endsWith('/api/register') && request.method() === 'POST') registerRequests += 1
