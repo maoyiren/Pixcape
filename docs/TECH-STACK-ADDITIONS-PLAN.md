@@ -160,3 +160,114 @@
 建议按“审计现状 → 确定唯一 UI 体系 → 统一表单与校验 → 补齐测试 → 按需引入数据表格/图表/缓存 → 最后扩展 AI、上传和监控”推进。
 
 本文是选型规划，不表示相关依赖已经安装，也不表示功能已经实现。每个阶段只引入当前真正需要的依赖，并以可构建、可测试、可回滚为完成标准。
+
+
+## 10. 细化功能库清单：尽量复用成熟实现
+
+本节补充全站实际功能可能用到的工具。它们全部是候选项；安装前必须搜索仓库现有实现与依赖，确认缺口后再采用。**不要求把清单里的每个库全部安装。**
+
+### 10.1 编辑器与画布交互
+
+| 功能 | 候选库 | 价值 | 限制/注意 |
+|---|---|---|---|
+| 快捷键与组合键 | `tinykeys` 或 `hotkeys-js`（二选一） | 撤销/重做、保存、切换工具、预览快捷键 | 忽略输入框、文本编辑和浏览器保留快捷键；显示可发现的快捷键帮助 |
+| 拖放上传 | `react-dropzone` | 拖入皮肤 PNG、图片和素材文件 | 前后端都检查真实格式、尺寸和文件大小；不能信任扩展名/MIME |
+| 颜色选择 | Mantine ColorInput 或现有颜色选择组件 | 像素绘制、调色、颜色替换 | 若像素编辑器需要精确色值/透明度，必须验证 alpha 通道和 HEX/RGBA 往返无损 |
+| 虚拟列表 | `@tanstack/react-virtual` | 大量素材、社区作品、管理日志列表 | 只有列表量或滚动性能确有问题时引入；虚拟列表须兼顾键盘和屏幕阅读器 |
+| 复杂画布状态 | 先用现有 reducer/命令模型；必要时 Zustand | 工具状态、选择区、图层、历史记录 | 不让状态库承载每个像素的高频逐帧状态；画布渲染性能单独测量 |
+| 动画/过渡 | CSS transitions；必要时 `motion` | 页面过渡、弹层、轻量反馈 | 3D 预览和编辑器不加无意义动画；遵守 prefers-reduced-motion |
+| 图像差异回归 | Playwright 截图或项目现有视觉测试工具 | 防止布局/预览意外变化 | 截图测试要固定字体、视口和渲染环境；像素纹理导出仍需二进制/像素级断言 |
+
+### 10.2 文件上传、图片与导出
+
+| 功能 | 候选库 | 价值 | 限制/注意 |
+|---|---|---|---|
+| 文件上传体验 | `react-dropzone` | 拖放区、文件选择、拒绝原因提示 | 不把客户端验证当安全边界 |
+| 浏览器端图片处理 | 原生 Canvas / `pngjs`（仅 Node 场景按需） | 读取像素、检测 PNG 尺寸、生成预览 | 不要用有损压缩；必须验证透明度、调色板、64×64、Classic/Slim |
+| 服务端图片变体 | `sharp` | 社区缩略图和非原始素材预览 | 不处理/覆盖原始 Minecraft 皮肤纹理；注意容器平台二进制兼容 |
+| 对象存储 | S3 兼容 SDK（选定供应商后确定） | 大文件与生成结果的持久化 | 私有对象使用短期签名 URL；检查访问控制、生命周期和删除 |
+| 下载/压缩包 | 浏览器原生 Blob；多文件打包时评估 `JSZip` | 导出单文件或多个素材 | ZIP 导出验证文件名、内容、路径，避免路径穿越及内存峰值 |
+
+### 10.3 社区、内容和富文本
+
+| 功能 | 候选库 | 价值 | 限制/注意 |
+|---|---|---|---|
+| Markdown 预览 | `react-markdown` | 投稿说明、帮助文档、教程内容 | 默认禁用危险 HTML；需要 HTML 时配合严格清洗 |
+| HTML 清洗 | `isomorphic-dompurify` 或服务端等效方案 | 防止富文本 XSS | 依据实际渲染链路选用；不能仅在客户端清洗后就信任数据库内容 |
+| 日期/相对时间 | `date-fns` | “刚刚”、日期筛选、时间格式 | 全站统一时区和本地化策略，避免混用多套日期库 |
+| 国际化 | `i18next` / `react-i18next`（先审计已有方案） | 中文/英文、错误信息、日期格式 | 文案使用稳定 key；不要把业务错误和翻译文案耦合在 API 中 |
+| 无限滚动 | TanStack Query 的 infinite query 或现有分页 | 素材库、社区列表 | 优先服务端分页与可恢复的 URL 查询参数；避免无上限加载 |
+| 搜索与筛选 | 现有数据库查询；复杂全文搜索以后再评估专用引擎 | 素材、用户和社区检索 | 先用数据库索引、分页和受控过滤；不要提前引入 Elasticsearch 类基础设施 |
+
+### 10.4 后台管理、数据与任务
+
+| 功能 | 候选库/方案 | 价值 | 限制/注意 |
+|---|---|---|---|
+| 表格 | `@tanstack/react-table` | 排序、过滤、列显示、批量操作 | 由服务端强制执行权限和分页；前端过滤不能当授权 |
+| 图表 | `recharts`（或已用图表库） | 注册趋势、生成任务、审核队列等 | 图表不允许用随机/演示数据伪装生产统计 |
+| 后台表单 | React Hook Form + Zod | 环境配置、内容审核、角色管理 | 敏感值只允许设置/轮换，不回显原始 secret |
+| 任务队列 | 先用数据库任务表；规模明确后评估 BullMQ + Redis | AI 图片生成、耗时导出、重试与并发控制 | 需要持久任务状态、幂等键、超时、取消、重试上限和失败队列；不要在没有 Redis/worker 运维能力时直接加 BullMQ |
+| 任务可观测性 | Pino + 关联 ID；可选 Sentry | 排查 AI 失败、OAuth 和后台操作 | 过滤 PII、令牌、提示词中的敏感内容与密钥；设置日志保留期限 |
+| 数据校验 | Zod + 数据库约束 | API 输入和数据完整性 | 应用层 schema 与数据库约束互补，不以单层校验代替另一层 |
+| 数据迁移 | 现有 Prisma Migrate | Schema 变更与部署升级 | 每个变更需考虑 SQLite 与 PostgreSQL/MySQL 差异、备份和回滚；生产启动迁移需可观测 |
+
+### 10.5 认证、邮件和安全
+
+| 功能 | 候选库/方案 | 价值 | 限制/注意 |
+|---|---|---|---|
+| 认证 | 继续用当前 NextAuth | OAuth、会话、登录回调 | 不再平行引入 Clerk/Auth.js 之外的第二套认证；先修复 provider ID、回调 URL、cookie 与生产域名 |
+| 表单/API 校验 | Zod | 登录、注册、管理员操作、AI API | 身份认证、角色检查、资源所有权、CSRF 和限流仍要单独实现 |
+| 限流 | 当前持久化方案；多实例时评估 Redis 方案 | 登录、注册、魔法链接、AI 生成防滥用 | 对邮箱/IP/账号维度设不同策略，防止攻击者利用请求耗尽邮件/AI 费用 |
+| 安全响应头 | Next.js headers / 当前反向代理配置 | CSP、HSTS、frame、MIME 等安全头 | 先盘点 nginx/Cloudflare/Next.js 现有策略，避免重复或冲突；CSP 需实测 OAuth 和图片资源 |
+| 安全审计 | npm audit / GitHub Dependabot / 现有 CI | 依赖漏洞与更新 | 审核升级变更和兼容性；不盲目使用 force 更新 |
+| 邮件模板 | 先复用现有 Nodemailer；若需组件化再评估 React Email | 魔法链接、通知、密码/安全提示 | 邮件模板需移动端兼容、纯文本版本、链接域名验证和发送失败监控 |
+| 权限库 | 暂不新增；必要时评估 CASL | 复杂资源权限矩阵 | 若仅 ADMIN/USER 与资源所有权，手写清晰的服务端 policy 通常更轻；权限复杂度增长时再引入 CASL |
+| 机器人防护 | Turnstile（若部署环境采用 Cloudflare） | 注册、邮件发送和公开表单滥用控制 | 服务端验证 token；仅加前端挑战不具备保护作用 |
+
+### 10.6 可观测性、错误边界和性能
+
+| 功能 | 候选库/方案 | 价值 | 限制/注意 |
+|---|---|---|---|
+| 前端错误边界 | React Error Boundary 或项目现有方案 | 页面局部故障时显示恢复 UI | 编辑器崩溃不能吞掉导出失败或丢失未保存状态；提供重试/恢复入口 |
+| 服务端日志 | Pino（可选） | JSON 日志、请求关联、错误上下文 | 不记录密码、Cookie、OAuth code、Authorization header 或 API key |
+| 错误追踪 | Sentry（可选） | 版本关联、错误聚合 | 上传源码映射前审查构建和访问权限；配置数据脱敏 |
+| 性能分析 | Web Vitals / Next.js 内建指标 | 首屏、交互延迟和移动端体验 | 只采集必要指标，建立性能预算；不默认追踪用户输入 |
+| Bundle 分析 | Vite/Next.js 现有分析工具或对应插件 | 检查新增依赖是否增大首屏 | 对编辑器、3D、后台分别分析；重型模块按需加载 |
+| 无障碍测试 | axe-core、Playwright 辅助 | 语义、标签、对比度和焦点检查 | 自动化结果需人工复核；所有核心功能应支持键盘操作 |
+
+## 11. 库选择决策表
+
+- **马上优先评估：** React Hook Form、Zod、测试覆盖工具，以及单一 UI 体系。
+- **页面实现时再引入：** TanStack Table、TanStack Query、react-dropzone、react-markdown、date-fns。
+- **生产需求出现后再引入：** Redis/BullMQ、对象存储、Sharp、Sentry、Pino、Turnstile。
+- **先不引入：** 第二套认证、ORM、UI 体系、状态管理体系；没有业务需求的搜索集群或微服务编排。
+
+每项依赖的 PR 应包含：
+1. 为什么当前代码无法低成本完成该功能；
+2. 依赖与替代方案的比较；
+3. 许可证、维护状态、Node/React 兼容性和包体积；
+4. 最小接入范围；
+5. 测试与验收方式；
+6. 回滚/移除方法。
+
+## 12. 参考文档
+
+实施时应优先核对官方文档及当前版本的安装要求：
+- Mantine: https://mantine.dev/
+- Radix UI: https://www.radix-ui.com/
+- React Hook Form: https://react-hook-form.com/
+- Zod: https://zod.dev/
+- Vitest: https://vitest.dev/
+- Testing Library: https://testing-library.com/docs/react-testing-library/intro/
+- Playwright: https://playwright.dev/
+- TanStack Query: https://tanstack.com/query/latest
+- TanStack Table: https://tanstack.com/table/latest
+- TanStack Virtual: https://tanstack.com/virtual/latest
+- React Dropzone: https://react-dropzone.js.org/
+- React Markdown: https://github.com/remarkjs/react-markdown
+- Sharp: https://sharp.pixelplumbing.com/
+- Recharts: https://recharts.org/
+- Sentry: https://docs.sentry.io/
+- Pino: https://getpino.io/
+- React Email: https://react.email/
+- Cloudflare Turnstile: https://developers.cloudflare.com/turnstile/
