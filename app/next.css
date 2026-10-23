@@ -422,3 +422,42 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
 .auth-account-type button { flex:1; min-height:38px; padding:8px 12px; border:1px solid transparent; border-radius:5px; background:transparent; color:var(--cdpc-muted); font:inherit; font-size:13px; font-weight:750; cursor:pointer; }
 .auth-account-type button.is-selected { background:#fff; color:var(--cdpc-ink); border-color:#d9deea; box-shadow:0 1px 3px rgba(23,29,42,.08); }
 .auth-account-type button:focus-visible { outline:2px solid var(--cdpc-action); outline-offset:2px; }
+
+/* Dress-up MVP shell: clear hierarchy and responsive panels. */
+.dressup-page{max-width:1480px;margin:0 auto;padding:clamp(16px,3vw,36px);color:#f0f2f5}
+.dressup-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:10px 0 24px}
+.dressup-eyebrow{font:700 11px ui-monospace,monospace;letter-spacing:.16em;color:#9aadd0;text-transform:uppercase}
+.dressup-heading h1{margin:8px 0;font-size:clamp(28px,4vw,44px);letter-spacing:-.04em}
+.dressup-heading p{max-width:620px;color:#a4adba;line-height:1.7;margin:0}
+.dressup-layout{display:grid;grid-template-columns:minmax(220px,280px) minmax(280px,1fr) minmax(220px,280px);gap:14px;align-items:stretch}
+.dressup-panel{min-width:0;background:#191d24;border:1px solid #303844;border-radius:12px;padding:16px}
+.dressup-panel h2{font-size:15px;margin:0 0 14px}
+.dressup-search{width:100%;padding:11px 12px;background:#101318;border:1px solid #394250;color:#f0f2f5;margin-bottom:12px}
+.dressup-categories{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.dressup-category{padding:10px 8px;border:1px solid #303844;background:#202630;color:#a4adba;text-align:left;cursor:pointer}
+.dressup-category[aria-pressed=true]{border-color:#8ba8ff;background:#28334a;color:#fff}
+.dressup-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.dressup-item{min-width:0;padding:10px;border:1px solid #303844;border-radius:8px;background:#202630;color:#f0f2f5;text-align:left;cursor:pointer}
+.dressup-item[aria-pressed=true]{border-color:#8ba8ff;box-shadow:inset 0 0 0 1px #8ba8ff}
+.dressup-item-mark{display:grid;place-items:center;aspect-ratio:1;background:#141820;border:1px solid #303844;margin-bottom:8px;font-size:28px}
+.dressup-item small{display:block;color:#a4adba;margin-top:4px;overflow-wrap:anywhere}
+.dressup-preview{display:flex;flex-direction:column;min-height:560px}
+.dressup-preview-stage{display:grid;place-items:center;flex:1;min-height:360px;background:radial-gradient(ellipse at center,#293140,#12161d 68%);border:1px solid #303844;border-radius:9px;position:relative;overflow:hidden}
+.dressup-preview-stage:before{content:"";position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:24px 24px;mask-image:linear-gradient(transparent,#000)}
+.dressup-avatar{position:relative;z-index:1;width:112px;height:252px;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 16px 20px #0008)}
+.dressup-avatar-head{width:76px;height:76px;background:#c79b76;border:8px solid #6a4939;box-shadow:inset -14px -8px #a77959}
+.dressup-avatar-body{width:104px;height:92px;background:#5a789f;border:8px solid #35465e;position:relative}
+.dressup-avatar-body:after{content:"";position:absolute;inset:8px 25px;background:#8299b5}
+.dressup-avatar-legs{display:flex;gap:8px;height:84px}
+.dressup-avatar-legs span{width:44px;background:#39475d;border:7px solid #273143}
+.dressup-cape{position:absolute;z-index:-1;top:82px;left:16px;width:80px;height:128px;background:#9a6b4d;transform:perspective(100px) rotateX(-4deg);opacity:.95}
+.dressup-preview-note{font-size:12px;line-height:1.6;color:#a4adba;margin:12px 0 0}
+.dressup-selected-list{display:grid;gap:8px}
+.dressup-selected-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;background:#202630;border:1px solid #303844;border-radius:8px;font-size:13px}
+.dressup-selected-row button{background:transparent;border:0;color:#a4adba;text-decoration:underline;cursor:pointer}
+.dressup-actions{display:grid;gap:8px;margin-top:16px}
+.dressup-actions button,.dressup-actions a{display:flex;justify-content:center;align-items:center;min-height:42px;padding:10px 12px;border:1px solid #303844;border-radius:7px;background:#202630;color:#f0f2f5;text-decoration:none;font-weight:650;cursor:pointer}
+.dressup-actions .primary{background:#8ba8ff;border-color:#8ba8ff;color:#101318}
+.dressup-empty{color:#a4adba;font-size:13px;line-height:1.6}
+@media(max-width:1050px){.dressup-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.dressup-preview{grid-column:1/-1;grid-row:1;min-height:420px}.dressup-preview-stage{min-height:320px}.dressup-heading{align-items:flex-start;flex-direction:column}}
+@media(max-width:680px){.dressup-page{padding:14px 10px 28px}.dressup-layout{grid-template-columns:minmax(0,1fr)}.dressup-preview{grid-column:auto;grid-row:auto;min-height:380px}.dressup-preview-stage{min-height:280px}.dressup-panel{padding:12px}.dressup-categories{grid-template-columns:repeat(3,minmax(0,1fr))}.dressup-category{font-size:12px;padding:9px 5px}.dressup-heading h1{font-size:30px}}
