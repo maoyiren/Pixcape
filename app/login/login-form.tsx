@@ -86,7 +86,7 @@ export default function LoginForm({ methods, adminEnabled, defaultCallbackUrl }:
     setError('')
     setMessage('')
     try {
-      const result = await signIn('email', { email: magicEmail.trim().toLowerCase(), callbackUrl: '/workbench', redirect: false })
+      const result = await signIn('email', { email: magicEmail.trim().toLowerCase(), callbackUrl: defaultCallbackUrl, redirect: false })
       if (result?.error) setError('邮件发送失败，请检查 SMTP 配置。')
       else setMessage('如果邮箱服务配置正确，请检查收件箱和垃圾邮件。')
     } catch {
