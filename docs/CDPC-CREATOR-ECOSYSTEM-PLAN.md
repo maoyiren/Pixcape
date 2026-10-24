@@ -219,3 +219,11 @@ CDPC 从像素编辑工具逐步扩展为创作、发布、分享、发现和治
 - AI 服务可通过受共享令牌保护的 `/api/internal/ai-config` 同步后台设置。要启用同步，Web 服务配置 `AI_CONFIG_SYNC_TOKEN`；AI API 服务配置相同令牌和 `AI_CONFIG_URL=https://cdpc.cc/api/internal/ai-config`。这些是一次性部署连接配置，不需要每次修改模型或 Key 时变更环境变量。
 - 如果尚未配置 AI 同步令牌，后台保存的设置会留在数据库中，但独立 AI 服务仍使用它自己的环境变量；后台页面会明确提示这一边界。数据库地址、认证密钥和服务间同步令牌仍属于部署级配置。
 - 回归测试曾因登录表单可访问标签与测试断言不一致而失败；已统一标签并新增 `/workbench` 路由浏览器测试。最终结果以本轮 CI 为准。
+
+
+## 13. 登录默认目标与 AI 服务连接（2026-10-24）
+
+- 默认登录成功页面为 `/account`，管理员可在「系统配置中心」选择 `/account`、`/workbench`、`/studio` 或首页；显式传入的合法站内 callback 目标优先。
+- AI 模型配置在管理员后台维护。DeepSeek 作为文本模型单独配置（默认模型 ID：`deepseek-chat`），用于文本/提示词任务，不作为图片生成供应商。
+- 独立 AI API 服务默认读取 `https://cdpc.cc/api/internal/ai-config`。为启用跨服务同步，仍需在 Web 与 AI API 服务中各配置一次相同的高强度随机 `AI_CONFIG_SYNC_TOKEN`。令牌不是可公开写死的默认值；后台保存模型或 API Key 后，AI 服务会在后续请求的刷新周期内拉取配置。
+- 部署时仅需完成一次共享令牌配置；后续日常更换模型或 API Key 无需修改部署环境变量。OAuth Client Secret、SMTP 密码、数据库连接串等必须由部署平台保护的基础设施密钥仍保留在 Secrets 中。
