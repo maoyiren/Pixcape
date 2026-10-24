@@ -31,13 +31,11 @@ export async function reviewCreatorApplication(formData: FormData) {
 
     const profile = await tx.creatorProfile.findUnique({ where: { id: profileId }, select: { userId: true } })
     if (!profile) throw new Error('Creator profile disappeared during review')
-    await tx.user.update({
-      where: { id: profile.userId },
-      data: { role: approved ? 'CREATOR' : 'USER' },
-    })
+    // Verification review is separate from creator identity. Rejection must never
+    // downgrade the account or revoke its ability to create private drafts.
     await tx.auditLog.create({ data: {
       actorId: actor.id,
-      action: approved ? 'CREATOR_APPLICATION_APPROVED' : 'CREATOR_APPLICATION_REJECTED',
+      action: approved ? 'CREATOR_VERIFICATION_APPROVED' : 'CREATOR_VERIFICATION_REJECTED',
       targetType: 'CreatorProfile',
       targetId: profileId,
       details: { userId: profile.userId },
