@@ -16,7 +16,7 @@ function decryptAISecret(value: string) {
 
 export async function GET(request: Request) {
   const expected = process.env.AI_CONFIG_SYNC_TOKEN
-  const supplied = request.headers.get('authorization')?.replace(/^Bearer\\s+/i, '') ?? ''
+  const supplied = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? ''
   if (!expected || !supplied) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const expectedBytes = Buffer.from(expected)
   const suppliedBytes = Buffer.from(supplied)
