@@ -71,7 +71,7 @@ export default function RegisterPage() {
         <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在创建账户…' : '创建账户'}</button>
       </form>
       {error && <p role="alert">{error}</p>}{message && <p role="status">{message} <Link href="/login">前往登录</Link></p>}
-      <p>新账户默认拥有基础使用权限。创作者身份需通过审核，管理员权限不会通过注册自动获得。</p>
+      <p>注册后即可开始创作，并可在创作者中心完善公开资料。管理员权限不会通过注册自动获得。</p>
     </section>
   </main>
 }
