@@ -14,7 +14,7 @@ export default async function AccountPage() {
     <header className="topbar cdpc-panel"><div><p className="eyebrow">YOUR CDPC ACCOUNT</p><h1>我的账户</h1></div><Link className="pixel-button cdpc-control" href="/">返回首页</Link></header>
     <section className="hero inventory-panel cdpc-panel">
       <h2>账户资料</h2>
-      <p>这里显示当前登录账户的基本信息与权限状态。</p>
+      <p>查看你的账户资料、账户类型与当前状态。</p>
       <p>账户：{session.user.name ?? session.user.email ?? session.user.id}</p>
       <p>账户类型：{roleLabels[session.user.role] ?? '普通账户'}</p>
       <p>账户状态：{statusLabels[session.user.status] ?? '未知'}</p>
