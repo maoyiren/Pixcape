@@ -71,3 +71,38 @@
   .preset-layout { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) !important; }
   .preset-properties { grid-column: 1 / -1; }
 }
+
+
+/* Accessible editor navigation controls and touch-friendly narrow-screen targets. */
+.preset-main-nav button:focus-visible,
+.preset-top-actions button:focus-visible,
+.preset-current-actions button:focus-visible,
+.preset-language-switch select:focus-visible {
+  outline: 2px solid #b7ceff;
+  outline-offset: 3px;
+}
+.preset-main-nav button,
+.preset-top-actions button,
+.preset-current-actions button,
+.preset-language-switch select {
+  touch-action: manipulation;
+}
+.preset-main-nav button:disabled,
+.preset-top-actions button:disabled,
+.preset-current-actions button:disabled {
+  transform: none;
+}
+@media (max-width: 700px) {
+  .preset-main-nav { scrollbar-width: thin; scrollbar-color: #3a4d6b transparent; }
+  .preset-main-nav button, .preset-main-nav span { min-height: 40px !important; }
+  .preset-top-actions button { min-height: 40px; }
+  .preset-current-actions > button { min-height: 42px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .preset-main-nav button, .preset-main-nav span,
+  .preset-top-actions button, .preset-current-actions button {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .preset-main-nav button:hover:not(:disabled) { transform: none; }
+}
