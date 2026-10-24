@@ -307,7 +307,7 @@ export default function DressUpStudio() {
     link.href = url
     link.download = 'cdpc-outfit-backup.json'
     link.click()
-    URL.revokeObjectURL(url)
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
     setSaveNotice('穿搭备份 JSON 已导出。若包含导入的皮肤图片，文件可能较大；备份保存在你的设备中。')
   }
 
