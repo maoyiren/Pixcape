@@ -210,3 +210,72 @@ export async function setEmailVerificationRequired(formData: FormData) {
   })
   redirect('/admin?emailVerificationUpdated=1#configuration')
 }
+
+
+function encryptAISecret(value: string) {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) throw new Error('缺少 AUTH_SECRET / NEXTAUTH_SECRET，无法安全保存 AI 密钥')
+  const { createCipheriv, createHash, randomBytes } = require('node:crypto') as typeof import('node:crypto')
+  const iv = randomBytes(12)
+  const key = createHash('sha256').update(secret).digest()
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()])
+  return [iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), encrypted.toString('base64url')].join('.')
+}
+
+export async function saveAIConfiguration(formData: FormData) {
+  const actor = await requireActiveAdmin()
+  const provider = String(formData.get('provider') ?? 'auto')
+  if (!['auto', 'gemini', 'openai', 'openrouter', 'seedream'].includes(provider)) redirect('/admin?error=invalid_ai_provider#configuration')
+  const model = String(formData.get('model') ?? '').trim().slice(0, 160)
+  const geminiModels = String(formData.get('geminiModels') ?? '').trim().slice(0, 500)
+  const openaiModels = String(formData.get('openaiModels') ?? '').trim().slice(0, 500)
+  const openrouterModels = String(formData.get('openrouterModels') ?? '').trim().slice(0, 1000)
+  const seedreamModels = String(formData.get('seedreamModels') ?? '').trim().slice(0, 500)
+  const arkBaseUrl = String(formData.get('arkBaseUrl') ?? 'https://ark.cn-beijing.volces.com/api/v3').trim().slice(0, 300)
+  try {
+    const parsed = new URL(arkBaseUrl)
+    if (parsed.protocol !== 'https:' || !/(^|\\.)volces\\.com$|(^|\\.)volcengine\\.com$/.test(parsed.hostname)) throw new Error()
+  } catch { redirect('/admin?error=invalid_ark_url#configuration') }
+
+  const values: Record<string, string> = {
+    AI_DEFAULT_PROVIDER: provider,
+    AI_DEFAULT_MODEL: model,
+    GEMINI_IMAGE_MODELS: geminiModels,
+    OPENAI_IMAGE_MODELS: openaiModels,
+    OPENROUTER_IMAGE_MODELS: openrouterModels,
+    SEEDREAM_IMAGE_MODELS: seedreamModels,
+    ARK_BASE_URL: arkBaseUrl,
+  }
+  const secretFields = [
+    ['geminiApiKey', 'clearGeminiApiKey', 'AI_SECRET_GEMINI_API_KEY'],
+    ['openaiApiKey', 'clearOpenaiApiKey', 'AI_SECRET_OPENAI_API_KEY'],
+    ['openrouterApiKey', 'clearOpenrouterApiKey', 'AI_SECRET_OPENROUTER_API_KEY'],
+    ['seedreamApiKey', 'clearSeedreamApiKey', 'AI_SECRET_ARK_API_KEY'],
+  ] as const
+  for (const [field, clearField, settingKey] of secretFields) {
+    const value = String(formData.get(field) ?? '').trim()
+    if (value.length > 2048) redirect('/admin?error=ai_key_too_long#configuration')
+    if (formData.get(clearField) === 'on') values[settingKey] = ''
+    else if (value) values[settingKey] = encryptAISecret(value)
+  }
+  await prisma.$transaction(async (tx) => {
+    for (const [key, value] of Object.entries(values)) {
+      await tx.appSetting.upsert({ where: { key }, update: { value }, create: { key, value } })
+    }
+    for (const [field, clearField, settingKey] of secretFields) {
+      if (formData.get(clearField) === 'on' || String(formData.get(field) ?? '').trim()) {
+        await tx.auditLog.create({ data: {
+          actorId: actor.id, action: 'AI_CONFIGURATION_SECRET_CHANGED',
+          targetType: 'AppSetting', targetId: settingKey,
+          details: { cleared: formData.get(clearField) === 'on', changed: formData.get(clearField) === 'on' || Boolean(String(formData.get(field) ?? '').trim()) },
+        } })
+      }
+    }
+    await tx.auditLog.create({ data: {
+      actorId: actor.id, action: 'AI_CONFIGURATION_UPDATED', targetType: 'AppSetting', targetId: 'AI_DEFAULT_PROVIDER',
+      details: { provider, model, configuredModelLists: ['gemini', 'openai', 'openrouter', 'seedream'] },
+    } })
+  })
+  redirect('/admin?aiConfigurationSaved=1#configuration')
+}
