@@ -14,9 +14,13 @@ const methods = [
 
 export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ verification?: string; callbackUrl?: string }> }) {
   const params = await searchParams
-  const configuredDefault = await prisma.appSetting.findUnique({ where: { key: 'AUTH_DEFAULT_CALLBACK_URL' } }).catch(() => null)
+  const [configuredDefault, returnToOriginalSetting] = await Promise.all([
+    prisma.appSetting.findUnique({ where: { key: 'AUTH_DEFAULT_CALLBACK_URL' } }).catch(() => null),
+    prisma.appSetting.findUnique({ where: { key: 'AUTH_RETURN_TO_ORIGINAL_PAGE' } }).catch(() => null),
+  ])
   const safePath = (value: string | undefined) => value && value.startsWith('/') && !value.startsWith('//') && !value.includes(String.fromCharCode(92)) ? value : ''
-  const defaultCallbackUrl = safePath(params?.callbackUrl) || safePath(configuredDefault?.value) || '/account'
+  const returnToOriginalPage = returnToOriginalSetting?.value !== 'false'
+  const defaultCallbackUrl = (returnToOriginalPage ? safePath(params?.callbackUrl) : '') || safePath(configuredDefault?.value) || '/account'
   const verificationMessage = params?.verification === 'success' ? '邮箱验证成功，可以继续登录。' : params?.verification === 'expired' ? '这条登录链接已过期，请重新获取。' : params?.verification === 'invalid' ? '这条登录链接无效，请重新获取。' : params?.verification === 'error' ? '暂时无法完成验证，请稍后重试。' : ''
   const enabledMethods = methods.filter((method) => method.enabled)
   const adminEnabled = Boolean(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL)
