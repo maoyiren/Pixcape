@@ -86,7 +86,9 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 export default async function AdminPage({ searchParams }: { searchParams?: Promise<{ q?: string; role?: string; status?: string; aiConfigurationSaved?: string; systemConfigurationSaved?: string; error?: string }> }) {
   const admin = await requireRole('ADMIN')
   const params = await searchParams
-  const defaultCallbackSetting = await prisma.appSetting.findUnique({ where: { key: 'AUTH_DEFAULT_CALLBACK_URL' } }).catch(() => null)\n  const defaultCallbackUrl = defaultCallbackSetting?.value || '/account'\n  const emailVerificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } }).catch(() => null)
+  const defaultCallbackSetting = await prisma.appSetting.findUnique({ where: { key: 'AUTH_DEFAULT_CALLBACK_URL' } }).catch(() => null)
+  const defaultCallbackUrl = defaultCallbackSetting?.value || '/account'
+  const emailVerificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } }).catch(() => null)
   const emailVerificationRequired = emailVerificationSetting?.value === 'true'
   const aiSettings = await prisma.appSetting.findMany({ where: { key: { in: [
     'AI_DEFAULT_PROVIDER', 'AI_DEFAULT_MODEL', 'GEMINI_IMAGE_MODELS', 'OPENAI_IMAGE_MODELS',
@@ -138,7 +140,9 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     <nav className="admin-subnav" aria-label="管理后台分区">
       <a href="#overview">总览</a><a href="#health">系统健康</a><a href="#creators">创作者审核</a><a href="#users">用户管理</a><a href="#audit">操作审计</a><a href="#configuration">配置中心</a>
     </nav>
-    {params?.aiConfigurationSaved === '1' ? <p role="status" className="config-status">AI 配置已保存到数据库。服务间同步已启用时，AI API 会在后续请求中自动读取新配置。</p> : null}\n    {params?.systemConfigurationSaved === '1' ? <p role="status" className="config-status">默认登录页面已保存。</p> : null}\n    {params?.error === 'invalid_default_callback' ? <p role="alert">登录默认目标必须是站内路径，例如 /account 或 /workbench。</p> : null}
+    {params?.aiConfigurationSaved === '1' ? <p role="status" className="config-status">AI 配置已保存到数据库。服务间同步已启用时，AI API 会在后续请求中自动读取新配置。</p> : null}
+    {params?.systemConfigurationSaved === '1' ? <p role="status" className="config-status">默认登录页面已保存。</p> : null}
+    {params?.error === 'invalid_default_callback' ? <p role="alert">登录默认目标必须是站内路径，例如 /account 或 /workbench。</p> : null}
     {params?.error === 'invalid_ai_provider' ? <p role="alert">AI 供应商选项无效，请重新选择。</p> : null}
     {params?.error === 'invalid_ark_url' ? <p role="alert">Ark 地址必须使用火山引擎官方 HTTPS 域名。</p> : null}
     {params?.error === 'ai_key_too_long' ? <p role="alert">API Key 长度超出限制。</p> : null}
