@@ -25,9 +25,9 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
       <section className="hero inventory-panel auth-panel cdpc-panel cdpc-stack">
         <h2>一个入口，继续你的创作</h2>
         {verificationMessage ? <p role="status">{verificationMessage}</p> : null}
-        <p>使用邮箱和密码、管理员账号，或已启用的第三方平台登录。系统会根据账号权限决定可访问的区域。</p>
+        <p>使用邮箱或用户名与密码登录，也可选择已启用的第三方登录方式。系统会根据账户权限开放相应功能。</p>
         <LoginForm methods={enabledMethods.map(({id,label}) => ({id,label}))} adminEnabled={adminEnabled} />
-        {enabledMethods.length === 0 && !adminEnabled ? <p>目前还没有启用第三方或管理员登录方式；邮箱密码登录仍可用于已有账户。请检查部署配置。</p> : null}
+        {enabledMethods.length === 0 && !adminEnabled ? <p>暂未启用第三方登录方式。你仍可使用已开通的邮箱与密码登录。</p> : null}
         <p className="auth-switch-copy">还没有账户？<Link href="/register">创建账户</Link>。新注册账号默认不会获得管理员权限。</p>
       </section>
     </main>
