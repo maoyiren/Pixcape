@@ -10,9 +10,9 @@ const statusLabels: Record<string, string> = { ACTIVE: '正常', SUSPENDED: '已
 export default async function AccountPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) redirect('/login')
-  return <main className="inventory-shell">
+  return <main className="inventory-shell cdpc-page">
     <header className="topbar"><div><p className="eyebrow">YOUR CDPC ACCOUNT</p><h1>我的账户</h1></div><Link className="pixel-button" href="/">返回首页</Link></header>
-    <section className="hero inventory-panel">
+    <section className="hero inventory-panel cdpc-panel">
       <h2>账户资料</h2>
       <p>这里显示当前登录账户的基本信息与权限状态。</p>
       <p>账户：{session.user.name ?? session.user.email ?? session.user.id}</p>
