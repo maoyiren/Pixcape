@@ -53,6 +53,28 @@ export default function DressUpStudio() {
   const [background, setBackground] = useState('#182437')
   const [isBusy, setIsBusy] = useState(false)
   const [retryVersion, setRetryVersion] = useState(0)
+  const [saveNotice, setSaveNotice] = useState('')
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('cdpc:dress-up:local-v1')
+      if (!raw) return
+      const saved = JSON.parse(raw) as { itemIds?: string[]; model?: ModelType; background?: string; skinUrl?: string; skinName?: string }
+      const restored = (saved.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
+        const item = catalog.find(entry => entry.id === id)
+        if (item) items[item.category] = item
+        return items
+      }, {})
+      setSelected(restored)
+      if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
+      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
+      if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
+      if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
+      setSaveNotice('已恢复上次保存在此设备的穿搭')
+    } catch {
+      setSaveNotice('上次的本地穿搭无法读取，可重新保存一份')
+    }
+  }, [])
 
   const filtered = useMemo(() => catalog.filter(item =>
     (category === '全部' || item.category === category) &&
@@ -160,6 +182,32 @@ export default function DressUpStudio() {
     })
   }
 
+  function saveLocalOutfit() {
+    try {
+      window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify({
+        itemIds: selectedItems.map(item => item.id),
+        model,
+        background,
+        skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
+        skinName,
+        savedAt: new Date().toISOString(),
+      }))
+      setSaveNotice('穿搭已保存在此设备；登录账户同步功能尚未接入')
+    } catch {
+      setSaveNotice('保存失败：浏览器存储空间可能不足，请减少图片数据后重试')
+    }
+  }
+
+  function randomOutfit() {
+    const next: Record<string, CatalogItem> = {}
+    for (const itemCategory of ['披肩', '外套', '披风'] as const) {
+      const options = catalog.filter(item => item.category === itemCategory)
+      if (options.length) next[itemCategory] = options[Math.floor(Math.random() * options.length)]
+    }
+    setSelected(next)
+    setSaveNotice('已随机生成一套搭配；保存后才会保留到下次访问')
+  }
+
   function importSkin(file?: File) {
     if (!file) return
     if (!file.type.includes('png')) {
@@ -242,10 +290,32 @@ export default function DressUpStudio() {
             {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong></span><button type="button" onClick={() => toggleItem(item)}>移除</button></div>)}
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
           <div className="dressup-actions">
-            <button type="button" onClick={() => setSelected({})} disabled={!selectedItems.length}>清空当前选择</button>
+            <button type="button" onClick={randomOutfit}>随机搭配</button>
+            <button type="button" onClick={saveLocalOutfit}>保存到此设备</button>
+            <button type="button" onClick={() => {
+              try {
+                const raw = window.localStorage.getItem('cdpc:dress-up:local-v1')
+                if (!raw) { setSaveNotice('此设备还没有保存过穿搭'); return }
+                const saved = JSON.parse(raw) as { itemIds?: string[]; model?: ModelType; background?: string; skinUrl?: string; skinName?: string }
+                setSelected((saved.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
+                  const item = catalog.find(entry => entry.id === id)
+                  if (item) items[item.category] = item
+                  return items
+                }, {}))
+                if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
+                if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
+                if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
+                if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
+                setSaveNotice('已恢复本地穿搭')
+              } catch {
+                setSaveNotice('无法读取本地穿搭，请重新保存')
+              }
+            }}>恢复已保存穿搭</button>
+            <button type="button" onClick={() => setSelected({})} disabled={!selectedItems.length}>全部脱下</button>
             <button type="button" onClick={() => skinFileRef.current?.click()}>更换基础皮肤</button>
             <Link className="primary" href="/studio">继续到创作工坊 ↗</Link>
           </div>
+          {saveNotice && <p className="dressup-save-notice" role="status">{saveNotice}</p>}
           <p className="dressup-preview-note">当前页面支持实时预览和本地临时搭配。账号保存穿搭及一键导出合成皮肤尚未接入，因此不会显示为已完成能力。</p>
         </aside>
       </div>
