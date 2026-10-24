@@ -270,3 +270,53 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .auth-account-type .cdpc-control { width: auto; flex: 1 1 0; }
 .auth-form .cdpc-control-primary { background: var(--cdpc-accent); color: #111827; border-color: var(--cdpc-accent); }
 
+
+
+/* Next.js account surfaces: consistent form rhythm, readable feedback, and touch targets. */
+.cdpc-page .inventory-panel {
+  min-width: 0;
+  padding: clamp(16px, 2.4vw, 28px);
+  border: 1px solid var(--cdpc-border);
+  border-radius: var(--cdpc-radius-md);
+  background: var(--cdpc-surface);
+  color: var(--cdpc-text);
+  box-shadow: none;
+}
+.cdpc-page .inventory-panel > :is(h2, h3) { color: var(--cdpc-text); line-height: 1.35; }
+.cdpc-page .inventory-panel > p { line-height: 1.7; }
+.cdpc-page .auth-email-form,
+.cdpc-page .application-form { display: grid; gap: 10px; min-width: 0; }
+.cdpc-page .auth-email-form label,
+.cdpc-page .application-form label,
+.cdpc-page .admin-filters label {
+  display: grid; gap: 6px; color: var(--cdpc-text); font-size: 13px; font-weight: 650;
+}
+.cdpc-page .auth-email-form input,
+.cdpc-page .application-form :is(input, textarea),
+.cdpc-page .admin-filters :is(input, select) {
+  width: 100%; min-width: 0; min-height: var(--cdpc-control-height);
+  padding: 9px 11px; border: 1px solid var(--cdpc-border);
+  border-radius: var(--cdpc-radius-sm); background: var(--cdpc-bg);
+  color: var(--cdpc-text); font: inherit;
+}
+.cdpc-page .application-form textarea { resize: vertical; min-height: 112px; }
+.cdpc-page .auth-email-form :is(input, textarea):focus-visible,
+.cdpc-page .application-form :is(input, textarea):focus-visible,
+.cdpc-page .admin-filters :is(input, select):focus-visible {
+  outline: 2px solid var(--cdpc-accent); outline-offset: 1px;
+}
+.cdpc-page :is([role="alert"], .auth-feedback-error) {
+  color: #ffd0d0; border: 1px solid #75434a; border-radius: var(--cdpc-radius-sm);
+  background: #321f26; padding: 10px 12px; line-height: 1.6;
+}
+.cdpc-page :is([role="status"], .auth-feedback-success) {
+  color: #c8f1dc; border: 1px solid #315d49; border-radius: var(--cdpc-radius-sm);
+  background: #192d25; padding: 10px 12px; line-height: 1.6;
+}
+.cdpc-page .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cdpc-page .application-card { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .cdpc-page .inventory-panel { padding: 14px; }
+  .cdpc-page .actions > .cdpc-control,
+  .cdpc-page .actions > .pixel-button { flex: 1 1 100%; }
+}
