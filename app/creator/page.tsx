@@ -18,10 +18,10 @@ export default async function CreatorPage() {
       <h2>申请加入创作者计划</h2><p>填写展示名称和创作简介。提交后由管理员审核，审核通过前不会改变你的账户权限。</p>
       {profile?.reviewStatus === 'PENDING' ? <p role="status">申请已收到，正在等待审核。你可以修改资料后再次提交。</p> : null}
       {profile?.reviewStatus === 'REJECTED' ? <p role="status">上次申请未通过。请完善资料后重新提交。</p> : null}
-      <form action={applyForCreator} className="application-form">
-        <label htmlFor="displayName">展示名称</label><input id="displayName" name="displayName" required minLength={2} maxLength={48} defaultValue={profile?.displayName ?? user.name ?? ''} />
-        <label htmlFor="bio">创作简介 <span>（最多 500 字）</span></label><textarea id="bio" name="bio" rows={4} maxLength={500} defaultValue={profile?.bio ?? ''} placeholder="介绍你擅长的像素创作类型或作品方向" />
-        <button className="pixel-button primary" type="submit">提交申请 / 更新资料</button>
+      <form action={applyForCreator} className="application-form cdpc-stack">
+        <label htmlFor="displayName">展示名称</label><input id="displayName" className="cdpc-input" name="displayName" required minLength={2} maxLength={48} defaultValue={profile?.displayName ?? user.name ?? ''} />
+        <label htmlFor="bio">创作简介 <span>（最多 500 字）</span></label><textarea id="bio" className="cdpc-input" name="bio" rows={4} maxLength={500} defaultValue={profile?.bio ?? ''} placeholder="介绍你擅长的像素创作类型或作品方向" />
+        <button className="pixel-button primary cdpc-control cdpc-control-primary" type="submit">提交申请 / 更新资料</button>
       </form>
     </section>}
   </main>
