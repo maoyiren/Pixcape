@@ -116,7 +116,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
         <label htmlFor="login-password">密码</label>
         <input id="login-password" className="cdpc-input" type="password" autoComplete="current-password" required maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} />
         <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</button>
-        <small>同一个入口支持普通用户邮箱和管理员用户名；系统根据服务端验证结果决定登录身份与跳转位置。</small>
+        <small>个人账户使用邮箱登录；管理员使用已配置的用户名登录。</small>
       </form>
       {oauthMethods.length > 0 ? (
         <div className="auth-provider-group">
