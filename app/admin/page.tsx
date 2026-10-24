@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
-import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus, setEmailVerificationRequired, saveAIConfiguration } from './actions'
+import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus, setEmailVerificationRequired, saveAIConfiguration, saveSystemConfiguration } from './actions'
 
 type HealthCheck = {
   name: string
@@ -83,10 +83,10 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
   return checks
 }
 
-export default async function AdminPage({ searchParams }: { searchParams?: Promise<{ q?: string; role?: string; status?: string; aiConfigurationSaved?: string; error?: string }> }) {
+export default async function AdminPage({ searchParams }: { searchParams?: Promise<{ q?: string; role?: string; status?: string; aiConfigurationSaved?: string; systemConfigurationSaved?: string; error?: string }> }) {
   const admin = await requireRole('ADMIN')
   const params = await searchParams
-  const emailVerificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } }).catch(() => null)
+  const defaultCallbackSetting = await prisma.appSetting.findUnique({ where: { key: 'AUTH_DEFAULT_CALLBACK_URL' } }).catch(() => null)\n  const defaultCallbackUrl = defaultCallbackSetting?.value || '/account'\n  const emailVerificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } }).catch(() => null)
   const emailVerificationRequired = emailVerificationSetting?.value === 'true'
   const aiSettings = await prisma.appSetting.findMany({ where: { key: { in: [
     'AI_DEFAULT_PROVIDER', 'AI_DEFAULT_MODEL', 'GEMINI_IMAGE_MODELS', 'OPENAI_IMAGE_MODELS',
@@ -138,7 +138,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     <nav className="admin-subnav" aria-label="管理后台分区">
       <a href="#overview">总览</a><a href="#health">系统健康</a><a href="#creators">创作者审核</a><a href="#users">用户管理</a><a href="#audit">操作审计</a><a href="#configuration">配置中心</a>
     </nav>
-    {params?.aiConfigurationSaved === '1' ? <p role="status" className="config-status">AI 配置已保存到数据库。若尚未配置服务间同步令牌，AI API 仍会使用部署环境中的配置。</p> : null}
+    {params?.aiConfigurationSaved === '1' ? <p role="status" className="config-status">AI 配置已保存到数据库。服务间同步已启用时，AI API 会在后续请求中自动读取新配置。</p> : null}\n    {params?.systemConfigurationSaved === '1' ? <p role="status" className="config-status">默认登录页面已保存。</p> : null}\n    {params?.error === 'invalid_default_callback' ? <p role="alert">登录默认目标必须是站内路径，例如 /account 或 /workbench。</p> : null}
     {params?.error === 'invalid_ai_provider' ? <p role="alert">AI 供应商选项无效，请重新选择。</p> : null}
     {params?.error === 'invalid_ark_url' ? <p role="alert">Ark 地址必须使用火山引擎官方 HTTPS 域名。</p> : null}
     {params?.error === 'ai_key_too_long' ? <p role="alert">API Key 长度超出限制。</p> : null}
@@ -188,7 +188,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     <section className="hero inventory-panel" id="audit"><h2>操作审计日志</h2><p>最近 30 条管理操作，用于追踪账号状态、角色调整和创作者审核。敏感凭据不会写入日志。</p>
       {auditLogs.length === 0 ? <p>暂无日志，或日志暂时无法读取。</p> : <div className="application-list">{auditLogs.map((entry) => <article className="application-card" key={entry.id}><h3>{entry.action}</h3><p>操作者：{entry.actor.name ?? entry.actor.email ?? '管理员账号'}</p><p>目标：{entry.targetType} · {entry.targetId}</p><p>时间：{entry.createdAt.toISOString().replace('T', ' ').slice(0, 19)} UTC</p><p>详情：{entry.details ? JSON.stringify(entry.details) : '无附加详情'}</p></article>)}</div>}
     </section>
-    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>敏感凭据仍由部署 Secrets 管理；可在此切换是否要求新注册邮箱验证，所有变更都会记录审计日志。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>OAuth 凭据与 SMTP 服务器请在部署环境配置。邮箱验证当前：<strong>{emailVerificationRequired ? '已开启' : '关闭（默认）'}</strong>。</p><form action={setEmailVerificationRequired} className="actions"><button className="pixel-button" type="submit" name="required" value={emailVerificationRequired ? 'false' : 'true'}>{emailVerificationRequired ? '关闭邮箱验证' : '开启邮箱验证'}</button></form><span className="config-status">{emailVerificationRequired ? '新注册账户需点击验证邮件' : '注册无需验证码'}</span></article><article className="ai-config-card"><h3>AI 服务商与模型</h3>
+    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>可动态生效的配置在此管理；需要服务启动前读取的 OAuth、SMTP 和基础设施密钥仍由部署 Secrets 管理。所有后台变更都会记录审计日志。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>OAuth 凭据与 SMTP 服务器请在部署环境配置。邮箱验证当前：<strong>{emailVerificationRequired ? '已开启' : '关闭（默认）'}</strong>。</p><form action={saveSystemConfiguration} className="application-form cdpc-stack"><label htmlFor="default-callback-url">默认登录成功页面</label><select id="default-callback-url" name="defaultCallbackUrl" defaultValue={defaultCallbackUrl}><option value="/account">账号界面（/account）</option><option value="/workbench">工作台（/workbench）</option><option value="/studio">编辑入口（/studio）</option><option value="/">首页（/）</option></select><p>登录请求明确传入合法的站内 callbackUrl 时优先使用该目标；未传入时使用此默认值。管理员密码登录仍进入管理员后台。</p><button className="pixel-button primary" type="submit">保存默认登录页面</button></form><form action={setEmailVerificationRequired} className="actions"><button className="pixel-button" type="submit" name="required" value={emailVerificationRequired ? 'false' : 'true'}>{emailVerificationRequired ? '关闭邮箱验证' : '开启邮箱验证'}</button></form><span className="config-status">{emailVerificationRequired ? '新注册账户需点击验证邮件' : '注册无需验证码'}</span></article><article className="ai-config-card"><h3>AI 服务商与模型</h3>
   <p>在此维护 AI 默认供应商、模型清单和 API Key。密钥使用服务端认证密钥加密保存，页面不会回显原始密钥。</p>
   {aiConfig.AI_SECRET_GEMINI_API_KEY || process.env.GEMINI_API_KEY ? <p className="config-status">Gemini：已配置</p> : <p className="config-status">Gemini：未配置</p>}
   {aiConfig.AI_SECRET_OPENAI_API_KEY || process.env.OPENAI_API_KEY ? <p className="config-status">OpenAI：已配置</p> : <p className="config-status">OpenAI：未配置</p>}
