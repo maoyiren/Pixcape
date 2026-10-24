@@ -331,7 +331,7 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url; link.download = 'cdpc-outfit-backup.json'; link.click()
-    URL.revokeObjectURL(url)
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
     setStatus(portableSkin ? '穿搭 JSON 备份已导出（含皮肤 PNG）' : '穿搭 JSON 备份已导出；当前皮肤来源不允许嵌入图片，导入后将使用默认皮肤')
   }
   const importOutfitBackup = async (file?: File) => {
