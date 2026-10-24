@@ -1,7 +1,8 @@
 import Link from 'next/link'
 
 const tools = [
-  { number: '01', title: '皮肤与配件编辑', tag: '编辑器', description: '导入现有皮肤，分别选择披肩、外套或披风素材，搭配后查看角色效果。', href: '/studio', action: '打开编辑器', featured: true },
+  { number: '00', title: '衣服选装', tag: '独立搭配', description: '用已接入的服装素材搭配角色，实时查看 3D 效果，并把临时穿搭保存在当前设备。', href: '/dress-up', action: '开始选装', featured: true },
+  { number: '01', title: '创作工坊', tag: '编辑器入口', description: '从选装流程继续前往像素编辑工作台；编辑器连接状态会在入口页明确显示。', href: '/studio', action: '打开创作工坊', featured: true },
   { number: '02', title: '角色预览与导出', tag: '预览工作流', description: '在编辑器中检查搭配结果，确认后导出皮肤 PNG，方便带回游戏使用。', href: '/studio', action: '开始搭配', featured: false },
   { number: '03', title: '创作者中心', tag: '创作者计划', description: '提交创作者申请，完善展示名称与简介；通过审核后再逐步开放创作者功能。', href: '/creator', action: '了解创作者入口', featured: false },
 ]
@@ -20,8 +21,8 @@ export default function MigrationHome() {
           <h1>让角色更像<br /><span>你想要的样子。</span></h1>
           <p className="cdpc-hero-description">从 Minecraft 皮肤开始，搭配披肩、外套和披风。导入、预览、调整，再把满意的作品带进游戏。</p>
           <div className="cdpc-hero-actions">
-            <Link className="cdpc-button cdpc-button-primary" href="/studio">开始编辑 <span aria-hidden="true">↗</span></Link>
-            <Link className="cdpc-button cdpc-button-quiet" href="/creator">创作者中心</Link>
+            <Link className="cdpc-button cdpc-button-primary" href="/dress-up">开始衣服选装 <span aria-hidden="true">↗</span></Link>
+            <Link className="cdpc-button cdpc-button-quiet" href="/studio">进入创作工坊</Link>
           </div>
           <div className="cdpc-hero-footnote"><span className="cdpc-mini-pixel" aria-hidden="true">▦</span> 为皮肤搭配与像素配件设计而做</div>
         </div>
@@ -52,7 +53,7 @@ export default function MigrationHome() {
         {tools.map((tool) => (
           <article className={`cdpc-tool-card ${tool.featured ? 'is-featured' : ''}`} key={tool.number}>
             <div className="cdpc-card-top"><span className="cdpc-card-number">{tool.number}</span><span className="cdpc-card-tag">{tool.tag}</span></div>
-            <div className={`cdpc-tool-glyph glyph-${tool.number}`} aria-hidden="true"><span>{tool.number === '01' ? '▦' : tool.number === '02' ? '◫' : '✎'}</span></div>
+            <div className={`cdpc-tool-glyph glyph-${tool.number}`} aria-hidden="true"><span>{tool.number === '00' ? '♧' : tool.number === '01' ? '▦' : tool.number === '02' ? '◫' : '✎'}</span></div>
             <h3>{tool.title}</h3>
             <p>{tool.description}</p>
             <Link href={tool.href} className="cdpc-card-link">{tool.action} <span aria-hidden="true">→</span></Link>
