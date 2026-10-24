@@ -17,6 +17,7 @@ const registerSchema = z.object({
 type RegisterValues = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
