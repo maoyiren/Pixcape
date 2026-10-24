@@ -250,7 +250,8 @@ export async function saveAIConfiguration(formData: FormData) {
   const geminiModels = String(formData.get('geminiModels') ?? '').trim().slice(0, 500)
   const openaiModels = String(formData.get('openaiModels') ?? '').trim().slice(0, 500)
   const openrouterModels = String(formData.get('openrouterModels') ?? '').trim().slice(0, 1000)
-  const seedreamModels = String(formData.get('seedreamModels') ?? '').trim().slice(0, 500)\n  const deepseekTextModel = String(formData.get('deepseekTextModel') ?? 'deepseek-chat').trim().slice(0, 160)
+  const seedreamModels = String(formData.get('seedreamModels') ?? '').trim().slice(0, 500)
+  const deepseekTextModel = String(formData.get('deepseekTextModel') ?? 'deepseek-chat').trim().slice(0, 160)
   const arkBaseUrl = String(formData.get('arkBaseUrl') ?? 'https://ark.cn-beijing.volces.com/api/v3').trim().slice(0, 300)
   try {
     const parsed = new URL(arkBaseUrl)
@@ -263,14 +264,16 @@ export async function saveAIConfiguration(formData: FormData) {
     GEMINI_IMAGE_MODELS: geminiModels,
     OPENAI_IMAGE_MODELS: openaiModels,
     OPENROUTER_IMAGE_MODELS: openrouterModels,
-    SEEDREAM_IMAGE_MODELS: seedreamModels,\n    DEEPSEEK_TEXT_MODEL: deepseekTextModel,
+    SEEDREAM_IMAGE_MODELS: seedreamModels,
+    DEEPSEEK_TEXT_MODEL: deepseekTextModel,
     ARK_BASE_URL: arkBaseUrl,
   }
   const secretFields = [
     ['geminiApiKey', 'clearGeminiApiKey', 'AI_SECRET_GEMINI_API_KEY'],
     ['openaiApiKey', 'clearOpenaiApiKey', 'AI_SECRET_OPENAI_API_KEY'],
     ['openrouterApiKey', 'clearOpenrouterApiKey', 'AI_SECRET_OPENROUTER_API_KEY'],
-    ['seedreamApiKey', 'clearSeedreamApiKey', 'AI_SECRET_ARK_API_KEY'],\n    ['deepseekApiKey', 'clearDeepseekApiKey', 'AI_SECRET_DEEPSEEK_API_KEY'],
+    ['seedreamApiKey', 'clearSeedreamApiKey', 'AI_SECRET_ARK_API_KEY'],
+    ['deepseekApiKey', 'clearDeepseekApiKey', 'AI_SECRET_DEEPSEEK_API_KEY'],
   ] as const
   for (const [field, clearField, settingKey] of secretFields) {
     const value = String(formData.get(field) ?? '').trim()
