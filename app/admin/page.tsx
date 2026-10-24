@@ -83,7 +83,7 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
   return checks
 }
 
-export default async function AdminPage({ searchParams }: { searchParams?: Promise<{ q?: string; role?: string; status?: string }> }) {
+export default async function AdminPage({ searchParams }: { searchParams?: Promise<{ q?: string; role?: string; status?: string; aiConfigurationSaved?: string; error?: string }> }) {
   const admin = await requireRole('ADMIN')
   const params = await searchParams
   const emailVerificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } }).catch(() => null)
@@ -138,6 +138,10 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     <nav className="admin-subnav" aria-label="管理后台分区">
       <a href="#overview">总览</a><a href="#health">系统健康</a><a href="#creators">创作者审核</a><a href="#users">用户管理</a><a href="#audit">操作审计</a><a href="#configuration">配置中心</a>
     </nav>
+    {params?.aiConfigurationSaved === '1' ? <p role="status" className="config-status">AI 配置已保存到数据库。若尚未配置服务间同步令牌，AI API 仍会使用部署环境中的配置。</p> : null}
+    {params?.error === 'invalid_ai_provider' ? <p role="alert">AI 供应商选项无效，请重新选择。</p> : null}
+    {params?.error === 'invalid_ark_url' ? <p role="alert">Ark 地址必须使用火山引擎官方 HTTPS 域名。</p> : null}
+    {params?.error === 'ai_key_too_long' ? <p role="alert">API Key 长度超出限制。</p> : null}
     <section className="admin-overview" id="overview">
       <article><span>用户总数</span><strong>{userTotal}</strong><small>所有注册账户</small></article>
       <article><span>创作者</span><strong>{creatorTotal}</strong><small>已授予创作者角色</small></article>
