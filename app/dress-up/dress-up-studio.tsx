@@ -198,6 +198,33 @@ export default function DressUpStudio() {
     }
   }
 
+  function downloadPreviewScreenshot() {
+    const canvas = previewHost.current?.querySelector('canvas')
+    if (!canvas) {
+      setSaveNotice('3D 预览尚未准备好，请稍后再试')
+      return
+    }
+    try {
+      const link = document.createElement('a')
+      link.download = 'cdpc-character-preview.png'
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+      setSaveNotice('预览截图已开始下载')
+    } catch {
+      setSaveNotice('截图生成失败；如果素材来自跨域地址，请检查素材服务器的跨域设置')
+    }
+  }
+
+  function resetPreviewCamera() {
+    const viewer = viewerRef.current
+    if (!viewer) {
+      setSaveNotice('3D 预览尚未准备好')
+      return
+    }
+    viewer.controls.reset()
+    setSaveNotice('已重置角色视角')
+  }
+
   function randomOutfit() {
     const next: Record<string, CatalogItem> = {}
     for (const itemCategory of ['披肩', '外套', '披风'] as const) {
@@ -277,6 +304,8 @@ export default function DressUpStudio() {
           <div className="dressup-preview-stage dressup-real-preview" ref={previewHost} />
           <div className="dressup-preview-tools dressup-bottom-tools">
             <span className="dressup-skin-name" title={skinName}>当前皮肤：{skinName}</span>
+            <button type="button" onClick={resetPreviewCamera}>重置视角</button>
+            <button type="button" onClick={downloadPreviewScreenshot}>下载预览截图</button>
             <button type="button" onClick={() => skinFileRef.current?.click()}>导入 64×64 PNG</button>
             <input ref={skinFileRef} hidden type="file" accept="image/png,.png" onChange={event => importSkin(event.target.files?.[0])} />
           </div>
