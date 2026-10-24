@@ -14,15 +14,15 @@ const quickLinks = [
 
 export default function MigrationHome() {
   return (
-    <main className="cdpc-home">
+    <main className="cdpc-home cdpc-page">
       <section className="cdpc-hero">
         <div className="cdpc-hero-copy">
           <p className="cdpc-kicker"><span className="pixel-live-dot" /> CDPC · 像素角色工具</p>
           <h1>让角色更像<br /><span>你想要的样子。</span></h1>
           <p className="cdpc-hero-description">从 Minecraft 皮肤开始，搭配披肩、外套和披风。导入、预览、调整，再把满意的作品带进游戏。</p>
           <div className="cdpc-hero-actions">
-            <Link className="cdpc-button cdpc-button-primary" href="/dress-up">开始衣服选装 <span aria-hidden="true">↗</span></Link>
-            <Link className="cdpc-button cdpc-button-quiet" href="/studio">进入创作工坊</Link>
+            <Link className="cdpc-button cdpc-button-primary cdpc-control cdpc-control-primary" href="/dress-up">开始衣服选装 <span aria-hidden="true">↗</span></Link>
+            <Link className="cdpc-button cdpc-button-quiet cdpc-control" href="/studio">进入创作工坊</Link>
           </div>
           <div className="cdpc-hero-footnote"><span className="cdpc-mini-pixel" aria-hidden="true">▦</span> 为皮肤搭配与像素配件设计而做</div>
         </div>
@@ -56,14 +56,14 @@ export default function MigrationHome() {
             <div className={`cdpc-tool-glyph glyph-${tool.number}`} aria-hidden="true"><span>{tool.number === '00' ? '♧' : tool.number === '01' ? '▦' : tool.number === '02' ? '◫' : '✎'}</span></div>
             <h3>{tool.title}</h3>
             <p>{tool.description}</p>
-            <Link href={tool.href} className="cdpc-card-link">{tool.action} <span aria-hidden="true">→</span></Link>
+            <Link href={tool.href} className="cdpc-card-link cdpc-control">{tool.action} <span aria-hidden="true">→</span></Link>
           </article>
         ))}
       </section>
 
       <section className="cdpc-quick-row" aria-label="账户快捷入口">
         <div className="cdpc-quick-intro"><p className="cdpc-section-kicker">YOUR SPACE / 02</p><h2>你的账户空间</h2><p>登录后查看账户资料，并管理创作者申请。</p></div>
-        {quickLinks.map((item) => <Link className="cdpc-quick-link" href={item.href} key={item.href}><span className="quick-symbol">{item.symbol}</span><span><b>{item.label}</b><small>{item.detail}</small></span><span className="quick-arrow" aria-hidden="true">↗</span></Link>)}
+        {quickLinks.map((item) => <Link className="cdpc-quick-link cdpc-control" href={item.href} key={item.href}><span className="quick-symbol">{item.symbol}</span><span><b>{item.label}</b><small>{item.detail}</small></span><span className="quick-arrow" aria-hidden="true">↗</span></Link>)}
       </section>
 
       <p className="cdpc-legal-note">CDPC 为独立社区工具项目，与 Mojang Studios、Microsoft 及 Minecraft 官方无隶属或背书关系。</p>
