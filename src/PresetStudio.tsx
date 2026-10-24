@@ -377,7 +377,6 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
         <button className="preset-import" onClick={() => skinInputRef.current?.click()}><Upload size={16}/> {tr('导入皮肤', language)}</button>
         <button className="preset-import" onClick={() => outfitBackupInputRef.current?.click()}><Upload size={16}/> {tr('导入穿搭备份 JSON', language)}</button>
         <button className="preset-export-skin" onClick={() => { void exportOutfitBackup() }}><Download size={16}/> {tr('导出穿搭备份 JSON', language)}</button>
-        <button className="preset-import" onClick={() => { void exportOutfitBackup() }}><Download size={16}/> {tr('导出穿搭备份 JSON', language)}</button>
         <Tooltip.Provider delayDuration={300}><Tooltip.Root><Tooltip.Trigger asChild><button className="preset-export-skin" onClick={exportPng} disabled={!ready}><Download size={16}/> {tr('导出合成皮肤 PNG', language)}</button></Tooltip.Trigger><Tooltip.Portal><Tooltip.Content className="preset-tooltip" side="bottom" sideOffset={6}>将当前皮肤与所选披肩、外套合成为 64 × 64 PNG。<Tooltip.Arrow className="preset-tooltip-arrow"/></Tooltip.Content></Tooltip.Portal></Tooltip.Root></Tooltip.Provider>
         <button className="preset-open-blockbench" onClick={openEditorWithPreset} disabled={!ready}><ExternalLink size={15}/> {tr('发送到 Blockbench 编辑', language)}</button>
       </div>
