@@ -8,7 +8,6 @@ type Method = { id: string; label: string }
 
 export default function LoginForm({ methods, adminEnabled }: { methods: Method[]; adminEnabled: boolean }) {
   const [identifier, setIdentifier] = useState('')
-  const [accountType, setAccountType] = useState<'user' | 'admin'>('user')
   const [password, setPassword] = useState('')
   const [magicEmail, setMagicEmail] = useState('')
   const [busy, setBusy] = useState(false)
@@ -44,29 +43,40 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     setError('')
     setMessage('')
     const value = identifier.trim()
-    const isAdmin = accountType === 'admin'
-    if (isAdmin && !adminEnabled) {
-      setError('管理员登录当前未启用，请检查部署环境变量。')
-      setBusy(false)
-      return
-    }
+    const looksLikeEmail = value.includes('@')
+
     try {
-      const provider = isAdmin ? 'admin-credentials' : 'email-password'
-      const callbackUrl = isAdmin ? '/admin' : '/account'
-      const credentials = isAdmin
-        ? { username: value, password, callbackUrl, redirect: false as const }
-        : { email: value.toLowerCase(), password, callbackUrl, redirect: false as const }
-      const result = await signIn(provider, credentials)
-      if (result?.error) {
-        setError(isAdmin ? '管理员用户名或密码错误，或管理员账号未启用。' : '邮箱或密码错误，或账户当前不可登录。')
-      } else if (result?.url) {
-        window.location.assign(result.url)
-        return
-      } else {
-        setError('登录失败，请检查账号、认证密钥和数据库配置。')
+      // One identifier field supports both account email and the configured admin username.
+      // Keep role selection server-side: successful credentials determine the destination.
+      if (looksLikeEmail) {
+        const userResult = await signIn('email-password', {
+          email: value.toLowerCase(),
+          password,
+          callbackUrl: '/account',
+          redirect: false,
+        })
+        if (!userResult?.error && userResult?.url) {
+          window.location.assign(userResult.url)
+          return
+        }
       }
+
+      if (adminEnabled) {
+        const adminResult = await signIn('admin-credentials', {
+          username: value,
+          password,
+          callbackUrl: '/admin',
+          redirect: false,
+        })
+        if (!adminResult?.error && adminResult?.url) {
+          window.location.assign(adminResult.url)
+          return
+        }
+      }
+
+      setError('用户名/邮箱或密码错误，或该账户当前不可登录。请检查账号后重试。')
     } catch {
-      setError('登录请求失败，请稍后重试。')
+      setError('登录请求失败，请稍后重试；如果持续失败，请检查认证服务和数据库配置。')
     } finally {
       setBusy(false)
     }
@@ -93,26 +103,22 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
   return (
     <div className="auth-form">
       <form onSubmit={(event) => void credentialLogin(event)} className="auth-email-form auth-unified-credentials">
-        {adminEnabled ? <div className="auth-account-type" role="group" aria-label="账户类型">
-          <button type="button" className={`cdpc-control ${accountType === 'user' ? 'is-selected cdpc-control-primary' : ''}`} aria-pressed={accountType === 'user'} onClick={() => setAccountType('user')} disabled={busy}>普通用户</button>
-          <button type="button" className={`cdpc-control ${accountType === 'admin' ? 'is-selected cdpc-control-primary' : ''}`} aria-pressed={accountType === 'admin'} onClick={() => setAccountType('admin')} disabled={busy}>管理员</button>
-        </div> : null}
-        <label htmlFor="login-identifier">{accountType === 'admin' ? '管理员用户名' : '邮箱地址'}</label>
+        <label htmlFor="login-identifier">用户名或邮箱地址</label>
         <input
           id="login-identifier"
           className="cdpc-input"
-          type={accountType === 'admin' ? 'text' : 'email'}
+          type="text"
           autoComplete="username"
           required
           maxLength={254}
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
-          placeholder={accountType === 'admin' ? '管理员用户名' : 'name@example.com'}
+          placeholder="输入用户名或 name@example.com"
         />
         <label htmlFor="login-password">密码</label>
         <input id="login-password" className="cdpc-input" type="password" autoComplete="current-password" required maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} />
         <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</button>
-        <small>普通用户使用注册邮箱；管理员选择管理员身份后使用配置的用户名。系统仍会在服务端校验账号权限。</small>
+        <small>同一个入口支持普通用户邮箱和管理员用户名；系统根据服务端验证结果决定登录身份与跳转位置。</small>
       </form>
       {oauthMethods.length > 0 ? (
         <div className="auth-provider-group">
