@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -44,8 +46,24 @@ export default function RegisterPage() {
         }),
       })
       const data = await response.json()
-      if (!response.ok) setError(data.error || '暂时无法创建账户，请检查填写信息后重试。')
-      else setMessage(data.message || '账户已创建，可以前往登录。')
+      if (!response.ok) {
+        setError(data.error || '暂时无法创建账户，请检查填写信息后重试。')
+      } else if (data.requiresVerification) {
+        setMessage(data.message || '注册已提交，请查收验证邮件。')
+      } else {
+        const result = await signIn('email-password', {
+          email: values.email.trim(),
+          password: values.password,
+          redirect: false,
+          callbackUrl: '/workbench',
+        })
+        if (result?.ok) {
+          router.push('/workbench')
+          router.refresh()
+        } else {
+          setMessage('账户已创建，请使用邮箱和密码登录。')
+        }
+      }
     } catch {
       setError('当前无法连接服务，请稍后重试。')
     } finally {
