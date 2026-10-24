@@ -2,20 +2,21 @@ import { expect, test } from '@playwright/test'
 
 test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
+  const navigation = page.getByRole('navigation', { name: '主导航' })
+  await expect(navigation).toBeVisible()
   await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '编辑器' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: '创作工坊' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: '创作者中心' })).toBeVisible()
+  await expect(navigation.getByRole('link', { name: '登录', exact: true })).toBeVisible()
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
 })
 
 test('login page exposes email credentials and account registration', async ({ page }) => {
   await page.goto('/login')
-  await expect(page.getByRole('heading', { name: '登录 CDPC' })).toBeVisible()
-  await expect(page.getByLabel('邮箱账号')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
+  await expect(page.getByLabel('邮箱地址')).toBeVisible()
   await expect(page.getByLabel('密码', { exact: true })).toBeVisible()
-  await expect(page.getByRole('link', { name: '没有账户？立即注册' })).toBeVisible()
+  await expect(page.locator('a[href="/register"]')).toBeVisible()
 })
 
 test('registration rejects a short password before sending a request', async ({ page }) => {
