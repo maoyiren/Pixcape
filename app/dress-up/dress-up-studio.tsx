@@ -334,6 +334,8 @@ export default function DressUpStudio() {
   }
 
   function resetToDefault() {
+    setSelectedSavedOutfitId('')
+    setOutfitName('我的穿搭')
     setSelected({})
     setModel('steve')
     setSkinUrl(BASE_SKIN)
@@ -370,6 +372,8 @@ export default function DressUpStudio() {
   }
 
   function randomOutfit() {
+    setSelectedSavedOutfitId('')
+    setOutfitName('随机搭配 ' + new Date().toLocaleDateString())
     const next: Record<string, CatalogItem> = {}
     for (const itemCategory of ['披肩', '外套', '披风'] as const) {
       const options = catalog.filter(item => item.category === itemCategory)
