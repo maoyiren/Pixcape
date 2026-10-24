@@ -6,6 +6,7 @@ const items = [
   { href: '/', label: '首页' },
   { href: '/dress-up', label: '衣服选装' },
   { href: '/studio', label: '创作工坊' },
+  { href: '/account', label: '我的账户' },
   { href: '/creator', label: '创作者中心' },
 ]
 
@@ -20,7 +21,7 @@ export async function SiteNav() {
           <span className="site-brand-word">cdpc</span>
         </Link>
         <div className="site-nav-links">
-          {items.map((item) => <Link href={item.href} key={item.href}>{item.label}</Link>)}
+          {items.map((item) => <Link href={item.href} key={item.href} className={item.href === '/dress-up' ? 'site-nav-primary' : undefined}>{item.label}</Link>)}
         </div>
         <div className="site-nav-account">
           {session?.user ? (
