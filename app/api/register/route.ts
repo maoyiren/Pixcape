@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       await tx.creatorProfile.upsert({
         where: { userId: user.id },
         update: {},
-        create: { userId: user.id, displayName: (user.name || user.email?.split('@')[0] || 'CDPC 创作者').slice(0, 48), bio: '', reviewStatus: 'PENDING' },
+        create: { userId: user.id, displayName: (user.name || user.email?.split('@')[0] || 'CDPC 创作者').slice(0, 48), bio: '', reviewStatus: 'NOT_SUBMITTED' },
       })
     })
     if (requireVerification) {
