@@ -189,7 +189,7 @@ export async function setAdminAccess(formData: FormData) {
 export async function saveSystemConfiguration(formData: FormData) {
   const actor = await requireActiveAdmin()
   const callbackUrl = String(formData.get('defaultCallbackUrl') ?? '/account').trim()
-  if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//') || callbackUrl.includes('\\\\') || callbackUrl.length > 300) {
+  if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//') || callbackUrl.includes(String.fromCharCode(92)) || callbackUrl.length > 300) {
     redirect('/admin?error=invalid_default_callback#configuration')
   }
   await prisma.$transaction(async (tx) => {
