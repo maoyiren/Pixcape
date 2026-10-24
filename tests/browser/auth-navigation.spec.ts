@@ -18,6 +18,13 @@ test('login page exposes email credentials and account registration', async ({ p
   await expect(page.getByRole('link', { name: '创建账户', exact: true }).first()).toBeVisible()
 })
 
+
+test('workbench route is available after login and keeps account settings reachable', async ({ page }) => {
+  await page.goto('/workbench')
+  await expect(page.getByRole('heading', { name: '皮肤与配件编辑' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '账户资料' })).toBeVisible()
+})
+
 test('registration rejects a short password before sending a request', async ({ page }) => {
   let registerRequests = 0
   page.on('request', request => {
