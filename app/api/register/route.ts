@@ -71,9 +71,9 @@ export async function POST(request: Request) {
         await prisma.user.deleteMany({ where: { email, passwordHash } })
         return NextResponse.json({ error: '验证邮件发送失败，请联系管理员检查 SMTP 配置。' }, { status: 503 })
       }
-      return NextResponse.json({ ok: true, message: '注册已提交，请查收验证邮件。验证链接 30 分钟后过期。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
+      return NextResponse.json({ ok: true, requiresVerification: true, message: '注册已提交，请查收验证邮件。验证链接 30 分钟后过期。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
     }
-    return NextResponse.json({ ok: true, message: '注册成功，请使用邮箱和密码登录。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ ok: true, requiresVerification: false, message: '注册成功，正在进入创作工坊。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch {
     return NextResponse.json({ error: '注册失败，请稍后重试。' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
