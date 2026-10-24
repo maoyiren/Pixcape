@@ -678,3 +678,26 @@ UI 重构不得绕过现有 NextAuth 或其他已接入认证逻辑。必须检�
 - 尚未执行安装依赖、生产构建、浏览器视觉检查或登录回归测试。
 - Mantine 与 Tailwind CSS v4 的正式依赖迁移仍未开始；现阶段是共享语义 CSS 的渐进迁移。
 - 账户中心仍是账户资料视图，作品、穿搭云端同步与账户安全管理等功能必须在后续接入真实数据后才能作为正式能力展示。
+
+
+## 二十七、注册后创作引导与当前验证记录（2026-10-24）
+
+### 已提交的注册体验
+
+- 未开启邮箱验证时，注册 API 返回 `requiresVerification: false`；前端使用 `email-password` provider 自动登录，成功后进入 `/workbench` 并刷新会话。
+- 开启邮箱验证时，注册页展示验证提示，不尝试自动登录或绕过邮箱验证。
+- 自动登录失败时保留账户并提示用户前往登录，不会把注册成功误报成失败。
+- 修复注册页未初始化 `useRouter` 导致的 TypeScript 构建错误，修复提交：`4a5fa0daa9604eec87450a924af09d1bd813b6e0`。
+
+### 最近一次代码提交的 CI 结果
+
+针对代码提交 `4a5fa0daa9604eec87450a924af09d1bd813b6e0` 的 GitHub Actions 检查结果：
+
+- [x] CI build 成功。
+- [x] Next.js Preview Build / Security Tests 成功。
+- [x] Playwright 浏览器回归 5 项通过。
+- [x] Docker smoke-test 成功，运行时启动检查覆盖 PostgreSQL、MySQL、SQLite。
+- [ ] Docker 镜像发布未执行：PR 触发的 workflow 将 publish job 跳过，因此不能据此声称新镜像已发布。
+- [ ] PR #20 仍为 Draft、未合并；生产 OAuth、SMTP 与真实部署行为仍需部署后验收。
+
+后续文档变更会触发新一轮 CI；最终以最新 PR head 的 workflow 结果为准。以上结果只代表该代码提交的自动化检查，不代表所有规划功能已完成，也不代表生产站点已更新。
