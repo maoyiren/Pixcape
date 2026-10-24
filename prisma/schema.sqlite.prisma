@@ -30,7 +30,7 @@ model CreatorProfile {
   userId       String   @unique
   displayName  String
   bio          String   @default("")
-  reviewStatus String   @default("NOT_SUBMITTED")
+  reviewStatus String   @default("PENDING")
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
