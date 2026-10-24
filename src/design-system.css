@@ -169,3 +169,88 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 .preset-language-content { z-index: 120; min-width: var(--radix-select-trigger-width); overflow: hidden; border: 1px solid var(--cdpc-border); border-radius: var(--cdpc-radius-sm); background: var(--cdpc-surface-raised); color: var(--cdpc-text); box-shadow: var(--cdpc-shadow); }
 .preset-language-item { padding: 9px 12px; outline: none; font-size: 12px; cursor: pointer; }
 .preset-language-item[data-highlighted] { background: var(--cdpc-accent); color: #101318; }
+
+/* Shared semantic primitives for the Next.js app and Vite editor.
+   These classes are opt-in so existing business layouts can migrate incrementally. */
+:root {
+  --cdpc-space-1: 4px;
+  --cdpc-space-2: 8px;
+  --cdpc-space-3: 12px;
+  --cdpc-space-4: 16px;
+  --cdpc-space-5: 20px;
+  --cdpc-space-6: 24px;
+  --cdpc-control-height: 40px;
+  --cdpc-control-height-touch: 44px;
+  --cdpc-content-width: 1200px;
+  --cdpc-focus-ring: 0 0 0 3px rgb(139 168 255 / 28%);
+}
+.cdpc-page {
+  width: min(calc(100% - 32px), var(--cdpc-content-width));
+  margin-inline: auto;
+  padding-block: clamp(20px, 3vw, 36px) 48px;
+}
+.cdpc-panel {
+  min-width: 0;
+  border: 1px solid var(--cdpc-border);
+  border-radius: var(--cdpc-radius-md);
+  background: var(--cdpc-surface);
+  color: var(--cdpc-text);
+  box-shadow: none;
+}
+.cdpc-panel-raised { background: var(--cdpc-surface-raised); }
+.cdpc-stack { display: flex; flex-direction: column; gap: var(--cdpc-space-3); }
+.cdpc-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cdpc-space-2); }
+.cdpc-muted { color: var(--cdpc-muted); }
+.cdpc-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cdpc-space-2);
+  min-height: var(--cdpc-control-height);
+  padding: 8px 13px;
+  border: 1px solid var(--cdpc-border);
+  border-radius: var(--cdpc-radius-sm);
+  background: var(--cdpc-surface-raised);
+  color: var(--cdpc-text);
+  font: inherit;
+  font-weight: 650;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cdpc-control:hover:not(:disabled) { border-color: var(--cdpc-accent); }
+.cdpc-control:focus-visible { outline: 2px solid var(--cdpc-accent); outline-offset: 2px; box-shadow: var(--cdpc-focus-ring); }
+.cdpc-control:disabled { cursor: not-allowed; opacity: .52; }
+.cdpc-control-primary { background: var(--cdpc-accent); border-color: var(--cdpc-accent); color: #111827; }
+.cdpc-control-danger { color: #ffd9d9; border-color: #75434a; background: #321f26; }
+.cdpc-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--cdpc-muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+.cdpc-field :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--cdpc-control-height);
+  padding: 9px 11px;
+  border: 1px solid var(--cdpc-border);
+  border-radius: var(--cdpc-radius-sm);
+  background: var(--cdpc-bg);
+  color: var(--cdpc-text);
+  font: inherit;
+}
+.cdpc-field :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--cdpc-accent);
+  outline-offset: 1px;
+}
+@media (max-width: 640px) {
+  .cdpc-page { width: min(calc(100% - 20px), var(--cdpc-content-width)); padding-top: 14px; }
+  .cdpc-control { min-height: var(--cdpc-control-height-touch); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cdpc-control { transition: none !important; }
+}
+
