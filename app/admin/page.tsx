@@ -93,7 +93,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
   const aiSettings = await prisma.appSetting.findMany({ where: { key: { in: [
     'AI_DEFAULT_PROVIDER', 'AI_DEFAULT_MODEL', 'GEMINI_IMAGE_MODELS', 'OPENAI_IMAGE_MODELS',
     'OPENROUTER_IMAGE_MODELS', 'SEEDREAM_IMAGE_MODELS', 'ARK_BASE_URL',
-    'AI_SECRET_GEMINI_API_KEY', 'AI_SECRET_OPENAI_API_KEY', 'AI_SECRET_OPENROUTER_API_KEY', 'AI_SECRET_ARK_API_KEY',
+    'AI_SECRET_GEMINI_API_KEY', 'AI_SECRET_OPENAI_API_KEY', 'AI_SECRET_OPENROUTER_API_KEY', 'AI_SECRET_ARK_API_KEY', 'DEEPSEEK_TEXT_MODEL', 'AI_SECRET_DEEPSEEK_API_KEY',
   ] } } }).catch(() => [])
   const aiConfig = Object.fromEntries(aiSettings.map((entry) => [entry.key, entry.value]))
   const q = (params?.q ?? '').trim().slice(0, 100)
@@ -198,12 +198,15 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
   {aiConfig.AI_SECRET_OPENAI_API_KEY || process.env.OPENAI_API_KEY ? <p className="config-status">OpenAI：已配置</p> : <p className="config-status">OpenAI：未配置</p>}
   {aiConfig.AI_SECRET_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY ? <p className="config-status">OpenRouter：已配置</p> : <p className="config-status">OpenRouter：未配置</p>}
   {aiConfig.AI_SECRET_ARK_API_KEY || process.env.ARK_API_KEY || process.env.VOLCENGINE_ARK_API_KEY ? <p className="config-status">豆包 Seedream：已配置</p> : <p className="config-status">豆包 Seedream：未配置</p>}
+  {aiConfig.AI_SECRET_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY ? <p className="config-status">DeepSeek 文本模型：已配置</p> : <p className="config-status">DeepSeek 文本模型：未配置</p>}
   <form action={saveAIConfiguration} className="application-form cdpc-stack">
     <label htmlFor="ai-provider">默认供应商</label><select id="ai-provider" name="provider" defaultValue={aiConfig.AI_DEFAULT_PROVIDER ?? 'auto'}><option value="auto">自动选择</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI Images</option><option value="openrouter">OpenRouter</option><option value="seedream">豆包 Seedream</option></select>
     <label htmlFor="ai-model">默认模型 ID（可留空自动选择）</label><input id="ai-model" name="model" className="cdpc-input" maxLength={160} defaultValue={aiConfig.AI_DEFAULT_MODEL ?? ''} placeholder="例如 gemini-2.5-flash-image"/>
     <label htmlFor="gemini-models">Gemini 模型列表（逗号分隔）</label><input id="gemini-models" name="geminiModels" className="cdpc-input" defaultValue={aiConfig.GEMINI_IMAGE_MODELS ?? 'gemini-2.5-flash-image'} maxLength={500}/>
     <label htmlFor="openai-models">OpenAI 模型列表（逗号分隔）</label><input id="openai-models" name="openaiModels" className="cdpc-input" defaultValue={aiConfig.OPENAI_IMAGE_MODELS ?? 'gpt-image-1'} maxLength={500}/>
     <label htmlFor="openrouter-models">OpenRouter 模型列表（逗号分隔）</label><input id="openrouter-models" name="openrouterModels" className="cdpc-input" defaultValue={aiConfig.OPENROUTER_IMAGE_MODELS ?? ''} maxLength={1000}/>
+    <label htmlFor="deepseek-text-model">DeepSeek 文本模型（提示词/文本任务）</label><input id="deepseek-text-model" name="deepseekTextModel" className="cdpc-input" defaultValue={aiConfig.DEEPSEEK_TEXT_MODEL ?? "deepseek-chat"} maxLength={160}/>
+    <label htmlFor="deepseek-api-key">DeepSeek API Key（留空保留现有值）</label><input id="deepseek-api-key" name="deepseekApiKey" className="cdpc-input" type="password" autoComplete="new-password" maxLength={2048} placeholder="不会回显已保存的密钥"/><label><input type="checkbox" name="clearDeepseekApiKey"/> 清除 DeepSeek API Key</label>
     <label htmlFor="seedream-models">Seedream 模型列表（逗号分隔）</label><input id="seedream-models" name="seedreamModels" className="cdpc-input" defaultValue={aiConfig.SEEDREAM_IMAGE_MODELS ?? 'doubao-seedream-5-0-lite-260128'} maxLength={500}/>
     <label htmlFor="ark-base-url">火山引擎 Ark API 地址（仅允许官方 HTTPS 域名）</label><input id="ark-base-url" name="arkBaseUrl" className="cdpc-input" defaultValue={aiConfig.ARK_BASE_URL ?? 'https://ark.cn-beijing.volces.com/api/v3'} maxLength={300}/>
     <label htmlFor="gemini-key">Gemini API Key（留空保留现有密钥）</label><input id="gemini-key" name="geminiApiKey" className="cdpc-input" type="password" autoComplete="new-password" maxLength={2048} placeholder="仅在新增或更换时填写"/>
