@@ -58,17 +58,17 @@ export default function RegisterPage() {
     <section className="hero inventory-panel cdpc-panel">
       <h2>创建你的 CDPC 账户</h2>
       <p>用你长期可以访问的邮箱注册。账户可用于管理个人资料与创作者申请；密码至少需要 10 位。</p>
-      <form className="auth-email-form" onSubmit={handleSubmit(submit)}>
+      <form className="auth-email-form cdpc-stack" onSubmit={handleSubmit(submit)}>
         <label htmlFor="register-name">昵称 <span>（选填）</span></label>
-        <input id="register-name" autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} {...register('name')} />
+        <input id="register-name" className="cdpc-input" autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} {...register('name')} />
         {errors.name && <p id="register-name-error" role="alert">{errors.name.message}</p>}
         <label htmlFor="register-email">邮箱地址</label>
-        <input id="register-email" type="email" maxLength={254} required aria-required="true" autoComplete="email" placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} {...register('email')} />
+        <input id="register-email" className="cdpc-input" type="email" maxLength={254} required aria-required="true" autoComplete="email" placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} {...register('email')} />
         {errors.email && <p id="register-email-error" role="alert">{errors.email.message}</p>}
         <label htmlFor="register-password">设置密码</label>
-        <input id="register-password" type="password" maxLength={256} minLength={10} required aria-required="true" autoComplete="new-password" placeholder="至少 10 位字符" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'register-password-error' : undefined} {...register('password')} />
+        <input id="register-password" className="cdpc-input" type="password" maxLength={256} minLength={10} required aria-required="true" autoComplete="new-password" placeholder="至少 10 位字符" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'register-password-error' : undefined} {...register('password')} />
         {errors.password && <p id="register-password-error" role="alert">{errors.password.message}</p>}
-        <button className="pixel-button primary" disabled={busy} type="submit">{busy ? '正在创建账户…' : '创建账户'}</button>
+        <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在创建账户…' : '创建账户'}</button>
       </form>
       {error && <p role="alert">{error}</p>}{message && <p role="status">{message} <Link href="/login">前往登录</Link></p>}
       <p>注册后默认是普通账户。创作者身份需审核，管理员权限由管理员单独授予。</p>
