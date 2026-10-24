@@ -94,12 +94,13 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     <div className="auth-form">
       <form onSubmit={(event) => void credentialLogin(event)} className="auth-email-form auth-unified-credentials">
         {adminEnabled ? <div className="auth-account-type" role="group" aria-label="账户类型">
-          <button type="button" className={accountType === 'user' ? 'is-selected' : ''} aria-pressed={accountType === 'user'} onClick={() => setAccountType('user')} disabled={busy}>普通用户</button>
-          <button type="button" className={accountType === 'admin' ? 'is-selected' : ''} aria-pressed={accountType === 'admin'} onClick={() => setAccountType('admin')} disabled={busy}>管理员</button>
+          <button type="button" className={`cdpc-control ${accountType === 'user' ? 'is-selected cdpc-control-primary' : ''}`} aria-pressed={accountType === 'user'} onClick={() => setAccountType('user')} disabled={busy}>普通用户</button>
+          <button type="button" className={`cdpc-control ${accountType === 'admin' ? 'is-selected cdpc-control-primary' : ''}`} aria-pressed={accountType === 'admin'} onClick={() => setAccountType('admin')} disabled={busy}>管理员</button>
         </div> : null}
         <label htmlFor="login-identifier">{accountType === 'admin' ? '管理员用户名' : '邮箱地址'}</label>
         <input
           id="login-identifier"
+          className="cdpc-input"
           type={accountType === 'admin' ? 'text' : 'email'}
           autoComplete="username"
           required
@@ -109,15 +110,15 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
           placeholder={accountType === 'admin' ? '管理员用户名' : 'name@example.com'}
         />
         <label htmlFor="login-password">密码</label>
-        <input id="login-password" type="password" autoComplete="current-password" required maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} />
-        <button className="pixel-button primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</button>
+        <input id="login-password" className="cdpc-input" type="password" autoComplete="current-password" required maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} />
+        <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</button>
         <small>普通用户使用注册邮箱；管理员选择管理员身份后使用配置的用户名。系统仍会在服务端校验账号权限。</small>
       </form>
       {oauthMethods.length > 0 ? (
         <div className="auth-provider-group">
           <p className="auth-divider-label">或使用第三方账号</p>
           {oauthMethods.map((method) => (
-            <button className="pixel-button auth-provider-button" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)}>
+            <button className="pixel-button auth-provider-button cdpc-control" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)}>
               {busy ? '正在连接…' : method.label}
             </button>
           ))}
@@ -128,7 +129,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
           <summary>改用邮箱登录链接</summary>
           <form onSubmit={(event) => void emailLogin(event)} className="auth-email-form">
             <label htmlFor="magic-email">邮箱地址</label>
-            <input id="magic-email" type="email" autoComplete="email" required maxLength={254} value={magicEmail} onChange={(event) => setMagicEmail(event.target.value)} placeholder="name@example.com" />
+            <input id="magic-email" className="cdpc-input" type="email" autoComplete="email" required maxLength={254} value={magicEmail} onChange={(event) => setMagicEmail(event.target.value)} placeholder="name@example.com" />
             <button className="pixel-button primary" disabled={busy} type="submit">{busy ? '正在发送…' : '发送登录链接'}</button>
           </form>
         </details>
