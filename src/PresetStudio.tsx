@@ -281,32 +281,6 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
   }
 
   const exportOutfitBackup = async () => {
-    try {
-      let skinDataUrl: string | undefined
-      try {
-        const image = await loadImage(skinUrl)
-        if (image.width === 64 && image.height === 64) {
-          const canvas = document.createElement('canvas')
-          canvas.width = 64
-          canvas.height = 64
-          const context = canvas.getContext('2d')
-          if (context) { context.drawImage(image, 0, 0); skinDataUrl = canvas.toDataURL('image/png') }
-        }
-      } catch { /* Remote skin hosts may block canvas export; the backup still remains usable. */ }
-      const capeMap: Record<string, string> = { 'cape_office.png': 'office-cape', 'cape_MCC.png': 'mcc-cape', 'cape_creeper.png': 'creeper-cape', 'cape_tiktok.png': 'tiktok-cape', 'cape_twitch.png': 'twitch-cape' }
-      const itemIds = [shawlId !== 'none' ? shawlId : undefined, coatId !== 'none' ? coatId : undefined, capeMap[capeId]].filter((id): id is string => Boolean(id))
-      const payload = { format: 'cdpc-outfit', version: 1, outfit: { id: 'studio-' + Date.now(), name: '创作工坊穿搭', itemIds, model: modelType, background: /^#[0-9a-f]{6}$/i.test(customBackground) ? customBackground : '#182437', ...(skinDataUrl ? { skinUrl: skinDataUrl } : {}), skinName, savedAt: new Date().toISOString() } }
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = 'cdpc-outfit-backup.json'
-      link.click()
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-      setStatus(skinDataUrl ? '已导出包含皮肤 PNG 的穿搭 JSON 备份' : '已导出穿搭 JSON；当前皮肤无法嵌入，请另行保留皮肤 PNG')
-    } catch (error) { setError(error instanceof Error ? '导出穿搭失败：' + error.message : '导出穿搭失败') }
-  }
-  const exportOutfitBackup = async () => {
     let portableSkin: string | undefined
     try {
       const image = await loadImage(skinUrl)
