@@ -311,6 +311,12 @@ export default function DressUpStudio() {
     setSaveNotice('穿搭备份 JSON 已导出。若包含导入的皮肤图片，文件可能较大；备份保存在你的设备中。')
   }
 
+  function exportOutfitAndOpenStudio() {
+    exportOutfitBackup()
+    window.open('/studio', '_blank', 'noopener,noreferrer')
+    setSaveNotice('已导出穿搭 JSON，并打开创作工坊入口。若编辑器已连接，请在编辑器中选择“导入穿搭备份 JSON”并选择刚下载的文件。')
+  }
+
   async function importOutfitBackup(file?: File) {
     if (!file) return
     try {
@@ -539,7 +545,7 @@ export default function DressUpStudio() {
           <div className="dressup-actions">
             <button type="button" onClick={randomOutfit}>随机搭配</button>
             <button type="button" onClick={saveLocalOutfit}>保存到此设备</button>
-            <button type="button" onClick={exportOutfitBackup}>导出穿搭备份 JSON</button>
+            <button type="button" onClick={exportOutfitBackup}>导出穿搭备份 JSON</button>\n            <button type="button" onClick={exportOutfitAndOpenStudio}>导出并前往创作工坊</button>
             <button type="button" onClick={() => outfitFileRef.current?.click()}>导入穿搭备份 JSON</button>
             <input ref={outfitFileRef} hidden type="file" accept="application/json,.json" onChange={event => { void importOutfitBackup(event.target.files?.[0]); event.currentTarget.value = '' }} />
             <button type="button" onClick={resetToDefault}>恢复默认角色</button>
