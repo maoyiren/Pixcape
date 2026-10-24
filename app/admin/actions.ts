@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
+import { createCipheriv, createHash, randomBytes } from 'node:crypto'
 
 async function requireActiveAdmin() {
   const session = await getServerSession(authOptions)
@@ -215,7 +216,6 @@ export async function setEmailVerificationRequired(formData: FormData) {
 function encryptAISecret(value: string) {
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
   if (!secret) throw new Error('缺少 AUTH_SECRET / NEXTAUTH_SECRET，无法安全保存 AI 密钥')
-  const { createCipheriv, createHash, randomBytes } = require('node:crypto') as typeof import('node:crypto')
   const iv = randomBytes(12)
   const key = createHash('sha256').update(secret).digest()
   const cipher = createCipheriv('aes-256-gcm', key, iv)
