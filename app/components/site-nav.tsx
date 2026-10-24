@@ -6,7 +6,6 @@ const items = [
   { href: '/', label: '首页' },
   { href: '/dress-up', label: '衣服选装' },
   { href: '/studio', label: '创作工坊' },
-  { href: '/account', label: '我的账户' },
   { href: '/creator', label: '创作者中心' },
 ]
 
