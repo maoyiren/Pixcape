@@ -176,7 +176,7 @@ export const authOptions: NextAuthOptions = {
         await tx.creatorProfile.upsert({
           where: { userId: current.id },
           update: {},
-          create: { userId: current.id, displayName: (current.name || current.email?.split('@')[0] || 'CDPC 创作者').slice(0, 48), bio: '', reviewStatus: 'PENDING' },
+          create: { userId: current.id, displayName: (current.name || current.email?.split('@')[0] || 'CDPC 创作者').slice(0, 48), bio: '', reviewStatus: 'NOT_SUBMITTED' },
         })
         if (account?.provider === 'email' && current.email) {
           await tx.user.update({ where: { id: current.id }, data: { emailVerified: new Date() } })
