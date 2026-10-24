@@ -104,6 +104,7 @@ function tr(text: string, language: StudioLanguage): string { return language ==
 export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const skinInputRef = useRef<HTMLInputElement>(null)
+  const outfitBackupInputRef = useRef<HTMLInputElement>(null)
   const [language, setLanguage] = useState<StudioLanguage>(() => localStorage.getItem('pixcape-language') === 'en-US' ? 'en-US' : 'zh-CN')
   const [skinUrl, setSkinUrl] = useState(BASE_SKIN)
   const [skinName, setSkinName] = useState('Steve 默认皮肤')
@@ -279,6 +280,36 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
     probe.src = url
   }
 
+  const importOutfitBackup = async (file?: File) => {
+    if (!file) return
+    try {
+      if (file.size > 12 * 1024 * 1024) throw new Error('备份文件超过 12 MB')
+      const parsed = JSON.parse(await file.text()) as { format?: string; version?: number; outfit?: { itemIds?: unknown; model?: unknown; background?: unknown; skinUrl?: unknown; skinName?: unknown; name?: unknown } }
+      const outfit = parsed.outfit
+      if (parsed.format !== 'cdpc-outfit' || parsed.version !== 1 || !outfit || !Array.isArray(outfit.itemIds)) throw new Error('文件不是受支持的 CDPC 穿搭备份')
+      const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string')
+      const shawl = PRESETS.find(item => item.kind === 'shawl' && itemIds.includes(item.id))
+      const coat = PRESETS.find(item => item.kind === 'coat' && itemIds.includes(item.id))
+      const capeMap: Record<string, string> = { 'office-cape': 'cape_office.png', 'mcc-cape': 'cape_MCC.png', 'creeper-cape': 'cape_creeper.png', 'tiktok-cape': 'cape_tiktok.png', 'twitch-cape': 'cape_twitch.png' }
+      const capeId = itemIds.map(id => capeMap[id]).find(id => id && CAPES.some(cape => cape.id === id)) || 'none'
+      let importedSkin: string | undefined
+      if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png;base64,')) {
+        const image = await loadImage(outfit.skinUrl)
+        if (image.width !== 64 || image.height !== 64) throw new Error('备份皮肤必须为 64 × 64 PNG')
+        importedSkin = outfit.skinUrl
+      }
+      setSkinUrl(previous => { if (previous.startsWith('blob:')) URL.revokeObjectURL(previous); return importedSkin || BASE_SKIN })
+      setSkinName(importedSkin && typeof outfit.skinName === 'string' ? outfit.skinName : 'Steve 默认皮肤')
+      setModelType(outfit.model === 'alex' ? 'alex' : 'steve')
+      setShawlId(shawl?.id || 'none')
+      setCoatId(coat?.id || 'none')
+      setCapeId(capeId)
+      setElytraVisible(false)
+      if (typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background)) { setCustomBackground(outfit.background); setBackgroundTheme('custom') }
+      setError('')
+      setStatus(importedSkin ? '已导入穿搭，正在应用预设' : '已导入穿搭；备份不含自定义皮肤 PNG，已使用默认皮肤')
+    } catch (error) { setError(error instanceof Error ? '穿搭导入失败：' + error.message : '穿搭导入失败，请检查 JSON 文件') }
+  }
   const reset = () => {
     setSkinUrl(BASE_SKIN)
     setSkinName('Steve 默认皮肤')
@@ -316,10 +347,12 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
       <div className="preset-skin-card"><div className="preset-skin-thumb"><canvas ref={canvasRef} width={64} height={64}/></div><div className="preset-skin-meta"><strong>{skinName}</strong><small>64 × 64 · PNG · 已应用所选披肩 / 外套</small></div></div>
       <div className="preset-current-actions">
         <button className="preset-import" onClick={() => skinInputRef.current?.click()}><Upload size={16}/> {tr('导入皮肤', language)}</button>
+        <button className="preset-import" onClick={() => outfitBackupInputRef.current?.click()}><Upload size={16}/> 导入穿搭备份 JSON</button>
         <Tooltip.Provider delayDuration={300}><Tooltip.Root><Tooltip.Trigger asChild><button className="preset-export-skin" onClick={exportPng} disabled={!ready}><Download size={16}/> {tr('导出合成皮肤 PNG', language)}</button></Tooltip.Trigger><Tooltip.Portal><Tooltip.Content className="preset-tooltip" side="bottom" sideOffset={6}>将当前皮肤与所选披肩、外套合成为 64 × 64 PNG。<Tooltip.Arrow className="preset-tooltip-arrow"/></Tooltip.Content></Tooltip.Portal></Tooltip.Root></Tooltip.Provider>
         <button className="preset-open-blockbench" onClick={openEditorWithPreset} disabled={!ready}><ExternalLink size={15}/> {tr('发送到 Blockbench 编辑', language)}</button>
       </div>
       <input ref={skinInputRef} hidden type="file" accept="image/png" onChange={event => { importSkin(event.target.files?.[0]); event.currentTarget.value = '' }}/>
+      <input ref={outfitBackupInputRef} hidden type="file" accept="application/json,.json" onChange={event => { void importOutfitBackup(event.target.files?.[0]); event.currentTarget.value = '' }}/>
       {error && <div className="preset-error">{tr(error, language)}</div>}
     </section>
     <main className="preset-layout">
