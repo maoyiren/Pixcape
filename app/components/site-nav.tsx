@@ -26,7 +26,7 @@ export async function SiteNav() {
           {session?.user ? (
             <>
               {isAdmin ? <Link className="site-nav-admin" href="/admin">管理后台</Link> : null}
-              <Link className="site-nav-user" href="/account">{session.user.name || session.user.email || '我的账户'}</Link>
+              <Link className="site-nav-user" href="/workbench">{session.user.name || session.user.email || '我的账户'}</Link>
             </>
           ) : (
             <>
