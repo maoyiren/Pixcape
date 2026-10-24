@@ -15,7 +15,7 @@ const methods = [
 export default async function LoginPage({ searchParams }: { searchParams?: Promise<{ verification?: string; callbackUrl?: string }> }) {
   const params = await searchParams
   const configuredDefault = await prisma.appSetting.findUnique({ where: { key: 'AUTH_DEFAULT_CALLBACK_URL' } }).catch(() => null)
-  const safePath = (value: string | undefined) => value && value.startsWith('/') && !value.startsWith('//') && !value.includes('\\\\') ? value : ''
+  const safePath = (value: string | undefined) => value && value.startsWith('/') && !value.startsWith('//') && !value.includes(String.fromCharCode(92)) ? value : ''
   const defaultCallbackUrl = safePath(params?.callbackUrl) || safePath(configuredDefault?.value) || '/account'
   const verificationMessage = params?.verification === 'success' ? '邮箱验证成功，可以继续登录。' : params?.verification === 'expired' ? '这条登录链接已过期，请重新获取。' : params?.verification === 'invalid' ? '这条登录链接无效，请重新获取。' : params?.verification === 'error' ? '暂时无法完成验证，请稍后重试。' : ''
   const enabledMethods = methods.filter((method) => method.enabled)
