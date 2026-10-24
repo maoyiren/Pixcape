@@ -1,0 +1,6 @@
+/* CDPC shared navigation and dress-up feedback states. */
+.site-nav-links .site-nav-primary{background:#dbe7ff;color:#17233a;border-radius:6px;font-weight:750}
+.site-nav-links .site-nav-primary:hover{background:#fff;color:#17233a}
+.dressup-save-notice{margin:10px 0 0;padding:10px 12px;border:1px solid #344b6d;border-radius:7px;background:#17263b;color:#c9dcff;font-size:12px;line-height:1.6}
+.dressup-actions button:focus-visible,.dressup-actions a:focus-visible,.dressup-category:focus-visible,.dressup-item:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.dressup-actions button,.dressup-actions a,.dressup-item,.dressup-category{transition:none!important}}
