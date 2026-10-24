@@ -349,9 +349,11 @@ export default function DressUpStudio() {
       }, {}))
       setModel(restored.model)
       setBackground(restored.background)
-      if (restored.skinUrl) setSkinUrl(restored.skinUrl)
-      setSkinName(restored.skinName)
-      setSaveNotice(`已导入“${restored.name}”，并保存到此设备`)
+      setSkinUrl(restored.skinUrl || BASE_SKIN)
+      setSkinName(restored.skinUrl ? restored.skinName : 'Steve 默认皮肤')
+      setSaveNotice(restored.skinUrl
+        ? `已导入“${restored.name}”，并保存到此设备`
+        : `已导入“${restored.name}”。备份未包含可迁移的皮肤 PNG，已使用默认皮肤；如需保留自定义皮肤，请先导入 64 × 64 PNG 后重新备份。`)
     } catch (error) {
       setSaveNotice(error instanceof Error ? `导入失败：${error.message}` : '导入失败，请选择有效的 CDPC JSON 备份')
     }
