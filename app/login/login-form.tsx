@@ -46,30 +46,28 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     const looksLikeEmail = value.includes('@')
 
     try {
-      // One identifier field supports both account email and the configured admin username.
-      // Keep role selection server-side: successful credentials determine the destination.
+      // Email addresses use the regular-user provider; non-email identifiers use
+      // the environment-configured admin provider. Authorization remains server-side.
       if (looksLikeEmail) {
-        const userResult = await signIn('email-password', {
+        const result = await signIn('email-password', {
           email: value.toLowerCase(),
           password,
           callbackUrl: '/account',
           redirect: false,
         })
-        if (!userResult?.error && userResult?.url) {
-          window.location.assign(userResult.url)
+        if (!result?.error && result?.url) {
+          window.location.assign(result.url)
           return
         }
-      }
-
-      if (adminEnabled) {
-        const adminResult = await signIn('admin-credentials', {
+      } else if (adminEnabled) {
+        const result = await signIn('admin-credentials', {
           username: value,
           password,
           callbackUrl: '/admin',
           redirect: false,
         })
-        if (!adminResult?.error && adminResult?.url) {
-          window.location.assign(adminResult.url)
+        if (!result?.error && result?.url) {
+          window.location.assign(result.url)
           return
         }
       }
