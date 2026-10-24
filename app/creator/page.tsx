@@ -16,11 +16,11 @@ export default async function CreatorPage() {
     <header className="topbar cdpc-panel"><div><p className="eyebrow">CREATOR PROGRAM</p><h1>创作者中心</h1></div><Link className="pixel-button cdpc-control" href="/">返回首页</Link></header>
     {user.role === 'CREATOR' || user.role === 'ADMIN' ? <section className="hero inventory-panel cdpc-panel"><h2>创作者账户已启用</h2><p>当前账户：{user.name ?? user.email ?? user.id}</p><p>创作者身份已生效。作品发布暂未开放，你可以继续完善创作者资料。</p></section> : <section className="hero inventory-panel cdpc-panel">
       <h2>申请加入创作者计划</h2><p>提交创作者资料后等待审核。审核通过前，你的账户权限保持不变。</p>
-      {profile?.reviewStatus === 'PENDING' ? <p role="status">申请已收到，正在等待审核。你可以修改资料后再次提交。</p> : null}
-      {profile?.reviewStatus === 'REJECTED' ? <p role="status">上次申请未通过。请完善资料后重新提交。</p> : null}
+      {profile?.reviewStatus === 'PENDING' ? <p role="status">申请已提交，等待管理员审核。审核期间，你仍可更新展示名称和创作简介。</p> : null}
+      {profile?.reviewStatus === 'REJECTED' ? <p role="status">上次申请未通过。请完善资料后重新提交申请。</p> : null}
       <form action={applyForCreator} className="application-form cdpc-stack">
         <label htmlFor="displayName">展示名称</label><input id="displayName" className="cdpc-input" name="displayName" required minLength={2} maxLength={48} defaultValue={profile?.displayName ?? user.name ?? ''} />
-        <label htmlFor="bio">创作简介 <span>（最多 500 字）</span></label><textarea id="bio" className="cdpc-input" name="bio" rows={4} maxLength={500} defaultValue={profile?.bio ?? ''} placeholder="介绍你擅长的像素创作类型或作品方向" />
+        <label htmlFor="bio">创作简介 <span>（最多 500 字）</span></label><textarea id="bio" className="cdpc-input" name="bio" rows={4} maxLength={500} defaultValue={profile?.bio ?? ''} placeholder="介绍你擅长的像素创作类型、作品风格或创作方向" />
         <button className="pixel-button primary cdpc-control cdpc-control-primary" type="submit">提交资料</button>
       </form>
     </section>}
