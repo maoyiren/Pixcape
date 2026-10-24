@@ -186,6 +186,25 @@ export async function setAdminAccess(formData: FormData) {
 }
 
 
+export async function saveSystemConfiguration(formData: FormData) {
+  const actor = await requireActiveAdmin()
+  const callbackUrl = String(formData.get('defaultCallbackUrl') ?? '/account').trim()
+  if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//') || callbackUrl.includes('\\\\') || callbackUrl.length > 300) {
+    redirect('/admin?error=invalid_default_callback#configuration')
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.appSetting.upsert({
+      where: { key: 'AUTH_DEFAULT_CALLBACK_URL' },
+      update: { value: callbackUrl },
+      create: { key: 'AUTH_DEFAULT_CALLBACK_URL', value: callbackUrl },
+    })
+    await tx.auditLog.create({
+      data: { actorId: actor.id, action: 'SYSTEM_CONFIGURATION_UPDATED', targetType: 'AppSetting', targetId: 'AUTH_DEFAULT_CALLBACK_URL', details: { defaultCallbackUrl: callbackUrl } },
+    })
+  })
+  redirect('/admin?systemConfigurationSaved=1#configuration')
+}
+
 export async function setEmailVerificationRequired(formData: FormData) {
   const actor = await requireActiveAdmin()
   const value = String(formData.get('required') ?? '')
