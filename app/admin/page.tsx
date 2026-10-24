@@ -140,7 +140,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     </section>
     <section className="hero inventory-panel health-panel" id="health">
       <div className="health-heading"><div><p className="eyebrow">SYSTEM HEALTH</p><h2>系统健康检查</h2></div><span className={`health-status ${failed ? 'is-error' : warnings ? 'is-warning' : 'is-healthy'}`}>{overall}</span></div>
-      <p>检查服务可达性、数据库查询、认证配置与 AI 配置。此页面不显示密钥或数据库连接字符串。</p>
+      <p>检查服务可达性、数据库查询、认证配置与 AI 配置。敏感密钥与数据库连接字符串不会展示。</p>
       <div className="health-summary">
         <div><strong>{healthChecks.length}</strong><span>检查项目</span></div>
         <div><strong>{healthChecks.length - failed - warnings}</strong><span>正常</span></div>
@@ -152,7 +152,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
         <p>{check.detail}</p>
       </article>)}</div>
       <div className="health-footer"><span>管理员：{admin.name ?? admin.email ?? admin.id}</span><Link className="pixel-button primary" href="/admin">刷新检查</Link></div>
-      <p className="health-disclaimer">提示：健康状态是应用层的轻量探测，不代表完整压力测试或第三方 API 密钥已通过实际调用验证。若数据库不可用，登录会话验证也可能阻止本页面加载；建议另配外部存活探针。</p>
+      <p className="health-disclaimer">健康状态基于应用层轻量探测，不代表完整压力测试，也不代表第三方 API 密钥已通过实际调用验证。建议同时配置外部存活探针，以便在应用无法加载时仍能监测服务状态。</p>
     </section>
     <section className="hero inventory-panel" id="creators"><h2>创作者申请审核</h2><p>待审核申请：{pending.length}（最多显示 100 条）。每次审核都会记录审计日志。</p>
       {!adminData ? <p role="alert">暂时无法读取审核和用户数据，请检查数据库状态后刷新。</p> : pending.length === 0 ? <p>目前没有待审核申请。</p> : <div className="application-list">{pending.map((profile) => <article className="application-card" key={profile.id}>
