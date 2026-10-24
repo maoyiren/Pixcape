@@ -6,7 +6,7 @@ import { signIn } from 'next-auth/react'
 
 type Method = { id: string; label: string }
 
-export default function LoginForm({ methods, adminEnabled }: { methods: Method[]; adminEnabled: boolean }) {
+export default function LoginForm({ methods, adminEnabled, defaultCallbackUrl }: { methods: Method[]; adminEnabled: boolean; defaultCallbackUrl: string }) {
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [magicEmail, setMagicEmail] = useState('')
@@ -19,7 +19,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     setError('')
     setMessage('')
     try {
-      const result = await signIn(provider, { callbackUrl: '/workbench', redirect: false })
+      const result = await signIn(provider, { callbackUrl: defaultCallbackUrl, redirect: false })
       if (result?.error) {
         setError('第三方登录启动失败，请检查认证服务配置、回调地址和密钥后重试。')
         setBusy(false)
@@ -52,7 +52,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
         const result = await signIn('email-password', {
           email: value.toLowerCase(),
           password,
-          callbackUrl: '/workbench',
+          callbackUrl: defaultCallbackUrl,
           redirect: false,
         })
         if (!result?.error && result?.url) {
