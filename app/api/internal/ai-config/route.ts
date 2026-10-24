@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   try {
     for (const [settingKey, envKey] of Object.entries(secretMappings)) {
       const value = values[settingKey]
-      if (value) env[envKey] = decryptAISecret(value)
+      if (typeof value === 'string') env[envKey] = value ? decryptAISecret(value) : ''
     }
   } catch {
     return NextResponse.json({ error: 'Stored AI configuration cannot be decrypted' }, { status: 503 })
