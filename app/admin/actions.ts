@@ -188,7 +188,7 @@ export async function setAdminAccess(formData: FormData) {
 
 export async function saveSystemConfiguration(formData: FormData) {
   const actor = await requireActiveAdmin()
-  const callbackUrl = String(formData.get('defaultCallbackUrl') ?? '/account').trim()
+  const callbackUrl = String(formData.get('defaultCallbackUrl') ?? '/workbench').trim()
   const returnToOriginalPage = String(formData.get('returnToOriginalPage') ?? 'true')
   if (!['true', 'false'].includes(returnToOriginalPage)) redirect('/admin?error=invalid_return_behavior#configuration')
   if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//') || callbackUrl.includes(String.fromCharCode(92)) || callbackUrl.length > 300) {
