@@ -76,7 +76,7 @@ export default function RegisterPage() {
     <header className="topbar cdpc-panel"><div><p className="eyebrow">JOIN CDPC</p><h1>创建账户</h1></div><Link className="pixel-button cdpc-control" href="/login">已有账户？登录</Link></header>
     <section className="hero inventory-panel cdpc-panel">
       <h2>创建你的 CDPC 账户</h2>
-      <p>使用可正常收信的邮箱注册。密码需至少包含 10 位字符。注册后即可登录并管理个人资料。</p>
+      <p>使用可正常收信的邮箱注册。密码需至少包含 10 位字符。注册后即成为 CDPC 创作者，可直接进入创作工坊；无需申请或切换创作者身份。</p>
       <form className="auth-email-form cdpc-stack" onSubmit={handleSubmit(submit)}>
         <label htmlFor="register-name">昵称 <span>（选填）</span></label>
         <input id="register-name" className="cdpc-input" autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} {...register('name')} />
@@ -90,7 +90,7 @@ export default function RegisterPage() {
         <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在创建账户…' : '创建账户'}</button>
       </form>
       {error && <p role="alert">{error}</p>}{message && <p role="status">{message} <Link href="/login">前往登录</Link></p>}
-      <p>注册后即可开始创作，并可在创作者中心完善公开资料。</p>
+      <p>你的创作者身份将在注册时自动开通。作品默认保存在本机；公开发布、商业销售等功能会在对应权限开放后提供。</p>
     </section>
   </main>
 }
