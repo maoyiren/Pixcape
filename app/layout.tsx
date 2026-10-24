@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { SiteNav } from './components/site-nav'
 import './next.css'
+import '../src/design-system.css'
 import './components/cdpc-ui-overrides.css'
 
 export const metadata: Metadata = {
