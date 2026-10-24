@@ -15,7 +15,7 @@ export default function StudioHandoffPage() {
   })()
 
   return <main className="inventory-shell cdpc-page">
-    <header className="topbar cdpc-panel"><div><p className="eyebrow">CDPC WORKSHOP</p><h1>皮肤与配件编辑</h1></div><Link className="pixel-button cdpc-control" href="/">返回首页</Link></header>
+    <header className="topbar cdpc-panel"><div><p className="eyebrow">CDPC WORKSHOP</p><h1>皮肤与配件编辑</h1></div><div className="actions"><Link className="pixel-button cdpc-control" href="/account">账户资料</Link><Link className="pixel-button cdpc-control" href="/">返回首页</Link></div></header>
     <section className="hero inventory-panel cdpc-panel">
       <p className="eyebrow" style={{ color: '#315a24' }}>皮肤 · 披肩 · 外套 · 披风</p>
       <h2>{validEditorUrl ? '继续编辑你的角色' : '编辑器尚未连接'}</h2>
