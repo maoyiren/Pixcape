@@ -13,7 +13,7 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
 test('login page exposes email credentials and account registration', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
-  await expect(page.getByLabel('邮箱地址或管理员用户名')).toBeVisible()
+  await expect(page.getByLabel('用户名或邮箱地址')).toBeVisible()
   await expect(page.getByLabel('密码', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: '创建账户', exact: true }).first()).toBeVisible()
 })
