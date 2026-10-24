@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     where: { key: { in: [
       'AI_DEFAULT_PROVIDER', 'AI_DEFAULT_MODEL', 'GEMINI_IMAGE_MODELS', 'OPENAI_IMAGE_MODELS',
       'OPENROUTER_IMAGE_MODELS', 'SEEDREAM_IMAGE_MODELS', 'ARK_BASE_URL',
-      'AI_SECRET_GEMINI_API_KEY', 'AI_SECRET_OPENAI_API_KEY', 'AI_SECRET_OPENROUTER_API_KEY', 'AI_SECRET_ARK_API_KEY',
+      'AI_SECRET_GEMINI_API_KEY', 'AI_SECRET_OPENAI_API_KEY', 'AI_SECRET_OPENROUTER_API_KEY', 'AI_SECRET_ARK_API_KEY', 'DEEPSEEK_TEXT_MODEL', 'AI_SECRET_DEEPSEEK_API_KEY',
     ] } },
   })
   const values = Object.fromEntries(entries.map((entry) => [entry.key, entry.value]))
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   }
   const secretMappings: Record<string, string> = {
     AI_SECRET_GEMINI_API_KEY: 'GEMINI_API_KEY', AI_SECRET_OPENAI_API_KEY: 'OPENAI_API_KEY',
-    AI_SECRET_OPENROUTER_API_KEY: 'OPENROUTER_API_KEY', AI_SECRET_ARK_API_KEY: 'ARK_API_KEY',
+    AI_SECRET_OPENROUTER_API_KEY: 'OPENROUTER_API_KEY', AI_SECRET_ARK_API_KEY: 'ARK_API_KEY',\n    AI_SECRET_DEEPSEEK_API_KEY: 'DEEPSEEK_API_KEY',
   }
   try {
     for (const [settingKey, envKey] of Object.entries(secretMappings)) {
