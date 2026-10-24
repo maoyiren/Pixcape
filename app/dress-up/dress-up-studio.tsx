@@ -43,6 +43,7 @@ export default function DressUpStudio() {
   const previewHost = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<SkinViewer | null>(null)
   const skinFileRef = useRef<HTMLInputElement>(null)
+  const outfitFileRef = useRef<HTMLInputElement>(null)
   const [category, setCategory] = useState<Category>('全部')
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Record<string, CatalogItem>>({})
@@ -289,6 +290,73 @@ export default function DressUpStudio() {
     }
   }
 
+  function exportOutfitBackup() {
+    const payload: LocalOutfit = {
+      id: `outfit-${Date.now()}`,
+      name: outfitName.trim().slice(0, 48) || '我的穿搭',
+      itemIds: selectedItems.map(item => item.id),
+      model,
+      background,
+      skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
+      skinName,
+      savedAt: new Date().toISOString(),
+    }
+    const blob = new Blob([JSON.stringify({ format: 'cdpc-outfit', version: 1, outfit: payload }, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'cdpc-outfit-backup.json'
+    link.click()
+    URL.revokeObjectURL(url)
+    setSaveNotice('穿搭备份 JSON 已导出。若包含导入的皮肤图片，文件可能较大；备份保存在你的设备中。')
+  }
+
+  async function importOutfitBackup(file?: File) {
+    if (!file) return
+    try {
+      if (file.size > 12 * 1024 * 1024) throw new Error('备份文件超过 12 MB，请检查文件是否正确')
+      const parsed = JSON.parse(await file.text()) as { format?: string; version?: number; outfit?: Partial<LocalOutfit> }
+      const outfit = parsed.outfit
+      if (parsed.format !== 'cdpc-outfit' || parsed.version !== 1 || !outfit || !Array.isArray(outfit.itemIds)) {
+        throw new Error('文件格式不正确或版本不受支持')
+      }
+      const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string' && catalog.some(item => item.id === id))
+      const nextSkinUrl = typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png;base64,') ? outfit.skinUrl : undefined
+      if (nextSkinUrl) {
+        const image = await loadImage(nextSkinUrl)
+        if (image.width !== 64 || image.height !== 64) throw new Error('备份中的皮肤不是 64 × 64 PNG')
+      }
+      const restored: LocalOutfit = {
+        id: `outfit-${Date.now()}`,
+        name: (typeof outfit.name === 'string' ? outfit.name.trim().slice(0, 48) : '') || '导入的穿搭',
+        itemIds,
+        model: outfit.model === 'alex' ? 'alex' : 'steve',
+        background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
+        skinUrl: nextSkinUrl,
+        skinName: typeof outfit.skinName === 'string' ? outfit.skinName.slice(0, 160) : '导入的皮肤',
+        savedAt: new Date().toISOString(),
+      }
+      const next = [...savedOutfits, restored]
+      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next))
+      window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify(restored))
+      setSavedOutfits(next)
+      setSelectedSavedOutfitId(restored.id)
+      setOutfitName(restored.name)
+      setSelected(itemIds.reduce<Record<string, CatalogItem>>((items, id) => {
+        const item = catalog.find(entry => entry.id === id)
+        if (item) items[item.category] = item
+        return items
+      }, {}))
+      setModel(restored.model)
+      setBackground(restored.background)
+      if (restored.skinUrl) setSkinUrl(restored.skinUrl)
+      setSkinName(restored.skinName)
+      setSaveNotice(`已导入“${restored.name}”，并保存到此设备`)
+    } catch (error) {
+      setSaveNotice(error instanceof Error ? `导入失败：${error.message}` : '导入失败，请选择有效的 CDPC JSON 备份')
+    }
+  }
+
   async function exportSkinPng() {
     try {
       setIsBusy(true)
@@ -469,6 +537,9 @@ export default function DressUpStudio() {
           <div className="dressup-actions">
             <button type="button" onClick={randomOutfit}>随机搭配</button>
             <button type="button" onClick={saveLocalOutfit}>保存到此设备</button>
+            <button type="button" onClick={exportOutfitBackup}>导出穿搭备份 JSON</button>
+            <button type="button" onClick={() => outfitFileRef.current?.click()}>导入穿搭备份 JSON</button>
+            <input ref={outfitFileRef} hidden type="file" accept="application/json,.json" onChange={event => { void importOutfitBackup(event.target.files?.[0]); event.currentTarget.value = '' }} />
             <button type="button" onClick={resetToDefault}>恢复默认角色</button>
             <button type="button" onClick={() => void exportSkinPng()} disabled={isBusy}>导出标准皮肤 PNG</button>
             <button type="button" onClick={restoreLastSavedOutfit}>恢复最近保存</button>
@@ -494,7 +565,7 @@ export default function DressUpStudio() {
             </div>
           </div>
           {saveNotice && <p className="dressup-save-notice" role="status">{saveNotice}</p>}
-          <p className="dressup-preview-note">当前页面支持实时预览和本地临时搭配。账号保存穿搭及一键导出合成皮肤尚未接入，因此不会显示为已完成能力。</p>
+          <p className="dressup-preview-note">穿搭可保存在此设备，也可导出为 JSON 备份后转移到另一台设备。账号云同步尚未接入；标准皮肤 PNG 导出不包含独立披风。</p>
         </aside>
       </div>
     </main>
