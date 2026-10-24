@@ -253,4 +253,20 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   .cdpc-control { transition: none !important; }
 }
+.cdpc-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--cdpc-control-height);
+  padding: 9px 11px;
+  border: 1px solid var(--cdpc-border);
+  border-radius: var(--cdpc-radius-sm);
+  background: var(--cdpc-bg);
+  color: var(--cdpc-text);
+  font: inherit;
+}
+.cdpc-input:focus-visible { outline: 2px solid var(--cdpc-accent); outline-offset: 1px; }
+.auth-form .cdpc-control { width: 100%; }
+.auth-account-type .cdpc-control { width: auto; flex: 1 1 0; }
+.auth-form .cdpc-control-primary { background: var(--cdpc-accent); color: #111827; border-color: var(--cdpc-accent); }
 
