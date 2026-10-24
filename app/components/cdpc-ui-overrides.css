@@ -4,3 +4,29 @@
 .dressup-save-notice{margin:10px 0 0;padding:10px 12px;border:1px solid #344b6d;border-radius:7px;background:#17263b;color:#c9dcff;font-size:12px;line-height:1.6}
 .dressup-actions button:focus-visible,.dressup-actions a:focus-visible,.dressup-category:focus-visible,.dressup-item:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.dressup-actions button,.dressup-actions a,.dressup-item,.dressup-category{transition:none!important}}
+
+/* Shared product surface: calm studio UI instead of a full-page checkerboard. */
+:root{--cdpc-action:#a8c7ff;--cdpc-action-ink:#17243a;--cdpc-surface:#171c25;--cdpc-border:#303949;--cdpc-muted:#a4adba}
+body{background:#10141b!important;background-image:radial-gradient(ellipse at 50% -25%,#202c3d 0,transparent 55%)!important;color:#edf1f7}
+.site-nav{background:rgba(16,20,27,.94)!important;border-bottom:1px solid #303949!important;box-shadow:0 6px 22px #0003!important}
+.site-brand-mark{border:1px solid #7e9ccf!important;background:#263750!important;box-shadow:none!important}
+.site-nav-links a[aria-current=page]{background:#273449;color:#edf3ff}
+.site-nav-links .site-nav-primary{background:#dbe7ff;color:#17233a;border-radius:6px;font-weight:750}
+.site-nav-links .site-nav-primary:hover{background:#fff;color:#17233a}
+.cdpc-home{color:#edf1f7}
+.cdpc-hero{background:#171d27;border-color:#303949;box-shadow:0 18px 55px #0003}
+.cdpc-hero:before{background:#a8c7ff}
+.cdpc-kicker,.cdpc-section-kicker{color:#a8c7ff}
+.cdpc-button-primary{background:#dbe7ff;border-color:#dbe7ff;color:#17233a}
+.cdpc-button-primary:hover{background:#fff;border-color:#fff}
+.cdpc-button-quiet{background:#222b39;border-color:#3a4659;color:#edf1f7}
+.cdpc-tool-card,.cdpc-quick-link{background:#171d27;border-color:#303949}
+.cdpc-tool-card.is-featured{background:#1c2737;border-color:#435777}
+.cdpc-card-tag{background:#222d3d;border-color:#3b4b62;color:#dbe7ff}
+.cdpc-tool-glyph{background:#222d3d;border-color:#3b4b62;color:#dbe7ff}
+.cdpc-card-link{color:#c6d9ff}
+.cdpc-legal-note{color:#8995a7}
+.dressup-save-notice{margin:10px 0 0;padding:10px 12px;border:1px solid #344b6d;border-radius:7px;background:#17263b;color:#c9dcff;font-size:12px;line-height:1.6}
+.dressup-actions button:focus-visible,.dressup-actions a:focus-visible,.dressup-category:focus-visible,.dressup-item:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
+@media(max-width:720px){.site-nav{background:#10141b!important}.cdpc-hero{min-height:0}.cdpc-home{padding-inline:12px}}
+@media(prefers-reduced-motion:reduce){.dressup-actions button,.dressup-actions a,.dressup-item,.dressup-category,.cdpc-tool-card{transition:none!important}}
