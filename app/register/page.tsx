@@ -44,10 +44,10 @@ export default function RegisterPage() {
         }),
       })
       const data = await response.json()
-      if (!response.ok) setError(data.error || '暂时无法创建账户，请检查填写内容后重试。')
+      if (!response.ok) setError(data.error || '暂时无法创建账户，请检查填写信息后重试。')
       else setMessage(data.message || '账户已创建，可以前往登录。')
     } catch {
-      setError('暂时无法连接服务，请稍后重试。')
+      setError('当前无法连接服务，请稍后重试。')
     } finally {
       setBusy(false)
     }
@@ -57,7 +57,7 @@ export default function RegisterPage() {
     <header className="topbar cdpc-panel"><div><p className="eyebrow">JOIN CDPC</p><h1>创建账户</h1></div><Link className="pixel-button cdpc-control" href="/login">已有账户？登录</Link></header>
     <section className="hero inventory-panel cdpc-panel">
       <h2>创建你的 CDPC 账户</h2>
-      <p>用你长期可以访问的邮箱注册。账户可用于管理个人资料与创作者申请；密码至少需要 10 位。</p>
+      <p>使用可正常收信的邮箱注册。密码需至少包含 10 位字符。注册后即可登录并管理个人资料。</p>
       <form className="auth-email-form cdpc-stack" onSubmit={handleSubmit(submit)}>
         <label htmlFor="register-name">昵称 <span>（选填）</span></label>
         <input id="register-name" className="cdpc-input" autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} {...register('name')} />
@@ -71,7 +71,7 @@ export default function RegisterPage() {
         <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在创建账户…' : '创建账户'}</button>
       </form>
       {error && <p role="alert">{error}</p>}{message && <p role="status">{message} <Link href="/login">前往登录</Link></p>}
-      <p>注册后默认是普通账户。创作者身份需审核，管理员权限由管理员单独授予。</p>
+      <p>新账户默认拥有基础使用权限。创作者身份需通过审核，管理员权限不会通过注册自动获得。</p>
     </section>
   </main>
 }
