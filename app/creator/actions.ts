@@ -23,7 +23,7 @@ export async function updateCreatorProfile(formData: FormData) {
   await prisma.creatorProfile.upsert({
     where: { userId: user.id },
     update: { displayName, bio },
-    create: { userId: user.id, displayName, bio, reviewStatus: 'PENDING' },
+    create: { userId: user.id, displayName, bio, reviewStatus: 'NOT_SUBMITTED' },
   })
   if (user.role === 'USER') {
     await prisma.user.updateMany({
