@@ -189,6 +189,8 @@ export async function setAdminAccess(formData: FormData) {
 export async function saveSystemConfiguration(formData: FormData) {
   const actor = await requireActiveAdmin()
   const callbackUrl = String(formData.get('defaultCallbackUrl') ?? '/account').trim()
+  const returnToOriginalPage = String(formData.get('returnToOriginalPage') ?? 'true')
+  if (!['true', 'false'].includes(returnToOriginalPage)) redirect('/admin?error=invalid_return_behavior#configuration')
   if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//') || callbackUrl.includes(String.fromCharCode(92)) || callbackUrl.length > 300) {
     redirect('/admin?error=invalid_default_callback#configuration')
   }
@@ -198,8 +200,13 @@ export async function saveSystemConfiguration(formData: FormData) {
       update: { value: callbackUrl },
       create: { key: 'AUTH_DEFAULT_CALLBACK_URL', value: callbackUrl },
     })
+    await tx.appSetting.upsert({
+      where: { key: 'AUTH_RETURN_TO_ORIGINAL_PAGE' },
+      update: { value: returnToOriginalPage },
+      create: { key: 'AUTH_RETURN_TO_ORIGINAL_PAGE', value: returnToOriginalPage },
+    })
     await tx.auditLog.create({
-      data: { actorId: actor.id, action: 'SYSTEM_CONFIGURATION_UPDATED', targetType: 'AppSetting', targetId: 'AUTH_DEFAULT_CALLBACK_URL', details: { defaultCallbackUrl: callbackUrl } },
+      data: { actorId: actor.id, action: 'SYSTEM_CONFIGURATION_UPDATED', targetType: 'AppSetting', targetId: 'AUTH_LOGIN_REDIRECT', details: { defaultCallbackUrl: callbackUrl, returnToOriginalPage: returnToOriginalPage === 'true' } },
     })
   })
   redirect('/admin?systemConfigurationSaved=1#configuration')
