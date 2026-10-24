@@ -280,6 +280,32 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
     probe.src = url
   }
 
+  const exportOutfitBackup = async () => {
+    try {
+      let skinDataUrl: string | undefined
+      try {
+        const image = await loadImage(skinUrl)
+        if (image.width === 64 && image.height === 64) {
+          const canvas = document.createElement('canvas')
+          canvas.width = 64
+          canvas.height = 64
+          const context = canvas.getContext('2d')
+          if (context) { context.drawImage(image, 0, 0); skinDataUrl = canvas.toDataURL('image/png') }
+        }
+      } catch { /* Remote skin hosts may block canvas export; the backup still remains usable. */ }
+      const capeMap: Record<string, string> = { 'cape_office.png': 'office-cape', 'cape_MCC.png': 'mcc-cape', 'cape_creeper.png': 'creeper-cape', 'cape_tiktok.png': 'tiktok-cape', 'cape_twitch.png': 'twitch-cape' }
+      const itemIds = [shawlId !== 'none' ? shawlId : undefined, coatId !== 'none' ? coatId : undefined, capeMap[capeId]].filter((id): id is string => Boolean(id))
+      const payload = { format: 'cdpc-outfit', version: 1, outfit: { id: 'studio-' + Date.now(), name: '创作工坊穿搭', itemIds, model: modelType, background: /^#[0-9a-f]{6}$/i.test(customBackground) ? customBackground : '#182437', ...(skinDataUrl ? { skinUrl: skinDataUrl } : {}), skinName, savedAt: new Date().toISOString() } }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'cdpc-outfit-backup.json'
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      setStatus(skinDataUrl ? '已导出包含皮肤 PNG 的穿搭 JSON 备份' : '已导出穿搭 JSON；当前皮肤无法嵌入，请另行保留皮肤 PNG')
+    } catch (error) { setError(error instanceof Error ? '导出穿搭失败：' + error.message : '导出穿搭失败') }
+  }
   const importOutfitBackup = async (file?: File) => {
     if (!file) return
     try {
@@ -348,6 +374,7 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
       <div className="preset-current-actions">
         <button className="preset-import" onClick={() => skinInputRef.current?.click()}><Upload size={16}/> {tr('导入皮肤', language)}</button>
         <button className="preset-import" onClick={() => outfitBackupInputRef.current?.click()}><Upload size={16}/> {tr('导入穿搭备份 JSON', language)}</button>
+        <button className="preset-import" onClick={() => { void exportOutfitBackup() }}><Download size={16}/> {tr('导出穿搭备份 JSON', language)}</button>
         <Tooltip.Provider delayDuration={300}><Tooltip.Root><Tooltip.Trigger asChild><button className="preset-export-skin" onClick={exportPng} disabled={!ready}><Download size={16}/> {tr('导出合成皮肤 PNG', language)}</button></Tooltip.Trigger><Tooltip.Portal><Tooltip.Content className="preset-tooltip" side="bottom" sideOffset={6}>将当前皮肤与所选披肩、外套合成为 64 × 64 PNG。<Tooltip.Arrow className="preset-tooltip-arrow"/></Tooltip.Content></Tooltip.Portal></Tooltip.Root></Tooltip.Provider>
         <button className="preset-open-blockbench" onClick={openEditorWithPreset} disabled={!ready}><ExternalLink size={15}/> {tr('发送到 Blockbench 编辑', language)}</button>
       </div>
