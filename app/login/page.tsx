@@ -18,11 +18,11 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
   const adminEnabled = Boolean(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL)
   return (
     <main className="inventory-shell auth-page-shell cdpc-page">
-      <header className="topbar">
+      <header className="topbar cdpc-panel">
         <div><p className="eyebrow">CDPC ACCOUNT</p><h1>登录 / 创建账户</h1></div>
-        <Link className="pixel-button" href="/">返回首页</Link>
+        <Link className="pixel-button cdpc-control" href="/">返回首页</Link>
       </header>
-      <section className="hero inventory-panel auth-panel cdpc-panel">
+      <section className="hero inventory-panel auth-panel cdpc-panel cdpc-stack">
         <h2>一个入口，继续你的创作</h2>
         {verificationMessage ? <p role="status">{verificationMessage}</p> : null}
         <p>使用邮箱和密码、管理员账号，或已启用的第三方平台登录。系统会根据账号权限决定可访问的区域。</p>
