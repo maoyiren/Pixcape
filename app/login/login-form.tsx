@@ -19,7 +19,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     setError('')
     setMessage('')
     try {
-      const result = await signIn(provider, { callbackUrl: '/account', redirect: false })
+      const result = await signIn(provider, { callbackUrl: '/workbench', redirect: false })
       if (result?.error) {
         setError('第三方登录启动失败，请检查认证服务配置、回调地址和密钥后重试。')
         setBusy(false)
@@ -52,7 +52,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
         const result = await signIn('email-password', {
           email: value.toLowerCase(),
           password,
-          callbackUrl: '/account',
+          callbackUrl: '/workbench',
           redirect: false,
         })
         if (!result?.error && result?.url) {
@@ -86,7 +86,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     setError('')
     setMessage('')
     try {
-      const result = await signIn('email', { email: magicEmail.trim().toLowerCase(), callbackUrl: '/account', redirect: false })
+      const result = await signIn('email', { email: magicEmail.trim().toLowerCase(), callbackUrl: '/workbench', redirect: false })
       if (result?.error) setError('邮件发送失败，请检查 SMTP 配置。')
       else setMessage('如果邮箱服务配置正确，请检查收件箱和垃圾邮件。')
     } catch {
