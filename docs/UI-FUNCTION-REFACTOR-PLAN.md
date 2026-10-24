@@ -591,3 +591,15 @@ UI 重构不得绕过现有 NextAuth 或其他已接入认证逻辑。必须检�
 - 动画过渡只作用于颜色属性，减少布局抖动；系统减少动态效果偏好仍由既有规则处理。
 
 **边界与状态：** 这是 CSS 层面的响应式与可访问性补强，不代表 Mantine/Tailwind CSS v4 迁移已经完成，也不代表已在真实设备上完成视觉验收。当前尚未执行浏览器回归测试。
+
+## 二十二、阶段一续：跨应用共享设计基础（2026-10-24）
+
+本轮直接提交到 `feat/cdpc-full-ui-implementation`：
+
+- `src/design-system.css` 增加共享语义样式原语：页面容器、面板、堆叠/横向组合、主/危险按钮、表单字段、统一间距、触控尺寸和焦点环。
+- `app/layout.tsx` 引入同一份设计系统 CSS，使 Next.js 主应用与 Vite 编辑器共享同一组 CDPC token 和 opt-in 组件类。
+- 新增类以 `cdpc-page`、`cdpc-panel`、`cdpc-control`、`cdpc-field` 等语义命名，采用渐进式迁移方式，不要求一次性重写所有现有业务页面。
+- 补充窄屏触控尺寸和减少动态效果规则。
+
+**边界与待办：** 这一步是共享设计 token 与样式原语，不等于 Mantine 或 Tailwind CSS v4 已安装，也不等于现有页面已经迁移到组件库。当前 `package.json` 与 `package-lock.json` 均未包含 Mantine / Tailwind CSS v4；不能仅编辑依赖清单宣称安装成功，后续需要在可执行 npm 安装与 lockfile 更新的环境中完成依赖迁移，并逐页面替换旧控件。当前尚未执行构建、浏览器或无障碍回归测试。
+
