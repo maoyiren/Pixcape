@@ -289,6 +289,50 @@ export default function DressUpStudio() {
     }
   }
 
+  async function exportSkinPng() {
+    try {
+      setIsBusy(true)
+      setSaveNotice('正在合成 64 × 64 标准皮肤 PNG…')
+      const base = await loadImage(skinUrl)
+      const canvas = document.createElement('canvas')
+      canvas.width = 64
+      canvas.height = 64
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('无法创建导出画布')
+      context.imageSmoothingEnabled = false
+      context.drawImage(base, 0, 0, 64, 64)
+      const uvRegions = [
+        { x: 16, y: 16, width: 24, height: 16 },
+        { x: 16, y: 32, width: 24, height: 16 },
+        { x: 40, y: 16, width: 16, height: 16 },
+        { x: 40, y: 32, width: 16, height: 16 },
+        { x: 32, y: 48, width: 16, height: 16 },
+        { x: 48, y: 48, width: 16, height: 16 },
+      ]
+      for (const item of selectedItems.filter(entry => entry.category !== '披风')) {
+        const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
+        const overlay = await loadImage(ASSET_ROOT + textureName)
+        context.save()
+        context.beginPath()
+        uvRegions.forEach(region => context.rect(region.x, region.y, region.width, region.height))
+        context.clip()
+        context.drawImage(overlay, 0, 0, 64, 64)
+        context.restore()
+      }
+      const link = document.createElement('a')
+      link.download = 'cdpc-skin-64x64.png'
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+      setSaveNotice(cape
+        ? '标准皮肤 PNG 已导出。注意：披风是独立背部装备，不包含在标准皮肤 PNG 中。'
+        : '标准皮肤 PNG 已导出（64 × 64）。')
+    } catch (error) {
+      setSaveNotice(error instanceof Error ? `导出失败：${error.message}` : '导出失败，请稍后重试')
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
   function resetToDefault() {
     setSelected({})
     setModel('steve')
