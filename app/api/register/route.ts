@@ -37,9 +37,16 @@ export async function POST(request: Request) {
     if (existing) return NextResponse.json({ error: '该邮箱已注册，请直接登录。' }, { status: 409 })
     const salt = randomBytes(16).toString('hex')
     const passwordHash = `${salt}:${scryptSync(password, salt, 64).toString('hex')}`
-    await prisma.user.create({
-      data: { email, name: name || email.split('@')[0], passwordHash, role: 'USER', status: 'ACTIVE', ...(requireVerification ? {} : { emailVerified: null }) },
-      select: { id: true },
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email, name: name || email.split('@')[0], passwordHash, role: 'CREATOR', status: 'ACTIVE', ...(requireVerification ? {} : { emailVerified: null }) },
+        select: { id: true, name: true, email: true },
+      })
+      await tx.creatorProfile.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: { userId: user.id, displayName: (user.name || user.email?.split('@')[0] || 'CDPC 创作者').slice(0, 48), bio: '', reviewStatus: 'PENDING' },
+      })
     })
     if (requireVerification) {
       const token = randomBytes(32).toString('hex')
