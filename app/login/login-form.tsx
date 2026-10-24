@@ -101,7 +101,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
   return (
     <div className="auth-form">
       <form onSubmit={(event) => void credentialLogin(event)} className="auth-email-form auth-unified-credentials">
-        <label htmlFor="login-identifier">邮箱地址或管理员用户名</label>
+        <label htmlFor="login-identifier">用户名或邮箱地址</label>
         <input
           id="login-identifier"
           className="cdpc-input"
