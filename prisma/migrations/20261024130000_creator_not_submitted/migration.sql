@@ -1,3 +1,2 @@
--- Creator identity is independent from optional verification. New profiles are not applications.
+-- Add the new value separately so PostgreSQL commits it before it is used by a default.
 ALTER TYPE "CreatorReviewStatus" ADD VALUE IF NOT EXISTS 'NOT_SUBMITTED';
-ALTER TABLE "CreatorProfile" ALTER COLUMN "reviewStatus" SET DEFAULT 'NOT_SUBMITTED';
