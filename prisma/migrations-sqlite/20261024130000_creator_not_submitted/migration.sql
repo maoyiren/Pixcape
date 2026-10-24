@@ -1,0 +1,2 @@
+-- SQLite stores this status as TEXT; no table rewrite is required. New profile creation
+-- explicitly writes NOT_SUBMITTED so historical PENDING applications remain reviewable.
