@@ -235,7 +235,7 @@ export async function saveAIConfiguration(formData: FormData) {
   const arkBaseUrl = String(formData.get('arkBaseUrl') ?? 'https://ark.cn-beijing.volces.com/api/v3').trim().slice(0, 300)
   try {
     const parsed = new URL(arkBaseUrl)
-    if (parsed.protocol !== 'https:' || !/(^|\\.)volces\\.com$|(^|\\.)volcengine\\.com$/.test(parsed.hostname)) throw new Error()
+    if (parsed.protocol !== 'https:' || !/(^|\.)volces\.com$|(^|\.)volcengine\.com$/.test(parsed.hostname)) throw new Error()
   } catch { redirect('/admin?error=invalid_ark_url#configuration') }
 
   const values: Record<string, string> = {
