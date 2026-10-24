@@ -178,3 +178,13 @@ CDPC 从像素编辑工具逐步扩展为创作、发布、分享、发现和治
 - Mantine/Tailwind CSS v4 迁移仍未完成；OAuth 外部 provider 仍需在真实生产凭据与回调配置下验收。
 
 本文是分阶段实施路线，不代表规划功能已经上线。后续先补齐注册后体验和权限边界，再逐步交付创作者中心与社区功能。当前 head `4a5fa0daa9604eec87450a924af09d1bd813b6e0` 的 GitHub Actions CI、Next.js Preview Build/Security Tests 均已通过；Playwright 浏览器测试 5 项通过；Docker smoke-test 已通过，镜像发布 job 因 PR 事件被跳过，未发布新镜像。PR #20 仍为 Draft、未合并。合并前仍需完成剩余功能范围审查与真实 OAuth/部署验收。
+
+
+## 11. 最新推进记录（2026-10-24 21:52，Asia/Singapore）
+
+- 登录成功后的默认目标已从 `/account` 调整为 `/workbench`，覆盖密码登录、OAuth 登录与邮箱登录链接。
+- 注册页已明确：注册即创作者，不需要身份申请/切换；作品当前默认保存在本机，公开发布与商业能力以实际权限开放为准。
+- 最新已完成的一组 GitHub Actions（提交 `b60a5c9951bb1d6ff601ebaf3dd286702b6b98f4`）中，CI、Next.js Preview Build/Security Tests、Docker smoke-test 均成功；测试覆盖 PostgreSQL/MySQL/SQLite 迁移与相关安全检查。
+- Docker workflow 的 `smoke-test` 成功，但 `publish` job 因 PR 工作流条件被跳过；这不是镜像发布成功，当前未确认发布了新镜像。
+- 随后继续修正登录页字段文案：普通账户实际使用注册邮箱登录；配置的管理员使用管理员用户名登录。普通账户昵称目前不是登录标识，页面已避免误导。该文案修改的新提交仍需等待 CI 结果。
+- PR #20 仍为 Draft，尚未合并。生产 OAuth、SMTP、cdpc.cc 回调及注册后真实会话仍需部署后验证。
