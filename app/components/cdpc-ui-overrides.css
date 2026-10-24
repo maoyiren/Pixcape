@@ -51,3 +51,15 @@ body{background:#10141b!important;background-image:radial-gradient(ellipse at 50
 .dressup-outfit-manager-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .dressup-outfit-manager-actions button{min-height:36px;padding:7px 9px;border:1px solid #3b4b62;border-radius:6px;background:#222d3d;color:#edf3ff;font:inherit;font-size:12px;cursor:pointer}
 .dressup-outfit-manager-actions button:disabled{opacity:.45;cursor:not-allowed}
+
+
+/* Outfit portability and responsive controls — phase 2/3. */
+.dressup-actions button,.dressup-actions a,.dressup-preview-tools button,.dressup-outfit-manager-actions button{transition:background-color .15s ease,border-color .15s ease,transform .15s ease}
+.dressup-actions button:hover:not(:disabled),.dressup-preview-tools button:hover:not(:disabled),.dressup-outfit-manager-actions button:hover:not(:disabled){border-color:#819cc7;background:#2b3a50}
+.dressup-actions button:disabled,.dressup-preview-tools button:disabled{opacity:.48;cursor:not-allowed}
+.dressup-actions button:focus-visible,.dressup-preview-tools button:focus-visible,.dressup-outfit-manager-actions button:focus-visible,.dressup-outfit-manager input:focus-visible,.dressup-outfit-manager select:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
+.dressup-outfit-manager-actions button{overflow-wrap:anywhere}
+.dressup-save-notice{overflow-wrap:anywhere}
+@media(max-width:900px){.dressup-layout{grid-template-columns:minmax(0,1fr)!important}.dressup-preview{order:-1}.dressup-preview-stage{min-height:320px}}
+@media(max-width:560px){.dressup-heading{align-items:flex-start;flex-direction:column;gap:12px}.dressup-heading>div{min-width:0}.dressup-heading h1{font-size:clamp(26px,8vw,38px)}.dressup-preview-tools{flex-wrap:wrap;gap:8px}.dressup-bottom-tools>*{max-width:100%}.dressup-skin-name{flex-basis:100%;overflow-wrap:anywhere}.dressup-actions{grid-template-columns:1fr 1fr}.dressup-outfit-manager-actions{grid-template-columns:1fr 1fr}.dressup-items{grid-template-columns:repeat(2,minmax(0,1fr))}.dressup-item{min-width:0}.dressup-item strong,.dressup-item small{overflow-wrap:anywhere}.dressup-preview-stage{min-height:280px}}
+@media(prefers-reduced-motion:reduce){.dressup-actions button,.dressup-actions a,.dressup-preview-tools button,.dressup-outfit-manager-actions button{transition:none!important}}
