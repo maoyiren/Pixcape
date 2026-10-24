@@ -89,7 +89,7 @@ reloadConfigFromEnv()
 let lastConfigRefresh = 0
 let configRefreshPromise = null
 async function refreshRemoteConfig(force = false) {
-  const configUrl = process.env.AI_CONFIG_URL
+  const configUrl = process.env.AI_CONFIG_URL || 'https://cdpc.cc/api/internal/ai-config'
   const token = process.env.AI_CONFIG_SYNC_TOKEN
   if (!configUrl || !token) return
   if (!force && Date.now() - lastConfigRefresh < 15000) return
@@ -108,7 +108,7 @@ async function refreshRemoteConfig(force = false) {
       const allowed = [
         'AI_DEFAULT_PROVIDER', 'AI_DEFAULT_MODEL', 'GEMINI_IMAGE_MODELS', 'OPENAI_IMAGE_MODELS',
         'OPENROUTER_IMAGE_MODELS', 'SEEDREAM_IMAGE_MODELS', 'ARK_BASE_URL',
-        'GEMINI_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'ARK_API_KEY',
+        'GEMINI_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'ARK_API_KEY', 'DEEPSEEK_API_KEY', 'DEEPSEEK_TEXT_MODEL',
       ]
       for (const key of allowed) if (typeof values[key] === 'string') process.env[key] = values[key]
       lastConfigRefresh = Date.now()
