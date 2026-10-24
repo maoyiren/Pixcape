@@ -101,7 +101,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
   return (
     <div className="auth-form">
       <form onSubmit={(event) => void credentialLogin(event)} className="auth-email-form auth-unified-credentials">
-        <label htmlFor="login-identifier">用户名或邮箱地址</label>
+        <label htmlFor="login-identifier">邮箱地址或管理员用户名</label>
         <input
           id="login-identifier"
           className="cdpc-input"
@@ -111,12 +111,12 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
           maxLength={254}
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
-          placeholder="输入用户名或 name@example.com"
+          placeholder="输入邮箱地址；管理员可输入配置的用户名"
         />
         <label htmlFor="login-password">密码</label>
         <input id="login-password" className="cdpc-input" type="password" autoComplete="current-password" required maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} />
         <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</button>
-        <small>个人账户使用邮箱登录；管理员使用已配置的用户名登录。</small>
+        <small>普通账户使用注册邮箱登录；管理员使用运维配置的用户名登录。普通账户暂不支持昵称登录。</small>
       </form>
       {oauthMethods.length > 0 ? (
         <div className="auth-provider-group">
