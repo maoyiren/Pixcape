@@ -11,14 +11,14 @@ export default async function AccountPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) redirect('/login')
   return <main className="inventory-shell cdpc-page">
-    <header className="topbar"><div><p className="eyebrow">YOUR CDPC ACCOUNT</p><h1>我的账户</h1></div><Link className="pixel-button" href="/">返回首页</Link></header>
+    <header className="topbar cdpc-panel"><div><p className="eyebrow">YOUR CDPC ACCOUNT</p><h1>我的账户</h1></div><Link className="pixel-button cdpc-control" href="/">返回首页</Link></header>
     <section className="hero inventory-panel cdpc-panel">
       <h2>账户资料</h2>
       <p>这里显示当前登录账户的基本信息与权限状态。</p>
       <p>账户：{session.user.name ?? session.user.email ?? session.user.id}</p>
       <p>账户类型：{roleLabels[session.user.role] ?? '普通账户'}</p>
       <p>账户状态：{statusLabels[session.user.status] ?? '未知'}</p>
-      <div className="actions"><Link className="pixel-button" href="/creator">查看创作者中心</Link><SignOutButton /></div>
+      <div className="actions"><Link className="pixel-button cdpc-control" href="/creator">查看创作者中心</Link><SignOutButton /></div>
     </section>
   </main>
 }
