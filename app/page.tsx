@@ -53,7 +53,7 @@ export default function MigrationHome() {
         {tools.map((tool) => (
           <article className={`cdpc-tool-card ${tool.featured ? 'is-featured' : ''}`} key={tool.number}>
             <div className="cdpc-card-top"><span className="cdpc-card-number">{tool.number}</span><span className="cdpc-card-tag">{tool.tag}</span></div>
-            <div className={`cdpc-tool-glyph glyph-${tool.number}`} aria-hidden="true"><span>{tool.number === '01' ? '▦' : tool.number === '02' ? '◫' : '✎'}</span></div>
+            <div className={`cdpc-tool-glyph glyph-${tool.number}`} aria-hidden="true"><span>{tool.number === '00' ? '♧' : tool.number === '01' ? '▦' : tool.number === '02' ? '◫' : '✎'}</span></div>
             <h3>{tool.title}</h3>
             <p>{tool.description}</p>
             <Link href={tool.href} className="cdpc-card-link">{tool.action} <span aria-hidden="true">→</span></Link>
