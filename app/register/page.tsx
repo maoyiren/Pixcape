@@ -53,9 +53,9 @@ export default function RegisterPage() {
     }
   }
 
-  return <main className="inventory-shell">
-    <header className="topbar"><div><p className="eyebrow">JOIN CDPC</p><h1>创建账户</h1></div><Link className="pixel-button" href="/login">已有账户？登录</Link></header>
-    <section className="hero inventory-panel">
+  return <main className="inventory-shell cdpc-page">
+    <header className="topbar cdpc-panel"><div><p className="eyebrow">JOIN CDPC</p><h1>创建账户</h1></div><Link className="pixel-button cdpc-control" href="/login">已有账户？登录</Link></header>
+    <section className="hero inventory-panel cdpc-panel">
       <h2>创建你的 CDPC 账户</h2>
       <p>用你长期可以访问的邮箱注册。账户可用于管理个人资料与创作者申请；密码至少需要 10 位。</p>
       <form className="auth-email-form" onSubmit={handleSubmit(submit)}>
