@@ -11,7 +11,7 @@ test('security headers are sent on public pages', async () => {
   assert.equal(response.headers.get('referrer-policy'), 'strict-origin-when-cross-origin')
 })
 
-for (const path of ['/account', '/creator', '/admin']) {
+for (const path of ['/account', '/creator', '/admin', '/admin/user', '/admin/audit', '/admin/stat']) {
   test(`anonymous access to ${path} is denied`, async () => {
     const response = await fetch(new URL(path, base), { redirect: 'manual' })
     assert.ok([302, 307, 308].includes(response.status), `${path} should redirect unauthenticated users (got ${response.status})`)
