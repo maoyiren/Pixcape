@@ -50,9 +50,10 @@ test('login page exposes email credentials and account registration', async ({ p
 test('workbench is distinct from the creator profile center', async ({ page }) => {
   await page.goto('/workbench')
   await expect(page.getByRole('heading', { name: '创作工作台' })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'AI 生成' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '编辑器' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '衣橱选装' })).toBeVisible()
+  const creationEntries = page.getByRole('region', { name: '创作入口' })
+  await expect(creationEntries.getByRole('link', { name: '开始生成 ↗' })).toBeVisible()
+  await expect(creationEntries.getByRole('link', { name: '打开编辑器 ↗' })).toBeVisible()
+  await expect(creationEntries.getByRole('link', { name: '开始搭配 ↗' })).toBeVisible()
   await expect(page.getByRole('link', { name: '创作者中心' })).toBeVisible()
 })
 
