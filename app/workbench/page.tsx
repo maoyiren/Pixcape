@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { Badge, Button, Card, Container, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { authOptions } from '@/auth'
