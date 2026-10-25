@@ -37,18 +37,20 @@
 
 本分支已建立独立衣服选装页面，并将已知披肩、外套和披风素材接入 skinview3d 实时预览，支持本地 64×64 PNG 导入、Steve/Alex 模型、旋转/缩放和背景色调整。上衣、裤子、鞋子和帽子当前没有确认可用的正式素材，页面明确显示尚未接入。穿搭持久化和本页导出仍未实现。Mantine/Tailwind CSS v4/shadcn 的依赖迁移尚未完成；需要在具备 npm registry 的开发环境中更新锁文件并通过双入口构建后再扩大迁移。
 
-## Phase 2 progress — shared form primitives
+## Phase 2 implementation — shared account form primitives
 
 Date: 2026-10-25
 
 Implemented on branch `feat/cdpc-ui-phase2-design-tokens`:
 - Added semantic control tokens for consistent height, radius, borders, and focus treatment.
-- Standardized auth-page input sizing, placeholder contrast, validation borders, button states, and mobile full-width behavior.
+- Standardized login/register input sizing, placeholder contrast, validation borders, primary/provider button states, magic-link disclosure, and mobile full-width behavior.
+- Added consistent provider-group spacing and distinct error/success feedback surfaces.
+- Added regression assertions for shared tokens, login/register controls, provider buttons, and feedback states.
 - Added reduced-motion handling to account-page interactions.
 - Kept styles scoped to `.cdpc-page` so the skin editor canvas and Blockbench surface are not affected.
 
 Validation boundary:
-- This is a CSS foundation step using existing class names; it is not a Mantine or Tailwind CSS v4 migration.
+- This phase is the shared CSS primitive implementation using existing class names; it is not a Mantine or Tailwind CSS v4 migration. The regression test is committed with the phase and must pass in CI before merge.
 - The repository still needs a reproducible npm environment to install the libraries and regenerate `package-lock.json`. Do not add dependency declarations without updating the lockfile and passing both Next.js and Vite builds.
-- Next stage after this foundation: establish the root npm package/lockfile migration for Tailwind CSS v4 and Mantine, then pilot Mantine on login/register only before expanding.
+- The next phase is a separate root npm package/lockfile migration for Tailwind CSS v4 and Mantine, then a Mantine pilot on login/register only before expanding.
 

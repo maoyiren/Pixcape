@@ -423,3 +423,75 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   }
 }
 
+
+
+/* Phase 2 completion: account form composition and feedback states. */
+.cdpc-page .auth-form,
+.cdpc-page .auth-provider-group,
+.cdpc-page .auth-magic-link {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.cdpc-page .auth-divider-label {
+  margin: 4px 0 0;
+  color: var(--cdpc-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.cdpc-page .auth-provider-button {
+  width: 100%;
+  justify-content: flex-start;
+  background: var(--cdpc-surface-raised);
+  color: var(--cdpc-text);
+}
+.cdpc-page .auth-provider-button:hover:not(:disabled) {
+  border-color: var(--cdpc-control-focus);
+  background: var(--cdpc-surface);
+}
+.cdpc-page .auth-magic-link {
+  padding-top: 12px;
+  border-top: 1px solid var(--cdpc-border);
+}
+.cdpc-page .auth-magic-link summary {
+  width: fit-content;
+  color: var(--cdpc-text);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.cdpc-page .auth-feedback {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--cdpc-border);
+  border-radius: var(--cdpc-control-radius);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.cdpc-page .auth-feedback-error {
+  border-color: #75434a;
+  background: #321f26;
+  color: #ffd0d0;
+}
+.cdpc-page .auth-feedback-success {
+  border-color: #315d49;
+  background: #192d25;
+  color: #c8f1dc;
+}
+.cdpc-page .auth-switch-copy,
+.cdpc-page .auth-panel > p {
+  line-height: 1.7;
+}
+.cdpc-page .auth-panel a:not(.cdpc-control) {
+  color: var(--cdpc-control-focus);
+  text-underline-offset: 3px;
+}
+.cdpc-page .cdpc-stack {
+  gap: 12px;
+}
+@media (max-width: 560px) {
+  .cdpc-page .auth-provider-button {
+    justify-content: center;
+  }
+}

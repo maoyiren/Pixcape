@@ -84,10 +84,13 @@ test('Phase 2 shared controls cover account forms and magic-link submission', ()
   for (const token of ['--cdpc-control-height: 44px', '--cdpc-control-radius: 7px', '--cdpc-control-focus']) {
     assert.ok(css.includes(token), `missing shared control token: ${token}`)
   }
-  for (const selector of ['.cdpc-page .cdpc-input', '.cdpc-page .cdpc-control-primary', '.cdpc-page .auth-email-form']) {
+  for (const selector of ['.cdpc-page .cdpc-input', '.cdpc-page .cdpc-control-primary', '.cdpc-page .auth-email-form', '.cdpc-page .auth-provider-group', '.cdpc-page .auth-feedback-error', '.cdpc-page .auth-feedback-success']) {
     assert.ok(css.includes(selector), `missing shared control rule: ${selector}`)
   }
   assert.match(login, /发送登录链接[^<]*<\/button>/)
+  assert.match(login, /className="pixel-button auth-provider-button cdpc-control"/)
+  assert.match(login, /auth-feedback-error/)
+  assert.match(login, /auth-feedback-success/)
   assert.match(login, /cdpc-control cdpc-control-primary/)
   assert.match(register, /className="pixel-button primary cdpc-control cdpc-control-primary"/)
 })
