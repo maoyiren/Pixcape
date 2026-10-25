@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Button, Textarea, TextInput } from '@mantine/core'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
@@ -28,11 +29,29 @@ export default async function CreatorPage({ searchParams }: { searchParams?: Pro
       {params?.saved === '1' ? <p role="status">资料已保存。</p> : null}
       {params?.error === 'display_name' ? <p role="alert">展示名称至少需要 2 个字符。</p> : null}
       <form action={updateCreatorProfile} className="application-form cdpc-stack">
-        <label htmlFor="displayName">公开展示名称</label>
-        <input id="displayName" className="cdpc-input" name="displayName" required minLength={2} maxLength={48} defaultValue={profile?.displayName ?? user.name ?? user.email?.split('@')[0] ?? ''} />
-        <label htmlFor="bio">创作简介 <span>（最多 500 字）</span></label>
-        <textarea id="bio" className="cdpc-input" name="bio" rows={4} maxLength={500} defaultValue={profile?.bio ?? ''} placeholder="介绍你擅长的像素创作类型、作品风格或创作方向" />
-        <button className="pixel-button primary cdpc-control cdpc-control-primary" type="submit">保存创作者资料</button>
+        <TextInput
+          id="displayName"
+          name="displayName"
+          label="公开展示名称"
+          className="cdpc-mantine-field"
+          classNames={{ input: 'cdpc-input' }}
+          required
+          minLength={2}
+          maxLength={48}
+          defaultValue={profile?.displayName ?? user.name ?? user.email?.split('@')[0] ?? ''}
+        />
+        <Textarea
+          id="bio"
+          name="bio"
+          label="创作简介（最多 500 字）"
+          className="cdpc-mantine-field"
+          classNames={{ input: 'cdpc-input' }}
+          rows={4}
+          maxLength={500}
+          defaultValue={profile?.bio ?? ''}
+          placeholder="介绍你擅长的像素创作类型、作品风格或创作方向"
+        />
+        <Button className="pixel-button primary cdpc-control cdpc-control-primary" type="submit">保存创作者资料</Button>
       </form>
     </section>
     <section className="hero inventory-panel cdpc-panel">
