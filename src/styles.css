@@ -129,7 +129,7 @@ body { background: #263b22; }
 
 
 /* The embedded studio owns its own full-screen chrome; avoid duplicate Next.js site chrome on tool routes. */
-body:has(.cdpc-next-studio) > .cdpc-app-header,
-body:has(.cdpc-next-studio) > footer.cdpc-site-footer {
+body:has(.cdpc-next-studio) .cdpc-app-header,
+body:has(.cdpc-next-studio) footer.cdpc-site-footer {
   display: none;
 }
