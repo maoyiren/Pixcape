@@ -5,9 +5,14 @@ import AiSkinStudio from './AiSkinStudio'
 
 const BLOCKBENCH_PATH = '/blockbench/'
 
+function getInitialMode(): 'editor' | 'ai' | 'wardrobe' {
+  const mode = new URLSearchParams(window.location.search).get('mode')
+  return mode === 'ai' ? 'ai' : mode === 'wardrobe' ? 'wardrobe' : 'editor'
+}
+
 export default function App() {
   const [editorOpen, setEditorOpen] = useState(false)
-  const [aiOpen, setAiOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(() => getInitialMode() === 'ai')
   const [pendingPayload, setPendingPayload] = useState<PresetEditorPayload | null>(null)
   const [importFeedback, setImportFeedback] = useState<string>('')
   const iframeRef = useRef<HTMLIFrameElement>(null)
