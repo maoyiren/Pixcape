@@ -108,3 +108,31 @@ body{background:#10141b!important;background-image:radial-gradient(ellipse at 50
   .site-nav-account a{font-size:12px}
   .site-nav-user{max-width:28vw}
 }
+
+
+/* Workbench uses Mantine primitives; keep them aligned with the shared CDPC studio surfaces. */
+.cdpc-workbench { color: var(--cdpc-text, #edf1f7); }
+.cdpc-workbench .cdpc-workbench-welcome,
+.cdpc-workbench .cdpc-workbench-card {
+  background: var(--cdpc-surface, #171d27);
+  border-color: var(--cdpc-border, #303949);
+}
+.cdpc-workbench .cdpc-workbench-welcome { box-shadow: 0 12px 36px rgb(0 0 0 / 14%); }
+.cdpc-workbench .cdpc-workbench-card {
+  min-width: 0;
+  transition: border-color .15s ease, transform .15s ease;
+}
+.cdpc-workbench .cdpc-workbench-card:hover {
+  border-color: #526581;
+  transform: translateY(-2px);
+}
+.cdpc-workbench a { color: #c6d9ff; }
+.cdpc-workbench .cdpc-control-primary { color: #17233a; }
+@media (max-width: 480px) {
+  .cdpc-workbench { padding-inline: 12px; }
+  .cdpc-workbench .mantine-Title-root { overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cdpc-workbench .cdpc-workbench-card { transition: none; }
+  .cdpc-workbench .cdpc-workbench-card:hover { transform: none; }
+}
