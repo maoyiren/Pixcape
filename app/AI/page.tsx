@@ -1,7 +1,5 @@
-import EditorEntry from '../components/editor-entry'
+import { redirect } from 'next/navigation'
 
-export const metadata = { title: 'AI 生成 | CDPC' }
-
-export default function AiPage() {
-  return <EditorEntry mode="ai" />
+export default function LegacyAiPage() {
+  redirect('/ai')
 }
