@@ -7,7 +7,7 @@ import { signIn } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Button, PasswordInput, TextInput } from '@mantine/core'
+import { Alert, Button, Container, Group, Paper, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core'
 
 const registerSchema = z.object({
   name: z.string().trim().max(80, '昵称最多 80 个字符').optional().or(z.literal('')),
@@ -73,22 +73,44 @@ export default function RegisterPage() {
     }
   }
 
-  return <main className="inventory-shell cdpc-page">
-    <header className="topbar cdpc-panel"><div><p className="eyebrow">JOIN CDPC</p><h1>创建账户</h1></div><Link className="pixel-button cdpc-control" href="/login">已有账户？登录</Link></header>
-    <section className="hero inventory-panel cdpc-panel">
-      <h2>创建你的 CDPC 账户</h2>
-      <p>使用可正常收信的邮箱注册。密码需至少包含 10 位字符。注册后即成为 CDPC 创作者，可直接进入创作工坊；无需申请或切换创作者身份。</p>
-      <form className="auth-email-form cdpc-stack" onSubmit={handleSubmit(submit)}>
-        <TextInput id="register-name" label={<>昵称 <span>（选填）</span></>} className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} error={errors.name?.message} {...register('name')} />
-        {errors.name && <p id="register-name-error" role="alert">{errors.name.message}</p>}
-        <TextInput id="register-email" label="邮箱地址" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} type="email" maxLength={254} required aria-required="true" autoComplete="email" placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} error={errors.email?.message} {...register('email')} />
-        {errors.email && <p id="register-email-error" role="alert">{errors.email.message}</p>}
-        <PasswordInput id="register-password" label="设置密码" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} maxLength={256} minLength={10} required aria-required="true" autoComplete="new-password" placeholder="至少 10 位字符" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'register-password-error' : undefined} error={errors.password?.message} {...register('password')} />
-        {errors.password && <p id="register-password-error" role="alert">{errors.password.message}</p>}
-        <Button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit" loading={busy}>{busy ? '正在创建账户…' : '创建账户'}</Button>
-      </form>
-      {error && <p role="alert">{error}</p>}{message && <p role="status">{message} <Link href="/login">前往登录</Link></p>}
-      <p>你的创作者身份将在注册时自动开通。作品默认保存在本机；公开发布、商业销售等功能会在对应权限开放后提供。</p>
-    </section>
-  </main>
+  return (
+    <Container size="sm" py={{ base: 'md', sm: 'xl' }} className="cdpc-register-page">
+      <Stack gap="lg">
+        <Group justify="space-between" align="flex-start" wrap="wrap">
+          <Stack gap={4}>
+            <Text size="xs" fw={700} c="dimmed" tt="uppercase" lts={1.5}>JOIN CDPC</Text>
+            <Title order={1} size="h2">创建账户</Title>
+          </Stack>
+          <Button component={Link} href="/login" variant="default" className="cdpc-control">已有账户？登录</Button>
+        </Group>
+
+        <Paper withBorder radius="md" p={{ base: 'md', sm: 'xl' }} className="cdpc-register-panel">
+          <Stack gap="md">
+            <Title order={2} size="h3">创建你的 CDPC 账户</Title>
+            <Text c="dimmed" lh={1.7}>
+              使用可正常收信的邮箱注册，密码至少 10 位。注册后即成为 CDPC 创作者，可直接进入创作工作台，无需申请或切换身份。
+            </Text>
+            <form className="auth-email-form cdpc-stack" onSubmit={handleSubmit(submit)} noValidate>
+              <Stack gap="md">
+                <TextInput id="register-name" label="昵称（选填）" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} error={errors.name?.message} {...register('name')} />
+                <TextInput id="register-email" label="邮箱地址" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} type="email" maxLength={254} required aria-required="true" autoComplete="email" placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} error={errors.email?.message} {...register('email')} />
+                <PasswordInput id="register-password" label="设置密码" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} maxLength={256} minLength={10} required aria-required="true" autoComplete="new-password" placeholder="至少 10 位字符" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'register-password-error' : undefined} error={errors.password?.message} {...register('password')} />
+                {errors.name && <Text id="register-name-error" role="alert" size="sm" c="red">{errors.name.message}</Text>}
+                {errors.email && <Text id="register-email-error" role="alert" size="sm" c="red">{errors.email.message}</Text>}
+                {errors.password && <Text id="register-password-error" role="alert" size="sm" c="red">{errors.password.message}</Text>}
+                <Button className="cdpc-control cdpc-control-primary" disabled={busy} type="submit" loading={busy} fullWidth>
+                  {busy ? '正在创建账户…' : '创建账户'}
+                </Button>
+              </Stack>
+            </form>
+            {error ? <Alert color="red" variant="light" role="alert" title="创建失败">{error}</Alert> : null}
+            {message ? <Alert color="blue" variant="light" role="status" title="账户状态">{message} <Link href="/login">前往登录</Link></Alert> : null}
+            <Text size="sm" c="dimmed" lh={1.7}>
+              你的创作者身份将在注册时自动开通。作品默认保存在本机；公开发布、商业销售等功能会在对应权限开放后提供。
+            </Text>
+          </Stack>
+        </Paper>
+      </Stack>
+    </Container>
+  )
 }
