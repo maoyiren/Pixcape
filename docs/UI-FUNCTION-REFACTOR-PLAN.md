@@ -1063,3 +1063,30 @@ CDPC 的业务界面优先通过现有组件库组合实现，不再为 3D 预�
 - [ ] 未接入的素材、模型、云同步和第三方服务没有被宣传为已实现。
 - [ ] 完成桌面、平板、移动端的键盘、触摸、焦点与响应式回归测试。
 
+## 三十、第二阶段结项记录（2026-10-25）
+
+### 30.1 本阶段结项范围
+
+第二阶段定义为“UI 组件库迁移基础设施与首批关键页面接入”，本次按该范围结项，不将其扩大解释为全站所有页面均已完成组件迁移。
+
+- [x] 根项目引入 Mantine 与 Tailwind CSS v4，并更新根锁文件。
+- [x] 为 Next.js 与 Vite 入口接入共享 Mantine 主题/Provider。
+- [x] 登录、注册表单首批迁移到 Mantine 控件，同时保留现有认证与校验流程。
+- [x] 补齐 `/ai`、`/editor`、`/wardrobe`、`/workbench` 等规范入口，并将编辑器模式参数接入 Vite studio。
+- [x] 添加路由目标与 AI/衣橱模式初始化的浏览器测试覆盖。
+- [x] 最新结项提交 `70361170d39a4d76860202c3d43dc37dfbf1c1d9` 的 CI、安全测试和 Docker 工作流均显示成功：
+  - CI: https://github.com/maoyiren/Pixcape/actions/runs/40161789431
+  - Next.js Preview Build and Security Tests: https://github.com/maoyiren/Pixcape/actions/runs/40161789438
+  - Build and publish Docker image workflow: https://github.com/maoyiren/Pixcape/actions/runs/40161789447
+
+### 30.2 结项边界与下一阶段
+
+第二阶段结项只覆盖以上明确范围。以下工作仍在后续阶段继续，不得标记为全站完成：
+
+- [ ] 将所有旧式按钮、面板、服装卡片与表单逐页迁移到共享组件体系。
+- [ ] 完成管理员后台 WordPress 风格统一外壳和真实业务链。
+- [ ] 完成全站窄屏、键盘可访问性、视觉与真实浏览器回归。
+- [ ] 完成生产环境 OAuth、邮件、AI 真实生成和部署后验收。
+- [ ] 合并 PR 并发布生产镜像。
+
+**发布边界：** PR #23 当前仍为 Draft、未合并。Docker 工作流成功不等于生产镜像已发布，也不代表 cdpc.cc 已更新。生产环境保持不变，除非后续明确执行合并、发布并完成部署验证。
