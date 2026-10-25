@@ -94,3 +94,9 @@ test('Vite AI route opens the actual AI creation interface', async ({ page }) =>
   await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
   await expect(page.getByText('CDPC AI 工坊')).toBeVisible()
 })
+
+test('Vite wardrobe route opens outfit selection instead of the default shawl tab', async ({ page }) => {
+  await page.goto('http://127.0.0.1:5173/?mode=wardrobe')
+  await expect(page.getByRole('heading', { name: 'Minecraft 皮肤与服装工作台' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
+})
