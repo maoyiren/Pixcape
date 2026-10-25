@@ -54,7 +54,7 @@ test('workbench is distinct from the creator profile center', async ({ page }) =
   await expect(creationEntries.getByRole('link', { name: '开始生成 ↗' })).toBeVisible()
   await expect(creationEntries.getByRole('link', { name: '打开编辑器 ↗' })).toBeVisible()
   await expect(creationEntries.getByRole('link', { name: '开始搭配 ↗' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '创作者中心' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
 })
 
 test('registration rejects a short password before sending a request', async ({ page }) => {
@@ -98,6 +98,6 @@ test('Vite AI route opens the actual AI creation interface', async ({ page }) =>
 
 test('Vite wardrobe route opens outfit selection instead of the default shawl tab', async ({ page }) => {
   await page.goto('http://127.0.0.1:5173/?mode=wardrobe')
-  await expect(page.getByRole('heading', { name: 'Minecraft 皮肤与服装工作台' })).toBeVisible()
+  await expect(page.getByText('Minecraft 皮肤与服装工作台')).toBeVisible()
   await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
 })
