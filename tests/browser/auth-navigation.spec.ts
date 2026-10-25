@@ -101,3 +101,19 @@ test('Vite wardrobe route opens outfit selection instead of the default shawl ta
   await expect(page.getByText('Minecraft 皮肤与服装工作台')).toBeVisible()
   await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
 })
+
+
+test('workbench remains usable at a narrow mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 })
+  await page.goto('/workbench')
+  await expect(page.getByRole('heading', { name: '创作工作台' })).toBeVisible()
+  const entries = page.getByRole('region', { name: '创作入口' })
+  await expect(entries.getByRole('link', { name: '开始生成 ↗' })).toBeVisible()
+  await expect(entries.getByRole('link', { name: '打开编辑器 ↗' })).toBeVisible()
+  await expect(entries.getByRole('link', { name: '开始搭配 ↗' })).toBeVisible()
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }))
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport + 1)
+})
