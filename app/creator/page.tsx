@@ -25,10 +25,10 @@ export default async function CreatorPage({ searchParams }: { searchParams?: Pro
             <Text size="xs" fw={700} c="dimmed" tt="uppercase" lts={1.5}>CREATOR STUDIO</Text>
             <Title order={1} size="h2">创作者中心</Title>
           </Stack>
-          <Button component={Link} href="/" variant="default" className="cdpc-control">返回首页</Button>
+          <Button component="a" href="/" variant="default" className="cdpc-control">返回首页</Button>
         </Group>
 
-        <Card withBorder radius="md" padding={{ base: 'md', sm: 'xl' }} className="cdpc-creator-card">
+        <Card withBorder radius="md" padding="md" className="cdpc-creator-card">
           <Stack gap="md">
             <Title order={2} size="h3">你的创作空间</Title>
             <Text c="dimmed" lh={1.7}>注册即拥有创作者身份。你可以完善公开资料并开始创作，无需申请或切换身份。</Text>
@@ -65,11 +65,11 @@ export default async function CreatorPage({ searchParams }: { searchParams?: Pro
           </Stack>
         </Card>
 
-        <Card withBorder radius="md" padding={{ base: 'md', sm: 'xl' }} className="cdpc-creator-card">
+        <Card withBorder radius="md" padding="md" className="cdpc-creator-card">
           <Stack gap="sm">
             <Title order={2} size="h3">作品管理</Title>
             <Text c="dimmed" lh={1.7}>草稿管理、公开发布、版本历史和作品数据正在按阶段接入。当前页面不会显示虚构的作品数量或互动统计。</Text>
-            <Button component={Link} href="/workbench" variant="light" className="cdpc-control cdpc-control-primary" w="fit-content">前往创作工作台</Button>
+            <Button component="a" href="/workbench" variant="light" className="cdpc-control cdpc-control-primary" w="fit-content">前往创作工作台</Button>
           </Stack>
         </Card>
       </Stack>
