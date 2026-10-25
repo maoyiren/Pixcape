@@ -21,8 +21,8 @@ export default function MigrationHome() {
           <h1>让角色更像<br /><span>你想要的样子。</span></h1>
           <p className="cdpc-hero-description">从 Minecraft 皮肤开始，搭配披肩、外套和披风。导入、预览、调整，再把满意的作品带进游戏。</p>
           <div className="cdpc-hero-actions">
-            <Link className="cdpc-button cdpc-button-primary cdpc-control cdpc-control-primary" href="/bench">开始编辑皮肤与配件 <span aria-hidden="true">↗</span></Link>
-            <Link className="cdpc-button cdpc-button-quiet cdpc-control" href="/AI">尝试 AI 生成</Link>
+            <Link className="cdpc-button cdpc-button-primary cdpc-control cdpc-control-primary" href="/editor">开始编辑皮肤与配件 <span aria-hidden="true">↗</span></Link>
+            <Link className="cdpc-button cdpc-button-quiet cdpc-control" href="/ai">尝试 AI 生成</Link>
           </div>
           <div className="cdpc-hero-footnote"><span className="cdpc-mini-pixel" aria-hidden="true">▦</span> 为皮肤搭配与像素配件设计而做</div>
         </div>
