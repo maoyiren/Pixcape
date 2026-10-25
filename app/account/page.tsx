@@ -27,7 +27,7 @@ export default async function AccountPage() {
           <Button component="a" href="/" variant="default" className="cdpc-control">返回首页</Button>
         </Group>
 
-        <Card withBorder radius="md" padding={{ base: "md", sm: "xl" }} className="cdpc-account-card">
+        <Card withBorder radius="md" padding="md" className="cdpc-account-card">
           <Stack gap="lg">
             <Title order={2} size="h3">账户资料</Title>
             <Stack gap="md">
