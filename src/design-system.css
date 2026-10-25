@@ -320,3 +320,106 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   .cdpc-page .actions > .cdpc-control,
   .cdpc-page .actions > .pixel-button { flex: 1 1 100%; }
 }
+
+/* Phase 2: shared form and control contract for Next.js account surfaces.
+   Keep these styles semantic so Mantine can replace the primitives incrementally. */
+:root {
+  --cdpc-control-height: 44px;
+  --cdpc-control-radius: 7px;
+  --cdpc-control-border: var(--cdpc-border);
+  --cdpc-control-focus: var(--cdpc-accent);
+  --cdpc-field-gap: 8px;
+}
+.cdpc-page .auth-email-form label,
+.cdpc-page .application-form label {
+  display: block;
+  margin: 2px 0 0;
+  color: var(--cdpc-text);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+.cdpc-page .cdpc-input,
+.cdpc-page .auth-email-form input,
+.cdpc-page .auth-email-form select,
+.cdpc-page .auth-email-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--cdpc-control-height);
+  padding: 10px 12px;
+  border: 1px solid var(--cdpc-control-border);
+  border-radius: var(--cdpc-control-radius);
+  background: var(--cdpc-surface-raised);
+  color: var(--cdpc-text);
+  font: inherit;
+  line-height: 1.45;
+}
+.cdpc-page .cdpc-input::placeholder,
+.cdpc-page .auth-email-form input::placeholder,
+.cdpc-page .auth-email-form textarea::placeholder {
+  color: var(--cdpc-muted);
+  opacity: .9;
+}
+.cdpc-page .cdpc-input[aria-invalid="true"],
+.cdpc-page .auth-email-form [aria-invalid="true"] {
+  border-color: var(--cdpc-danger);
+}
+.cdpc-page .cdpc-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--cdpc-control-height);
+  padding: 10px 14px;
+  border: 1px solid var(--cdpc-control-border);
+  border-radius: var(--cdpc-control-radius);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cdpc-page .cdpc-control-primary {
+  border-color: var(--cdpc-accent);
+  background: var(--cdpc-accent);
+  color: #111827;
+}
+.cdpc-page .cdpc-control-primary:hover:not(:disabled) {
+  border-color: var(--cdpc-accent-hover);
+  background: var(--cdpc-accent-hover);
+}
+.cdpc-page .cdpc-control:disabled {
+  cursor: not-allowed;
+  opacity: .58;
+}
+.cdpc-page .auth-email-form {
+  display: grid;
+  gap: var(--cdpc-field-gap);
+  width: 100%;
+  max-width: 620px;
+}
+.cdpc-page .auth-email-form small {
+  color: var(--cdpc-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.cdpc-page :where(input, select, textarea, button, a):focus-visible {
+  outline: 2px solid var(--cdpc-control-focus);
+  outline-offset: 3px;
+}
+@media (max-width: 560px) {
+  .cdpc-page .cdpc-control { width: 100%; }
+  .cdpc-page .auth-email-form { max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cdpc-page *,
+  .cdpc-page *::before,
+  .cdpc-page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
