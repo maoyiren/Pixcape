@@ -3,12 +3,12 @@ import Link from 'next/link'
 const tools = [
   { number: '00', title: '皮肤与配件编辑器', tag: '核心编辑器', description: '在同一工作区导入皮肤，编辑披肩、外套与披风，实时预览角色并导出 PNG。', href: '/bench', action: '打开编辑器', featured: true },
   { number: '01', title: 'AI 生成', tag: 'AI 创作', description: '通过文字描述或参考图片生成 Minecraft 皮肤，并在 3D 预览中检查结果。', href: '/AI', action: '开始 AI 创作', featured: true },
-  { number: '02', title: '角色预览与导出', tag: '预览工作流', description: '检查皮肤与配件效果，确认后导出标准 PNG 文件，方便带回游戏使用。', href: '/bench', action: '预览与导出', featured: false },
+  { number: '02', title: '衣服选装', tag: '角色搭配', description: '浏览已接入的服装素材并进入角色搭配入口；披肩、外套与披风保持独立分类。', href: '/wardrobe', action: '开始搭配', featured: false },
   { number: '03', title: '创作者中心', tag: '创作者空间', description: '完善公开展示资料，逐步管理你的原创作品与创作内容。', href: '/creator', action: '进入创作者中心', featured: false },
 ]
 
 const quickLinks = [
-  { label: '我的账户', detail: '查看账户状态与个人资料', href: '/workbench', symbol: '◉' },
+  { label: '创作工作台', detail: '进入生成、编辑与衣服选装流程', href: '/workbench', symbol: '◉' },
   { label: '登录 / 注册', detail: '保存账户，管理自己的创作', href: '/login', symbol: '↗' },
 ]
 
@@ -62,7 +62,7 @@ export default function MigrationHome() {
       </section>
 
       <section className="cdpc-quick-row" aria-label="账户快捷入口">
-        <div className="cdpc-quick-intro"><p className="cdpc-section-kicker">YOUR SPACE / 02</p><h2>你的账户空间</h2><p>登录后进入创作工作台，管理资料并继续创作。</p></div>
+        <div className="cdpc-quick-intro"><p className="cdpc-section-kicker">YOUR SPACE / 02</p><h2>你的账户空间</h2><p>创作工作台负责进入创作流程；创作者中心单独管理公开展示资料。</p></div>
         {quickLinks.map((item) => <Link className="cdpc-quick-link cdpc-control" href={item.href} key={item.href}><span className="quick-symbol">{item.symbol}</span><span><b>{item.label}</b><small>{item.detail}</small></span><span className="quick-arrow" aria-hidden="true">↗</span></Link>)}
       </section>
 
