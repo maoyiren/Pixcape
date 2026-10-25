@@ -151,3 +151,23 @@ body{background:#10141b!important;background-image:radial-gradient(ellipse at 50
   .cdpc-editor-entry { padding-inline: 12px; }
   .cdpc-editor-entry .mantine-Title-root { overflow-wrap: anywhere; }
 }
+
+/* Final shared pass: studio handoff and admin dashboard. */
+.cdpc-studio-handoff .cdpc-studio-panel{background:var(--cdpc-surface,#171d27)!important;border-color:var(--cdpc-border,#303949)!important}
+.cdpc-studio-handoff .cdpc-studio-note{background:#1c2430!important;border-color:var(--cdpc-border,#303949)!important}
+.cdpc-studio-handoff a:focus-visible,.cdpc-studio-handoff button:focus-visible{outline:2px solid #a8c7ff!important;outline-offset:3px}
+.admin-subnav{top:68px;background:#10141b!important}
+.admin-subnav a{background:#171c25!important;border-color:#303949!important;color:#edf1f7!important;border-radius:7px!important}
+.admin-subnav a:hover,.admin-subnav a:focus-visible{background:#222b39!important;border-color:#657da6!important}
+.admin-overview article,.admin-stat-card,.admin-user-card,.admin-section,.admin-config-grid article,.admin-table-wrap,.admin-log-card{background:#171c25!important;border:1px solid #303949!important;border-radius:10px!important;box-shadow:none!important;color:#edf1f7!important}
+.admin-overview article p,.admin-overview article span,.admin-stat-card p,.admin-user-card p,.admin-section-description{color:#a4adba!important}
+.admin-overview strong,.admin-overview h3,.admin-stat-card h3,.admin-user-card h3,.admin-section h2,.admin-section h3{color:#edf1f7!important}
+.admin-section input,.admin-section textarea,.admin-section select,.admin-config-grid input,.admin-config-grid textarea,.admin-config-grid select,.admin-filter-form input,.admin-filter-form select{max-width:100%;min-height:40px;background:#101318!important;border:1px solid #303949!important;border-radius:6px!important;color:#edf1f7!important;padding:9px 11px}
+.admin-section button,.admin-config-grid button,.admin-filter-form button{min-height:38px;border-radius:7px!important}
+.admin-table-wrap{max-width:100%;overflow-x:auto}
+.admin-table-wrap table{min-width:680px;width:100%;border-collapse:collapse}
+.admin-table-wrap th,.admin-table-wrap td{border-bottom:1px solid #303949!important;padding:10px 12px;text-align:left;vertical-align:top}
+.admin-table-wrap th{color:#a4adba!important;font-size:12px}
+.admin-table-wrap td{overflow-wrap:anywhere}
+@media(max-width:720px){.admin-subnav{position:static;overflow-x:auto;flex-wrap:nowrap;padding:8px 0}.admin-subnav a{flex-shrink:0}.admin-overview{grid-template-columns:repeat(2,minmax(0,1fr))!important}.admin-table-wrap table{min-width:620px}.cdpc-studio-handoff{padding-inline:12px}}
+@media(prefers-reduced-motion:reduce){.cdpc-studio-handoff *{scroll-behavior:auto!important;transition:none!important}}
