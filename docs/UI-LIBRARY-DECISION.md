@@ -73,3 +73,34 @@ Not yet validated:
 - Current GitHub Actions CI, Next.js security/build checks, and Docker smoke build must complete successfully before merge.
 - Check the login/register visual states and mobile layout in a browser; fix any Mantine/CSS specificity issues before expanding the migration.
 - Do not migrate editor canvas, Blockbench surfaces, OAuth internals, or data contracts in this phase.
+
+
+## Phase 4 — 全站统一组件体系（目标范围扩展）
+
+Date: 2026-10-25
+
+用户确认：不是只迁移登录/注册；**CDPC 所有产品界面都纳入统一 UI 体系**，包含 Next.js 主站、创作者工作台、衣服选装、皮肤/披肩/外套/披风编辑器、AI 生成、素材与模板库、社区/作品详情、账户设置、管理员后台、帮助与空状态/错误状态，以及移动端布局。
+
+### 全站约定
+
+- **Mantine** 是通用业务控件的默认实现：按钮、输入、选择器、弹窗、抽屉、菜单、通知、标签页、表格、分页、加载与反馈状态。
+- **Tailwind CSS v4** 是布局和设计 token 的默认工具：容器、栅格、间距、断点、排版和页面组合；避免每个页面继续新增互不一致的私有布局系统。
+- **shadcn/ui** 是按需引入的可定制组件来源，不要求每个控件都同时维护 Mantine 与 shadcn 两份实现。使用前确认场景和依赖；同类交互在全站只保留一个默认实现。
+- **Lucide React** 统一图标语义与尺寸。按钮、输入、提示、危险操作和键盘焦点行为使用共享规范。
+- **皮肤画布、skinview3d、Blockbench iframe/工作区** 属于专业编辑表面：统一外围工具栏、面板、对话框和响应式框架，但不得让全局 CSS reset 或普通表单组件破坏 canvas、3D 交互、像素精度或 iframe。
+- 所有路由共享导航、页脚、页面宽度、标题层级、加载/错误/空状态和移动端规则；已登录用户进入 `/workbench`，减少登录后再次寻找入口的步骤。
+- 注册即创作者的产品流程、衣服选装独立入口、现有登录/OAuth 回调与后端 API 契约继续保留；UI 迁移不以重写业务逻辑为代价。
+
+### 迁移顺序与验收
+
+1. 建立共享 tokens、页面容器、导航/页脚、按钮/表单/反馈和移动端规范。
+2. 完成登录、注册、账户资料与认证状态。
+3. 迁移创作者工作台、衣服选装、皮肤编辑器外围工具栏和资源面板。
+4. 迁移 AI 生成、素材/模板库、作品发布/详情、社区与个人创作者页面。
+5. 迁移管理员后台、配置表单、健康检查和管理表格。
+6. 覆盖帮助、404/500、权限不足、空列表、加载中、提交失败/成功等状态。
+7. 每组页面完成桌面和移动端浏览器回归，并验证键盘可访问性、焦点状态、表单语义、Next.js 与 Vite 双入口构建。
+
+### 验收边界
+
+“全站统一”表示所有页面逐步遵循同一套 token、布局和默认组件规则，不表示本次提交已经完成全站迁移。PR #23 当前只是 Mantine + Tailwind CSS v4 的基础设施与登录/注册试点；全站其余模块需分批实施并逐批验证。shadcn/ui 尚需按实际场景评估和接入，不应在未安装、未验证前声称已经全面使用。
