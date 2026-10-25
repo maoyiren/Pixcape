@@ -796,3 +796,484 @@ CDPC 从像素编辑工具逐步扩展为创作、发布、分享、发现和治
 - 独立 AI API 服务默认读取 `https://cdpc.cc/api/internal/ai-config`。为启用跨服务同步，仍需在 Web 与 AI API 服务中各配置一次相同的高强度随机 `AI_CONFIG_SYNC_TOKEN`。令牌不是可公开写死的默认值；后台保存模型或 API Key 后，AI 服务会在后续请求的刷新周期内拉取配置。
 - 部署时仅需完成一次共享令牌配置；后续日常更换模型或 API Key 无需修改部署环境变量。OAuth Client Secret、SMTP 密码、数据库连接串等必须由部署平台保护的基础设施密钥仍保留在 Secrets 中。
 
+
+
+---
+
+# 原文：`docs/CDPC-UI-OVERHAUL-IMPLEMENTATION.md`
+
+> 原文件 Blob SHA：`006c8bda17f78b3ee6fec4fd2cb4c22f405f3a8e`
+
+# CDPC UI 全面升级实施规范
+
+> 状态：实施基线（与 `feat/cdpc-ui-overhaul-dress-up` 分支配套）  
+> 更新日期：2026-10-23  
+> 目标：统一 Next.js 主站与 Vite 编辑器的体验；不在缺少素材或业务接口时伪造可用能力。
+
+## 1. 交付目标
+
+- 全站导航、页脚、页面宽度、标题层级、按钮语义、空状态、错误状态和移动端行为统一。
+- 使用 Mantine 作为通用交互组件基础，Tailwind CSS v4 处理布局与响应式；shadcn/ui 仅在存在明确缺口时按组件引入，不为同一控件同时维护两套实现。
+- 独立的「衣服选装」入口，和像素级编辑工作台分开；选装负责浏览、筛选、搭配，工作台负责导入皮肤、贴图编辑、3D 检查和导出。
+- 真实预览优先复用项目已有的 `skinview3d`、`ThreeCapePreview`、`PresetStudio` 和素材清单。
+- 保留登录、OAuth 回调、数据库、权限、Blockbench 导入协议及 PNG 导出行为，不把 UI 重构与认证重写混在一起。
+
+## 2. 技术职责边界
+
+| 技术 | 职责 | 约束 |
+| --- | --- | --- |
+| Mantine | 表单、弹窗、抽屉、通知、菜单、分页、可访问性基础 | 先选定主题和 token；避免全站默认样式覆盖 |
+| Tailwind CSS v4 | 网格、间距、断点、布局、状态样式 | 使用 v4 CSS-first 配置；不照搬 v3 的 `@tailwind base/components/utilities` 配置 |
+| shadcn/ui | 少量 Mantine 无法满足且可维护的组件 | 组件源代码归项目维护；禁止无理由重复造 Dialog、Select、Tooltip |
+| Lucide React | 图标 | 同一功能不混用字符图标与图标库 |
+| React Hook Form + Zod | 复杂表单与校验 | 保留现有服务端验证，客户端校验不是安全边界 |
+| skinview3d | 角色 3D 预览 | 只使用真实皮肤/贴图；加载失败必须显示错误与重试 |
+| Playwright | 主流程回归 | 桌面与移动端均验证；认证测试使用受控测试账号 |
+
+### 安装策略
+
+仓库是双入口：Next.js 主站和 Vite 编辑器；另有独立 `ai-api`。当前 root package 使用 npm lockfile，`ai-api` 也有自己的依赖边界。依赖安装必须在 root 对应工作目录完成，并提交对应锁文件；不得手工伪造锁文件，不得把主站依赖写入 `ai-api`。
+
+推荐分阶段加入：
+1. Tailwind CSS v4 与兼容的 PostCSS/Vite 或 Next 集成，按入口分别验证。
+2. Mantine core/hooks 与 Emotion 依赖，先在一个隔离页面验证主题、SSR 与 hydration。
+3. shadcn/ui 初始化配置及按需组件；不得把 shadcn 的全局 reset 与 Mantine reset 叠加造成全站样式回归。
+4. 锁文件、Docker build、Next build、Vite build 全部通过后再扩大迁移范围。
+
+**禁止一次性把 Mantine 与 shadcn/ui 全量铺满所有页面。** 两者在弹窗、下拉、提示、表单等领域重叠，必须遵循单一组件所有权。
+
+## 3. 全站信息架构
+
+主导航建议：
+- 首页
+- 衣服选装
+- 创作工坊
+- AI 皮肤
+- 创作者中心
+- 账户入口（未登录显示登录/注册，已登录显示账户菜单）
+
+页脚统一包含：衣服选装、创作工坊、创作者中心、账户、隐私/条款（页面存在后再显示）、非官方项目声明。
+
+页面级布局统一：页面标题与一句说明、主要操作区、内容区、帮助/错误提示。不要每页再造一套顶部导航。移动端导航使用可访问的菜单按钮与抽屉，支持键盘焦点、Escape 关闭和明确的 aria-label。
+
+## 4. 衣服选装：职责和行为
+
+### 分类
+- 上衣
+- 外套
+- 裤子
+- 鞋子
+- 帽子
+- 披肩
+- 披风
+
+「披肩」「外套」「披风」是三个独立分类，不得在 UI 或数据模型里合并。分类可有「全部」筛选，但「全部」不是素材类型。
+
+### 页面区域
+1. 素材侧栏：搜索、分类、筛选、排序、素材卡片、加载/空/错误状态。
+2. 角色预览：真实 skinview3d 模型、Steve/Alex、前后/旋转、背景、动作控制；WebGL 不可用时给出降级说明。
+3. 穿搭清单：每个可叠加槽位的当前选择、移除、清空、冲突提示。
+4. 操作区：保存穿搭、加载穿搭、随机搭配、发送到工作台、导出。只有对应 API/数据通路实现并测试后才显示为启用状态。
+
+### 选择规则
+- 每个分类的单选槽位只能存在一个当前项；未来支持可叠加饰品时，应显式定义 stackable，而不是靠 UI 猜测。
+- 搜索和切换分类不能清空已选素材。
+- 清空操作需要可撤销或确认（素材选择清空不影响用户已保存的穿搭）。
+- 刷新页面是否保留选择由明确的本地草稿/账号保存策略决定；未接入存储前不显示“已保存”。
+- 素材数据必须来自正式 catalog；素材缺失时显示不可用原因，不能用硬编码占位素材冒充真实资产。
+
+### 现有素材映射（第一阶段）
+当前 `PresetStudio` 的已知正式预设包括眼眸花、MCC、苦力怕、TikTok、Twitch 的披肩，以及苦力怕、TikTok、Twitch 外套；披风列表包括眼眸花、MCC、苦力怕、TikTok、Twitch。应先复用这份 catalog 和其贴图合成逻辑。
+目前尚不能据已读取的代码确认有完整的上衣、裤子、鞋子和帽子 PNG catalog。没有可用资产时显示「素材准备中」，不得伪造一键试穿能力。
+
+## 5. 创作工坊与导出
+
+创作工坊继续承担：
+- 导入标准 64×64 PNG 皮肤并验证尺寸/格式；
+- Steve / Alex 模型切换；
+- 披肩、外套、披风的素材选择与贴图合成；
+- 真实 3D 预览、动作切换、背景选择；
+- 导出前检查并下载 PNG；
+- Blockbench 导入/发送工作流及成功/失败反馈。
+
+衣服选装和创作工坊之间传递明确的数据结构（skin、modelType、各分类 asset id、语言），禁止只通过显示名称拼接猜测素材路径。跨应用通信应验证 origin、source 和消息 schema；任何导入失败都要可见且可重试。
+
+## 6. 组件与设计 token
+
+- 颜色：语义 token（background、surface、text、muted、border、primary、danger、success），不要在页面内散落硬编码色值。
+- 间距：以 4px 为基础步长；卡片内边距、网格 gap、标题间距统一。
+- 圆角与阴影：建立少量层级，不要同页混用像素风厚边框、玻璃拟态和默认组件圆角。
+- 状态：hover、focus-visible、active、disabled、loading 均有明确样式；颜色不能作为唯一状态指示。
+- 可访问性：语义 HTML、表单 label、键盘操作、可见焦点、合理对比度、aria-live 仅用于动态反馈。
+- 响应式：宽屏三栏；平板两栏并将穿搭摘要移至下方/抽屉；手机单栏，预览优先，素材分类横向滚动或抽屉，触控目标至少 44px。
+
+## 7. 安全与兼容性
+
+- 不修改 OAuth provider 配置、回调 URL、数据库 schema、会话策略或角色权限作为 UI 迁移的一部分。
+- 外部图片加载失败、CORS 受限或 WebGL 不可用时必须可恢复；导出前检测画布是否 tainted。
+- 用户上传的皮肤只在用户明确操作后处理；不得自动上传到第三方服务。
+- 所有保存、导出和权限相关操作必须在服务端重新验证，不能依赖隐藏按钮。
+- 版权与 Minecraft 非官方声明在全站统一呈现。
+
+## 8. 分阶段实施顺序
+
+### 阶段 A — 基础设施
+- [ ] 检查 root 与 ai-api 的 package manager、Node 版本和锁文件。
+- [ ] 加入 Tailwind v4 并在 Next 与 Vite 两入口分别验证。
+- [ ] 引入 Mantine，验证 Next SSR/hydration 与 Vite 样式隔离。
+- [ ] 配置 shadcn/ui 的组件所有权与按需安装策略。
+- [ ] 建立 token、Button、Input、Card、Dialog、Toast 等最小组件基线。
+
+### 阶段 B — 衣服选装
+- [ ] 从 PresetStudio 提取共享 catalog 和稳定 asset id。
+- [ ] 复用贴图加载/合成逻辑，接入真实 skinview3d。
+- [ ] 实现导入皮肤、Steve/Alex、旋转/缩放、动作和背景。
+- [ ] 实现分类筛选、单槽位选择、移除、清空和错误恢复。
+- [ ] 缺少资产的分类明确显示空状态；待真实素材交付后再启用。
+- [ ] 定义穿搭 JSON schema 与本地草稿；账号保存需另行接后端。
+
+### 阶段 C — 全站迁移
+- [ ] 导航、页脚、首页与账户页面统一。
+- [ ] 登录/注册、创作者中心、管理后台逐页迁移。
+- [ ] 保持 URL、表单字段、API 合约和权限行为不变。
+- [ ] 清理重复 CSS 与旧组件；每迁移一页执行视觉和功能回归。
+
+### 阶段 D — 验证与发布
+- [ ] `npm ci`
+- [ ] `npm run build`（Vite/Blockbench）
+- [ ] `npm run next:build`
+- [ ] `npm test` 与相关 Playwright 测试
+- [ ] 桌面/手机导航、选装、导入、导出、登录、OAuth 回归。
+- [ ] Docker build 与容器启动健康检查。
+- [ ] CI 全绿后再合并；只有镜像构建/发布 workflow 成功，才能宣称新镜像已发布。
+
+## 9. 验收标准
+
+1. 所有页面使用统一导航和页脚，移动端无横向溢出。
+2. 选装页不再用 CSS 假人冒充真实 3D；无法初始化时明确说明。
+3. 选择素材后真实预览更新，披肩、外套、披风的类型和贴图不混淆。
+4. 未实现的素材、保存、随机、导出功能不显示成已可用操作。
+5. OAuth、登录注册、Blockbench 导入、PNG 导出回归通过。
+6. npm 锁文件一致，CI、Next、Vite、Docker 验证通过。
+7. 页面支持键盘操作、可见焦点、错误反馈与加载反馈。
+
+
+
+---
+
+# 原文：`docs/DEPLOYMENT.md`
+
+> 原文件 Blob SHA：`8217e7dd6eac55fb2c531b083ba0280e7e163567`
+
+# 部署文档入口
+
+本文件保留为便于查找的部署入口，避免维护重复的部署说明。
+
+- **当前单镜像部署、环境变量、数据库选择与路由：** [SINGLE-IMAGE-PRODUCTION.md](./SINGLE-IMAGE-PRODUCTION.md)
+- **独立 Next.js 容器部署（仅在确实使用 Dockerfile.nextjs 时）：** [NEXTJS-CONTAINER-DEPLOYMENT.md](./NEXTJS-CONTAINER-DEPLOYMENT.md)
+- **生产迁移、备份、安全检查和回滚：** [PRODUCTION-SECURITY-ROLLOUT.md](./PRODUCTION-SECURITY-ROLLOUT.md)
+
+旧部署说明中有关“纯 Vite 静态站点”的部分不再作为当前生产架构依据。发布状态和多数据库兼容性必须通过当前提交的工作流与真实部署验证，不能只凭文档判断。
+
+
+
+---
+
+# 原文：`docs/DEVELOPMENT.md`
+
+> 原文件 Blob SHA：`a6777e888eb7d6c1b5395ed1c8d0251891ebb71c`
+
+# 开发环境与贡献指南
+
+## 1. 技术栈
+
+- React 18
+- TypeScript 5.6
+- Vite 6
+- lucide-react 图标库
+- Canvas 2D API
+- Docker + Nginx
+- GitHub Actions 与 GitHub Container Registry（GHCR）
+
+## 2. 环境要求
+
+建议安装受支持的 Node.js LTS 版本和 npm。Docker 不是本地前端开发的必需条件，但构建容器镜像和验证生产环境时需要 Docker。
+
+## 3. 本地启动
+
+在仓库根目录执行：
+
+```bash
+npm install
+npm run dev
+```
+
+Vite 开发服务器会监听可访问地址。终端会显示本机 URL；如在容器或局域网内测试，应使用终端输出的可访问地址。
+
+## 4. 构建与预览
+
+```bash
+npm run build
+npm run preview
+```
+
+构建命令先执行 TypeScript 项目检查，再生成 Vite 生产文件到 `dist/`。提交前应确认构建成功。
+
+## 5. 主要目录
+
+```text
+.
+├── .github/workflows/   # CI 与镜像发布工作流
+├── docs/               # 项目文档（唯一规范目录）
+├── src/
+│   ├── App.tsx         # 编辑器交互与像素数据逻辑
+│   ├── main.tsx        # React 应用入口
+│   └── styles.css      # 工作区样式
+├── Dockerfile          # 单镜像生产构建入口
+├── nginx.conf          # Nginx 配置
+├── docker-compose.yml  # 本地容器运行
+├── package.json        # 依赖与脚本
+└── vite.config.ts      # Vite 配置
+```
+
+## 6. 修改建议
+
+- 保持组件与交互逻辑清晰，避免将不相关的功能耦合在一起。
+- 像素数组与 Canvas 渲染应保持一致；涉及绘制操作时测试鼠标/触控指针事件。
+- 新增工具时同步更新工具类型、操作逻辑、快捷键和 `docs/USER_GUIDE.md`。
+- 修改导入或导出逻辑时，测试透明像素、边缘尺寸与异常文件情况。
+- 避免把秘密、访问令牌、私钥或生产凭据提交到 Git。
+- 保持 Docker 生产阶段通过 Nginx 提供静态文件，不要将开发服务器当作生产服务。
+
+## 7. 提交前检查
+
+```bash
+npm install
+npm run build
+```
+
+如果修改了容器配置，建议额外执行：
+
+```bash
+docker compose up --build -d
+```
+
+然后打开本地映射端口测试页面，并在完成后执行：
+
+```bash
+docker compose down
+```
+
+## 8. Pull Request / 代码审查
+
+提交说明应概括变更内容。PR 描述建议包含：
+
+- 修改目的和主要变更；
+- 手动测试步骤及结果；
+- UI 修改的截图（如适用）；
+- 对文档、Docker、CI 或部署配置的影响。
+
+
+
+---
+
+# 原文：`docs/NEXTJS-CONTAINER-DEPLOYMENT.md`
+
+> 原文件 Blob SHA：`5ba4222d1f1d12a923a73a25ba6d924ba6dda38a`
+
+# Next.js 独立容器部署与环境变量指南
+
+更新日期：2026-10-17
+
+## 1. 先确认部署的是哪一个服务
+
+本仓库有两套独立应用入口，环境变量不能混为一谈：
+
+- 根目录 `Dockerfile`：现有 Vite + Nginx 主站，包含 `/blockbench/`。
+- `Dockerfile.nextjs`：Next.js Node.js 服务，容器端口为 `3000`，用于账户、创作者和管理员功能。
+
+如果部署现有主站，不要因为 Next.js 文档而改用 `Dockerfile.nextjs`。如果部署账户系统，才选择 `Dockerfile.nextjs`。两者分别配置域名、变量、数据库和健康检查。
+
+## 2. Next.js 必需环境变量
+
+在 Zeabur、Vercel 或其他平台的服务设置中添加以下变量。值请在目标平台的 Secret / Environment Variables 页面填写，不要提交真实值到 Git。
+
+| 变量 | 必需 | 示例 / 默认值 | 用途 |
+| --- | --- | --- | --- |
+| `DATABASE_PROVIDER` | 是 | `postgresql` | 选择 `postgresql`、`mysql` 或 `sqlite`，必须与构建时选择的 schema/provider 一致 |
+| `DATABASE_URL` | 是 | 见数据库章节 | 数据库连接串；密码应 URL 编码，数据库账号遵循最小权限 |
+| `NEXTAUTH_SECRET` | 是 | 随机高熵密钥 | NextAuth 会话/令牌签名密钥；生产环境不得使用示例值 |
+| `NEXTAUTH_URL` | 是 | `https://你的账户服务域名` | NextAuth 服务的公开根 URL，必须与真实部署域名一致 |
+| `AUTH_GITHUB_ID` | 使用 GitHub 登录时必需 | GitHub OAuth Client ID | GitHub OAuth 应用的 Client ID |
+| `AUTH_GITHUB_SECRET` | 使用 GitHub 登录时必需 | GitHub OAuth Client Secret | GitHub OAuth 应用的密钥，只放服务端 Secret |
+| `LOGIN_RATE_LIMIT_MAX` | 否 | `10` | 每个 IP 在限流窗口内允许的登录尝试次数 |
+| `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | 否 | `900` | 登录限流窗口秒数；默认 15 分钟 |
+| `LOGIN_RATE_LIMIT_IP_HEADER` | 否 | `x-real-ip` | 从可信反向代理读取客户端 IP 的请求头；仅当代理会覆盖此头时使用 |
+| `BOOTSTRAP_ADMIN_EMAIL` | 仅初始化管理员时 | 不设置 | 一次性管理员引导命令所使用的确切邮箱；完成后必须删除 |
+
+`NODE_ENV` 由生产镜像/运行环境设置为 `production`。不要将 `NEXTAUTH_SECRET`、`AUTH_GITHUB_SECRET` 或数据库密码设置成 `NEXT_PUBLIC_*` 变量。不要把 Secret 放进 Docker build args、前端代码、日志或聊天消息。
+
+生成随机密钥示例（在自己的终端运行；不要把生成结果发到聊天中）：
+
+```bash
+openssl rand -base64 32
+```
+
+将命令输出作为 `NEXTAUTH_SECRET` 的值。
+
+## 3. 数据库连接配置
+
+每个部署环境只选择一种数据库。下面的 URL 是占位示例，必须替换用户名、密码、主机、端口和数据库名。
+
+| 数据库 | `DATABASE_PROVIDER` | `DATABASE_URL` 示例 | Prisma schema | 迁移目录 |
+| --- | --- | --- | --- | --- |
+| PostgreSQL | `postgresql` | `postgresql://USER:PASSWORD@HOST:5432/pixcape?schema=public` | `prisma/schema.prisma` | `prisma/migrations/` |
+| MySQL / MariaDB | `mysql` | `mysql://USER:PASSWORD@HOST:3306/pixcape` | `prisma/schema.mysql.prisma` | `prisma/migrations-mysql/` |
+| SQLite | `sqlite` | `file:/data/pixcape.db` | `prisma/schema.sqlite.prisma` | `prisma/migrations-sqlite/` |
+
+切换数据库 provider 后，必须按对应 schema 重新生成 Prisma Client 并重新构建镜像。不能将一种数据库的生成客户端或迁移用于另一种数据库。
+
+SQLite 仅建议单实例、单副本部署。必须将容器 `/data` 挂载到持久化卷，否则容器重建可能丢失数据库文件；多副本或较高写入量场景优先使用 PostgreSQL 或 MySQL/MariaDB。
+
+## 4. GitHub OAuth 配置
+
+1. 在 GitHub Developer Settings 中创建 OAuth App。
+2. Homepage URL 填账户服务的公开 HTTPS 根 URL。
+3. Authorization callback URL 填：
+
+```text
+https://你的账户服务域名/api/auth/callback/github
+```
+
+4. 将 OAuth App 的 Client ID 写入 `AUTH_GITHUB_ID`，将 Client Secret 写入 `AUTH_GITHUB_SECRET`。
+5. 将 `NEXTAUTH_URL` 设置为同一个账户服务根 URL；不要加上 callback 路径。
+6. 部署后测试登录、回调和退出。预览域名和生产域名不同的话，应分别确认 OAuth App 的回调配置。
+
+当前认证配置在未提供 GitHub OAuth ID 和 Secret 时不会注册 GitHub 登录提供方，因此登录功能不会正常可用。
+
+## 5. Zeabur / Vercel Docker 部署步骤
+
+1. 创建独立的 Next.js 预览服务，并选择包含对应代码的提交。
+2. Docker 部署时指定仓库根目录下的 `Dockerfile.nextjs`，容器端口设置为 `3000`。
+3. 创建隔离的预览数据库，按上表设置 `DATABASE_PROVIDER` 和 `DATABASE_URL`。
+4. 在服务的 Variables / Environment Variables / Secrets 设置页逐项添加本节必需变量及需要的可选变量。变量名必须完全一致；修改后按平台要求重新部署。
+5. 添加 GitHub OAuth 变量和匹配的 callback URL。
+6. 先检查当前提交、数据库 provider 和迁移状态；确认目标数据库与备份策略后，才执行迁移。
+7. 验证反向代理会覆盖 `x-real-ip`（或你配置的可信头）。若无法确认代理信任边界，不要把依赖 IP 限流的登录端点直接暴露到公网。
+8. 检查健康状态、登录/OAuth 回调、退出、创作者流程、管理员审核/封禁及资源所有权。
+9. 生产迁移前先备份数据库，并由维护者明确批准。预览构建成功不等于生产环境已部署或通过安全验收。
+
+## 6. 迁移与初始化管理员
+
+数据库 schema 变更需要使用与 provider 匹配的迁移目录。不要在生产启动时未经审查就自动执行开发迁移。
+
+示例命令（请在有正确环境变量、且指向目标数据库的受控环境执行）：
+
+```bash
+# PostgreSQL
+DATABASE_PROVIDER=postgresql npm run db:generate
+DATABASE_PROVIDER=postgresql npm run db:migrate
+
+# MySQL / MariaDB
+DATABASE_PROVIDER=mysql DATABASE_URL='mysql://USER:PASSWORD@HOST:3306/pixcape' npm run db:generate
+DATABASE_PROVIDER=mysql DATABASE_URL='mysql://USER:PASSWORD@HOST:3306/pixcape' npm run db:migrate
+
+# SQLite
+DATABASE_PROVIDER=sqlite DATABASE_URL='file:/data/pixcape.db' npm run db:generate
+DATABASE_PROVIDER=sqlite DATABASE_URL='file:/data/pixcape.db' npm run db:migrate
+```
+
+管理员引导仅在受控环境进行：先使用目标邮箱完成 OAuth 登录，然后短暂设置 `BOOTSTRAP_ADMIN_EMAIL` 为该确切邮箱，并运行 `npm run db:bootstrap-admin`。确认成功后立即删除该变量，禁止长期保留或公开管理员引导开关。
+
+## 7. 根目录 `.env.example` 与本地开发
+
+仓库的 `.env.example` 可作为本地开发模板。复制为 `.env.local` 后再填写自己的值；不要把真实的 `.env.local` 提交到仓库。
+
+```bash
+cp .env.example .env.local
+```
+
+示例文件中的占位数据库凭据、随机密钥提示和空 OAuth 值不能直接用于生产。主站 Vite 环境变量与 Next.js 服务端环境变量应分别管理；不要假设为主站配置的变量会自动传入另一个服务。
+
+## 8. 验收边界
+
+- CI 或镜像构建成功不代表已在 Zeabur/Vercel 完成真实部署。
+- 一个数据库 provider 的测试通过，不代表其他 provider 也通过。
+- 生产 OAuth 凭据、Secret、代理头、域名、持久化卷、数据库迁移和回滚方案必须在真实环境单独验证。
+- 保持根目录 `Dockerfile` 与现有主站入口不变，直到 Next.js 预览、迁移、安全测试和生产切换均经过单独审批。
+
+
+
+---
+
+# 原文：`docs/NEXTJS-USER-ROLES-MIGRATION.md`
+
+> 原文件 Blob SHA：`dbf926d19fc96d10d7db3f2f3bbca15d3e9ae7dc`
+
+# Next.js 与用户 / 创作者 / 管理员系统迁移方案
+
+## 当前进度（更新于 2026-10-16）
+
+- [x] 创建隔离迁移分支，保留现有 Vite 生产入口。
+- [x] 增加 Next.js App Router 页面骨架：主页、登录、注册、账户、创作者、管理员入口。
+- [x] 增加 Prisma PostgreSQL 数据模型草案：用户、角色、创作者资料、项目、审计日志及 Auth.js Adapter 表。
+- [x] 增加服务端授权原语与环境变量示例。
+- [x] 增加独立 Next.js 构建工作流。
+- [x] 接入 Auth.js 数据库会话与条件启用的 GitHub OAuth provider（仍需部署端密钥和数据库）。
+- [x] 为 Auth.js 数据库会话设置 8 小时最长有效期、1 小时更新间隔，并在生产环境使用安全 Cookie。
+- [x] 增加 PostgreSQL / MySQL provider 选择、独立 Prisma schema 与独立迁移目录，并适配两种数据库的 Prisma driver adapter。
+- [x] 为 MySQL 增加初始迁移及并发登录限流集成测试；实际 CI 结果仍需等待本次双数据库工作流完成。
+- [x] 添加基础 HTTP 安全响应头，生产环境启用当前主机的 HSTS（不默认覆盖其他子域名）。
+- [x] 管理员审核和封禁操作加入条件更新，降低并发重复审核和状态竞争风险。
+- [x] 封禁用户时删除其数据库会话并记录审计日志。
+- [x] 建立独立的登录限流增量迁移，避免修改可能已执行过的初始 migration。
+- [x] 增加 PostgreSQL 持久化限流，按可信反向代理提供的 IP 标识做原子固定窗口计数；默认每 IP 每 15 分钟 10 次，数据库不可用时认证入口失败关闭。
+- [x] 增加 Node.js 内置测试运行器的 RBAC / 资源所有权单元测试、PostgreSQL 集成测试和 HTTP 安全 E2E 测试。
+- [x] CI 使用真实 PostgreSQL 服务执行 migrate deploy、RBAC/所有权测试、并发限流测试、Vite/Next 构建与 E2E。
+- [x] GitHub Actions Run #92（基线验证）与 Run #96（当时验证）：PostgreSQL 迁移、RBAC / 资源所有权单元测试、PostgreSQL 集成测试、Vite / Next.js 构建和 HTTP 安全 E2E 全部通过。
+- [x] PR Run #97 暴露 PostgreSQL 时间戳精度边界问题，可能使 Retry-After 超过 900 秒；已在 `lib/login-rate-limit-store.ts` 中将返回值限制在 `1..windowSeconds`。修复后 Preview Security Run #99 全部通过，包括 PostgreSQL 迁移、RBAC/所有权测试、PostgreSQL 集成测试、Vite/Next.js 构建和 HTTP 安全 E2E。
+- [ ] 配置 GitHub OAuth 与数据库后端，完成真实登录、会话撤销、审核和封禁端到端测试。
+- [x] 增加 RBAC / 资源所有权自动化测试与安全回归测试。
+- [x] 将构建运行时切换为 Node.js 24 LTS，并更新 GitHub Actions checkout/setup-node 到稳定主版本。
+- [x] 将 Next.js、React、Vite、TypeScript、skinview3d、Three.js、Radix UI、Lucide、PWA 插件和 PostgreSQL 驱动升级到已发布稳定版本。
+- [x] 将 Prisma 升级到 7.10 稳定版，增加 prisma.config.ts 与 PostgreSQL driver adapter；需由 CI 验证生成、schema 与构建兼容性。
+- [x] 将 NextAuth 从 v5 beta API 迁移到稳定版 v4.24.15，并调整 App Router 会话与退出登录代码。
+- [x] 最新 CI Run #247 全部通过：现有 Vite 构建、npm 高危/严重漏洞门禁与完整 Docker 镜像构建。
+- [x] 最新 CodeQL Run #72 成功完成静态分析；SARIF 作为 artifact 保存。该方式不向 GitHub Security 页面上传告警，若需要 Security 页面告警，仍需为私有仓库启用 GitHub Code Security。
+- [ ] 完成 Next.js 与现有 Vite / Blockbench 的整合、Docker 预览和回归验证。
+
+## 技术路线
+
+Next.js App Router + TypeScript、Auth.js、Prisma；数据库可通过 `DATABASE_PROVIDER=postgresql`（默认）或 `DATABASE_PROVIDER=mysql` 选择。两种数据库分别使用 `prisma/schema.prisma` / `prisma/schema.mysql.prisma` 及各自迁移目录，不能交叉应用迁移。部署仍需保证现有 `/blockbench/` 静态编辑器路径可访问。新 Next.js 入口在完成测试之前不替换当前 Vite 生产入口。
+
+## 角色与权限
+
+角色为 `USER`、`CREATOR`、`ADMIN`。新用户必须默认是 `USER`；创作者由申请和审核流程授予；管理员只能通过受保护的管理操作或一次性受控初始化流程授予。角色来源必须是服务端验证的会话与数据库记录，不可信任客户端传入的 role。
+
+| 能力 | 游客 | 普通用户 | 创作者 | 管理员 |
+| --- | --- | --- | --- | --- |
+| 浏览公开作品 | 是 | 是 | 是 | 是 |
+| 保存个人作品 | 否 | 是 | 是 | 是 |
+| 发布创作者作品 | 否 | 否 | 是 | 是 |
+| 管理用户与审核作品 | 否 | 否 | 否 | 是 |
+
+## 安全要求
+
+- 默认拒绝访问；每个 Server Action / Route Handler 都必须校验会话、角色和资源所有权。
+- 管理操作写入审计日志；封禁用户后删除现存数据库会话，并在每次敏感操作时重新读取角色和状态。
+- 密钥只通过部署平台 Secret 或本地未提交的环境文件提供；不得提交真实 OAuth 密钥或数据库凭据。
+- 生产环境只在确认 HTTPS 后启用 HSTS；部署到多子域名环境前单独核对 HTTPS 覆盖情况。
+- 安全响应头是纵深防御，不替代输入校验、CSRF/Origin 检查、限流、资源所有权检查和安全测试。
+- 不在认证和数据库尚未接通时声称登录或角色授权已经生效。
+
+## 验收清单
+
+1. 现有 `npm run build` 仍然通过。
+2. `npm run next:build` 通过，页面可打开并刷新。
+3. 游客访问受限资源得到登录引导；普通用户不能进入创作者写操作或管理员写操作。
+4. 并发重复审核只能成功一次；非管理员无法修改用户状态；封禁后原数据库会话失效。
+5. 创作者只能编辑自己的项目；管理员操作有审计记录。
+6. 验证皮肤 PNG 导入导出、skinview3d 预览、Blockbench 深层路径、PWA 缓存和 Docker 镜像。
+
+> PostgreSQL 的登录限流和安全测试已有通过的 CI 记录。MySQL provider、独立迁移和并发限流测试现已加入工作流，但必须等待新的 MySQL 服务迁移、集成测试和双镜像构建全部通过后，才能称为已验证兼容。CI 使用的是临时数据库，不是生产数据库。OAuth 真实提供商登录、生产数据库迁移、生产反向代理 IP 头配置，以及生产部署后的 Blockbench/PWA 回归仍需真实环境验证。未完成这些验证前，不应切换生产入口。
+
