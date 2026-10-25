@@ -26,7 +26,7 @@
 ## 实施顺序
 
 1. 统一全站导航、按钮语义和响应式布局。
-2. 独立衣服选装入口已连接项目现有 skinview3d 和已知披肩/外套/披风素材；尚未接入的服装分类必须保持不可用状态。
+2. 旧的独立衣服选装页面已退役；AI 生成、编辑器、衣服选装三个导航入口统一进入 `/studio/`，通过 `mode=ai|editor|wardrobe` 区分入口。旧 `/dress-up` 地址保留兼容重定向，不再渲染独立搭配页面。
 3. 以 Mantine 迁移登录/注册和设置表单作为首个组件试点。
 4. 建立 Tailwind CSS v4 token/布局约定，并逐页迁移。
 5. 在明确场景引入 shadcn/ui 组件。
@@ -35,7 +35,7 @@
 
 ## 本次实现边界
 
-本分支已建立独立衣服选装页面，并将已知披肩、外套和披风素材接入 skinview3d 实时预览，支持本地 64×64 PNG 导入、Steve/Alex 模型、旋转/缩放和背景色调整。上衣、裤子、鞋子和帽子当前没有确认可用的正式素材，页面明确显示尚未接入。穿搭持久化和本页导出仍未实现。Mantine 与 Tailwind CSS v4 的依赖及锁文件已在迁移分支接入；登录/注册已开始使用 Mantine 控件，Next.js 与 Vite 入口均已接入 Provider 和 Tailwind utilities。双入口构建与浏览器回归仍待当前 PR 的 GitHub Actions 结果确认。
+历史实现说明：旧独立衣服选装页面曾接入已知披肩、外套和披风素材与 skinview3d 预览。本轮已将旧 `/dress-up` 页面退役并重定向到统一 `/studio/?mode=wardrobe` 入口；统一工作区实际可用能力仍取决于 `NEXT_PUBLIC_EDITOR_URL` 指向的编辑器是否支持 `mode` 参数。上衣、裤子、鞋子和帽子当前没有确认可用的正式素材，页面明确显示尚未接入。穿搭持久化和本页导出仍未实现。Mantine 与 Tailwind CSS v4 的依赖及锁文件已在迁移分支接入；登录/注册已开始使用 Mantine 控件，Next.js 与 Vite 入口均已接入 Provider 和 Tailwind utilities。双入口构建与浏览器回归仍待当前 PR 的 GitHub Actions 结果确认。
 
 ## Phase 2 implementation — shared account form primitives
 
