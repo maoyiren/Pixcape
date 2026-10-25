@@ -95,13 +95,13 @@ export type PresetEditorPayload = {
 }
 
 type StudioLanguage = 'zh-CN' | 'en-US'
-type Props = { onOpenEditor: (payload: PresetEditorPayload) => void; onOpenAI: () => void }
+type Props = { initialMode?: 'editor' | 'ai' | 'wardrobe'; onOpenEditor: (payload: PresetEditorPayload) => void; onOpenAI: () => void }
 const EN: Record<string, string> = {
 'Minecraft 皮肤与服装工作台':'Minecraft Skin & Outfit Studio','当前皮肤':'Current Skin','已就绪':'Ready','正在加载':'Loading','导入皮肤':'Import Skin','导入穿搭备份 JSON':'Import Outfit Backup JSON','导出穿搭备份 JSON':'Export Outfit Backup JSON','导出合成皮肤 PNG':'Export Combined Skin PNG','发送到 Blockbench 编辑':'Send to Blockbench','预制服装':'Presets','披肩':'Shawl','外套':'Jacket','披风':'Cape','角色预览':'Character Preview','Steve 粗臂':'Steve · Classic','Alex 细臂':'Alex · Slim','正面':'Front','背面':'Back','切换为披风':'Switch to Cape','切换为鞘翅':'Switch to Elytra','白天':'Day','夜晚':'Night','平原':'Plains','沙漠':'Desert','森林':'Forest','下界':'Nether','末地':'The End','自定义':'Custom','背景调色':'Background Color','恢复天空蓝':'Reset Sky Blue','站立':'Idle','挥手':'Wave','行走':'Walk','飞行':'Fly','切换动作':'Switch action','缩放':'Zoom','X 轴':'X axis','Y 轴':'Y axis','Z 轴':'Z axis','重置视角':'Reset View','重置':'Reset','选择语言':'Language','工作台':'Studio','AI 皮肤工坊':'AI Skin Studio','3D 模型编辑':'3D Model Editor','拖动旋转 · 上下拖动俯仰 · 滚轮缩放 · 正面 / 背面':'Drag to rotate · vertical drag to tilt · wheel to zoom · front / back','正在加载模板…':'Loading presets…','模板已应用，可旋转预览或导出 PNG':'Preset applied. Rotate preview or export PNG.','备用皮肤已就绪':'Fallback skin ready','已导入皮肤，正在应用模板…':'Skin imported. Applying presets…','皮肤仍在加载，请稍后再打开编辑器。':'Skin is loading. Please wait before opening the editor.','已将当前预制皮肤发送到 Blockbench':'Current preset skin sent to Blockbench','已导出合成皮肤 PNG':'Combined skin PNG exported','请导入 PNG 格式的 Minecraft 皮肤。':'Please import a Minecraft skin in PNG format.','皮肤尺寸必须是标准的 64 × 64 PNG，未修改当前皮肤。':'Skin must be a standard 64 × 64 PNG. Current skin was not changed.','无法读取这张 PNG 图片，请选择有效的皮肤文件。':'Could not read this PNG. Choose a valid skin file.','部分远程模板素材加载失败，已显示备用皮肤；可继续编辑或重新导入 PNG。':'Some remote assets failed. A fallback skin is shown; continue editing or import a PNG.','披肩 / 外套模板 · 实时 3D 预览':'Shawl / jacket presets · live 3D preview'
 }
 function tr(text: string, language: StudioLanguage): string { return language === 'en-US' ? (EN[text] || text) : text }
 
-export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
+export default function PresetStudio({ initialMode = 'editor', onOpenEditor, onOpenAI }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const skinInputRef = useRef<HTMLInputElement>(null)
   const outfitBackupInputRef = useRef<HTMLInputElement>(null)
@@ -111,7 +111,7 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
   const [shawlId, setShawlId] = useState('office-shawl')
   const [coatId, setCoatId] = useState('none')
   const [capeId, setCapeId] = useState('cape_office.png')
-  const [activeCategory, setActiveCategory] = useState<'shawl' | 'coat' | 'cape'>('shawl')
+  const [activeCategory, setActiveCategory] = useState<'shawl' | 'coat' | 'cape'>(() => initialMode === 'wardrobe' ? 'coat' : 'shawl')
   const [elytraVisible, setElytraVisible] = useState(false)
   const [modelType, setModelType] = useState<'steve' | 'alex'>('steve')
   const [viewSide, setViewSide] = useState<'front' | 'back'>('front')
