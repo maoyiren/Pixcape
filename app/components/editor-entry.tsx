@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { Alert, Button } from '@mantine/core'
 
