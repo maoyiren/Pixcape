@@ -104,3 +104,13 @@ Date: 2026-10-25
 ### 验收边界
 
 “全站统一”表示所有页面逐步遵循同一套 token、布局和默认组件规则，不表示本次提交已经完成全站迁移。PR #23 当前只是 Mantine + Tailwind CSS v4 的基础设施与登录/注册试点；全站其余模块需分批实施并逐批验证。shadcn/ui 尚需按实际场景评估和接入，不应在未安装、未验证前声称已经全面使用。
+
+
+## Phase 4 implementation update — creator profile form
+
+Date: 2026-10-25
+
+- Migrated the creator profile form's public display-name and bio fields to Mantine `TextInput` and `Textarea`, and the submit action to Mantine `Button`.
+- Preserved the existing server action, field names, required/minimum/maximum constraints, profile defaults, and success/error query-state messages.
+- This is an incremental route migration; account overview, admin settings, home page, editor panels and other product surfaces remain in the staged rollout and must not be described as fully migrated yet.
+- The earlier browser regression exposed a Mantine accessible-name difference for the password field. The locator now targets the stable `#login-password` ID; the next CI run must confirm this regression is resolved.
