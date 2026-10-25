@@ -61,22 +61,68 @@ app.use('/api/ai', (req, res, next) => {
   next()
 })
 
-const configured = {
-  gemini: Boolean(process.env.GEMINI_API_KEY),
-  openai: Boolean(process.env.OPENAI_API_KEY),
-  openrouter: Boolean(process.env.OPENROUTER_API_KEY),
-  seedream: Boolean(process.env.ARK_API_KEY || process.env.VOLCENGINE_ARK_API_KEY),
-}
 function modelList(pluralName, singularName, fallback = '') {
   const raw = process.env[pluralName] || process.env[singularName] || fallback
   return [...new Set(raw.split(/[;,]/).map(value => value.trim()).filter(Boolean))]
 }
-const openRouterImageToImageModels = modelList('OPENROUTER_IMAGE_TO_IMAGE_MODELS', 'OPENROUTER_IMAGE_TO_IMAGE_MODEL')
-const seedreamModels = modelList('SEEDREAM_IMAGE_MODELS', 'SEEDREAM_IMAGE_MODEL', 'doubao-seedream-4-0-250828')
-const configuredModels = {
-  gemini: modelList('GEMINI_IMAGE_MODELS', 'GEMINI_IMAGE_MODEL', 'gemini-2.5-flash-image'),
-  openai: modelList('OPENAI_IMAGE_MODELS', 'OPENAI_IMAGE_MODEL', 'gpt-image-1'),
-  openrouter: modelList('OPENROUTER_IMAGE_MODELS', 'OPENROUTER_IMAGE_MODEL'),
+let configured = {}
+let openRouterImageToImageModels = []
+let seedreamModels = []
+let configuredModels = {}
+function reloadConfigFromEnv() {
+  configured = {
+    gemini: Boolean(process.env.GEMINI_API_KEY),
+    openai: Boolean(process.env.OPENAI_API_KEY),
+    openrouter: Boolean(process.env.OPENROUTER_API_KEY),
+    seedream: Boolean(process.env.ARK_API_KEY || process.env.VOLCENGINE_ARK_API_KEY),
+  }
+  openRouterImageToImageModels = modelList('OPENROUTER_IMAGE_TO_IMAGE_MODELS', 'OPENROUTER_IMAGE_TO_IMAGE_MODEL')
+  seedreamModels = modelList('SEEDREAM_IMAGE_MODELS', 'SEEDREAM_IMAGE_MODEL', 'doubao-seedream-4-0-250828')
+  configuredModels = {
+    gemini: modelList('GEMINI_IMAGE_MODELS', 'GEMINI_IMAGE_MODEL', 'gemini-2.5-flash-image'),
+    openai: modelList('OPENAI_IMAGE_MODELS', 'OPENAI_IMAGE_MODEL', 'gpt-image-1'),
+    openrouter: modelList('OPENROUTER_IMAGE_MODELS', 'OPENROUTER_IMAGE_MODEL'),
+  }
+}
+reloadConfigFromEnv()
+
+let lastConfigRefresh = 0
+let configRefreshPromise = null
+async function refreshRemoteConfig(force = false) {
+  const configUrl = process.env.AI_CONFIG_URL || 'https://cdpc.cc/api/internal/ai-config'
+  const token = process.env.AI_CONFIG_SYNC_TOKEN
+  if (!configUrl || !token) return
+  if (!force && Date.now() - lastConfigRefresh < 15000) return
+  if (configRefreshPromise) return configRefreshPromise
+  configRefreshPromise = (async () => {
+    try {
+      const response = await fetch(configUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(3000),
+        cache: 'no-store',
+      })
+      if (!response.ok) throw new Error(`config endpoint HTTP ${response.status}`)
+      const payload = await response.json()
+      const values = payload?.env
+      if (!values || typeof values !== 'object') throw new Error('invalid config payload')
+      const allowed = [
+        'AI_DEFAULT_PROVIDER', 'AI_DEFAULT_MODEL', 'GEMINI_IMAGE_MODELS', 'OPENAI_IMAGE_MODELS',
+        'OPENROUTER_IMAGE_MODELS', 'SEEDREAM_IMAGE_MODELS', 'ARK_BASE_URL',
+        'GEMINI_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'ARK_API_KEY', 'DEEPSEEK_API_KEY', 'DEEPSEEK_TEXT_MODEL',
+      ]
+      for (const key of allowed) if (typeof values[key] === 'string') process.env[key] = values[key]
+      lastConfigRefresh = Date.now()
+      reloadConfigFromEnv()
+      console.info('[ai-config] refreshed from CDPC admin settings')
+    } catch (error) {
+      // Continue using the last known or deployment environment configuration.
+      console.warn('[ai-config] refresh failed; retaining current settings', error instanceof Error ? error.message : 'unknown error')
+      lastConfigRefresh = Date.now()
+    } finally {
+      configRefreshPromise = null
+    }
+  })()
+  return configRefreshPromise
 }
 
 function getModels() {

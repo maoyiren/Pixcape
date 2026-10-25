@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
+import { createCipheriv, createHash, randomBytes } from 'node:crypto'
 
 async function requireActiveAdmin() {
   const session = await getServerSession(authOptions)
@@ -31,13 +32,11 @@ export async function reviewCreatorApplication(formData: FormData) {
 
     const profile = await tx.creatorProfile.findUnique({ where: { id: profileId }, select: { userId: true } })
     if (!profile) throw new Error('Creator profile disappeared during review')
-    await tx.user.update({
-      where: { id: profile.userId },
-      data: { role: approved ? 'CREATOR' : 'USER' },
-    })
+    // Verification review is separate from creator identity. Rejection must never
+    // downgrade the account or revoke its ability to create private drafts.
     await tx.auditLog.create({ data: {
       actorId: actor.id,
-      action: approved ? 'CREATOR_APPLICATION_APPROVED' : 'CREATOR_APPLICATION_REJECTED',
+      action: approved ? 'CREATOR_VERIFICATION_APPROVED' : 'CREATOR_VERIFICATION_REJECTED',
       targetType: 'CreatorProfile',
       targetId: profileId,
       details: { userId: profile.userId },
@@ -187,6 +186,32 @@ export async function setAdminAccess(formData: FormData) {
 }
 
 
+export async function saveSystemConfiguration(formData: FormData) {
+  const actor = await requireActiveAdmin()
+  const callbackUrl = String(formData.get('defaultCallbackUrl') ?? '/workbench').trim()
+  const returnToOriginalPage = String(formData.get('returnToOriginalPage') ?? 'true')
+  if (!['true', 'false'].includes(returnToOriginalPage)) redirect('/admin?error=invalid_return_behavior#configuration')
+  if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//') || callbackUrl.includes(String.fromCharCode(92)) || callbackUrl.length > 300) {
+    redirect('/admin?error=invalid_default_callback#configuration')
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.appSetting.upsert({
+      where: { key: 'AUTH_DEFAULT_CALLBACK_URL' },
+      update: { value: callbackUrl },
+      create: { key: 'AUTH_DEFAULT_CALLBACK_URL', value: callbackUrl },
+    })
+    await tx.appSetting.upsert({
+      where: { key: 'AUTH_RETURN_TO_ORIGINAL_PAGE' },
+      update: { value: returnToOriginalPage },
+      create: { key: 'AUTH_RETURN_TO_ORIGINAL_PAGE', value: returnToOriginalPage },
+    })
+    await tx.auditLog.create({
+      data: { actorId: actor.id, action: 'SYSTEM_CONFIGURATION_UPDATED', targetType: 'AppSetting', targetId: 'AUTH_LOGIN_REDIRECT', details: { defaultCallbackUrl: callbackUrl, returnToOriginalPage: returnToOriginalPage === 'true' } },
+    })
+  })
+  redirect('/admin?systemConfigurationSaved=1#configuration')
+}
+
 export async function setEmailVerificationRequired(formData: FormData) {
   const actor = await requireActiveAdmin()
   const value = String(formData.get('required') ?? '')
@@ -211,4 +236,75 @@ export async function setEmailVerificationRequired(formData: FormData) {
     })
   })
   redirect('/admin?emailVerificationUpdated=1#configuration')
+}
+
+
+function encryptAISecret(value: string) {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) throw new Error('缺少 AUTH_SECRET / NEXTAUTH_SECRET，无法安全保存 AI 密钥')
+  const iv = randomBytes(12)
+  const key = createHash('sha256').update(secret).digest()
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()])
+  return [iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), encrypted.toString('base64url')].join('.')
+}
+
+export async function saveAIConfiguration(formData: FormData) {
+  const actor = await requireActiveAdmin()
+  const provider = String(formData.get('provider') ?? 'auto')
+  if (!['auto', 'gemini', 'openai', 'openrouter', 'seedream'].includes(provider)) redirect('/admin?error=invalid_ai_provider#configuration')
+  const model = String(formData.get('model') ?? '').trim().slice(0, 160)
+  const geminiModels = String(formData.get('geminiModels') ?? '').trim().slice(0, 500)
+  const openaiModels = String(formData.get('openaiModels') ?? '').trim().slice(0, 500)
+  const openrouterModels = String(formData.get('openrouterModels') ?? '').trim().slice(0, 1000)
+  const seedreamModels = String(formData.get('seedreamModels') ?? '').trim().slice(0, 500)
+  const deepseekTextModel = String(formData.get('deepseekTextModel') ?? 'deepseek-chat').trim().slice(0, 160)
+  const arkBaseUrl = String(formData.get('arkBaseUrl') ?? 'https://ark.cn-beijing.volces.com/api/v3').trim().slice(0, 300)
+  try {
+    const parsed = new URL(arkBaseUrl)
+    if (parsed.protocol !== 'https:' || !/(^|\.)volces\.com$|(^|\.)volcengine\.com$/.test(parsed.hostname)) throw new Error()
+  } catch { redirect('/admin?error=invalid_ark_url#configuration') }
+
+  const values: Record<string, string> = {
+    AI_DEFAULT_PROVIDER: provider,
+    AI_DEFAULT_MODEL: model,
+    GEMINI_IMAGE_MODELS: geminiModels,
+    OPENAI_IMAGE_MODELS: openaiModels,
+    OPENROUTER_IMAGE_MODELS: openrouterModels,
+    SEEDREAM_IMAGE_MODELS: seedreamModels,
+    DEEPSEEK_TEXT_MODEL: deepseekTextModel,
+    ARK_BASE_URL: arkBaseUrl,
+  }
+  const secretFields = [
+    ['geminiApiKey', 'clearGeminiApiKey', 'AI_SECRET_GEMINI_API_KEY'],
+    ['openaiApiKey', 'clearOpenaiApiKey', 'AI_SECRET_OPENAI_API_KEY'],
+    ['openrouterApiKey', 'clearOpenrouterApiKey', 'AI_SECRET_OPENROUTER_API_KEY'],
+    ['seedreamApiKey', 'clearSeedreamApiKey', 'AI_SECRET_ARK_API_KEY'],
+    ['deepseekApiKey', 'clearDeepseekApiKey', 'AI_SECRET_DEEPSEEK_API_KEY'],
+  ] as const
+  for (const [field, clearField, settingKey] of secretFields) {
+    const value = String(formData.get(field) ?? '').trim()
+    if (value.length > 2048) redirect('/admin?error=ai_key_too_long#configuration')
+    if (formData.get(clearField) === 'on') values[settingKey] = ''
+    else if (value) values[settingKey] = encryptAISecret(value)
+  }
+  await prisma.$transaction(async (tx) => {
+    for (const [key, value] of Object.entries(values)) {
+      await tx.appSetting.upsert({ where: { key }, update: { value }, create: { key, value } })
+    }
+    for (const [field, clearField, settingKey] of secretFields) {
+      if (formData.get(clearField) === 'on' || String(formData.get(field) ?? '').trim()) {
+        await tx.auditLog.create({ data: {
+          actorId: actor.id, action: 'AI_CONFIGURATION_SECRET_CHANGED',
+          targetType: 'AppSetting', targetId: settingKey,
+          details: { cleared: formData.get(clearField) === 'on', changed: formData.get(clearField) === 'on' || Boolean(String(formData.get(field) ?? '').trim()) },
+        } })
+      }
+    }
+    await tx.auditLog.create({ data: {
+      actorId: actor.id, action: 'AI_CONFIGURATION_UPDATED', targetType: 'AppSetting', targetId: 'AI_DEFAULT_PROVIDER',
+      details: { provider, model, configuredModelLists: ['gemini', 'openai', 'openrouter', 'seedream', 'deepseek-text'] },
+    } })
+  })
+  redirect('/admin?aiConfigurationSaved=1#configuration')
 }

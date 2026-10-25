@@ -165,9 +165,23 @@ export const authOptions: NextAuthOptions = {
         console.warn('[auth] signIn denied: user record missing or status is not ACTIVE')
         return false
       }
-      if (account?.provider === 'email' && record.email) {
-        await prisma.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } })
-      }
+      // Every authenticated account can create immediately. Keep ADMIN privileged, but
+      // promote legacy USER accounts to CREATOR and ensure profile creation is idempotent.
+      await prisma.$transaction(async (tx) => {
+        const current = await tx.user.findUnique({ where: { id: user.id }, select: { id: true, name: true, email: true, role: true } })
+        if (!current) throw new Error('Authenticated user disappeared')
+        if (current.role === 'USER') {
+          await tx.user.update({ where: { id: current.id }, data: { role: 'CREATOR' } })
+        }
+        await tx.creatorProfile.upsert({
+          where: { userId: current.id },
+          update: {},
+          create: { userId: current.id, displayName: (current.name || current.email?.split('@')[0] || 'CDPC 创作者').slice(0, 48), bio: '', reviewStatus: 'NOT_SUBMITTED' },
+        })
+        if (account?.provider === 'email' && current.email) {
+          await tx.user.update({ where: { id: current.id }, data: { emailVerified: new Date() } })
+        }
+      })
       return true
     },
   },

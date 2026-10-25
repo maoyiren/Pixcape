@@ -37,9 +37,16 @@ export async function POST(request: Request) {
     if (existing) return NextResponse.json({ error: '该邮箱已注册，请直接登录。' }, { status: 409 })
     const salt = randomBytes(16).toString('hex')
     const passwordHash = `${salt}:${scryptSync(password, salt, 64).toString('hex')}`
-    await prisma.user.create({
-      data: { email, name: name || email.split('@')[0], passwordHash, role: 'USER', status: 'ACTIVE', ...(requireVerification ? {} : { emailVerified: null }) },
-      select: { id: true },
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email, name: name || email.split('@')[0], passwordHash, role: 'CREATOR', status: 'ACTIVE', ...(requireVerification ? {} : { emailVerified: null }) },
+        select: { id: true, name: true, email: true },
+      })
+      await tx.creatorProfile.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: { userId: user.id, displayName: (user.name || user.email?.split('@')[0] || 'CDPC 创作者').slice(0, 48), bio: '', reviewStatus: 'NOT_SUBMITTED' },
+      })
     })
     if (requireVerification) {
       const token = randomBytes(32).toString('hex')
@@ -64,9 +71,9 @@ export async function POST(request: Request) {
         await prisma.user.deleteMany({ where: { email, passwordHash } })
         return NextResponse.json({ error: '验证邮件发送失败，请联系管理员检查 SMTP 配置。' }, { status: 503 })
       }
-      return NextResponse.json({ ok: true, message: '注册已提交，请查收验证邮件。验证链接 30 分钟后过期。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
+      return NextResponse.json({ ok: true, requiresVerification: true, message: '注册已提交，请查收验证邮件。验证链接 30 分钟后过期。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
     }
-    return NextResponse.json({ ok: true, message: '注册成功，请使用邮箱和密码登录。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ ok: true, requiresVerification: false, message: '注册成功，正在进入创作工坊。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch {
     return NextResponse.json({ error: '注册失败，请稍后重试。' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }

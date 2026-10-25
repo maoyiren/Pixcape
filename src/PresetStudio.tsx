@@ -97,13 +97,14 @@ export type PresetEditorPayload = {
 type StudioLanguage = 'zh-CN' | 'en-US'
 type Props = { onOpenEditor: (payload: PresetEditorPayload) => void; onOpenAI: () => void }
 const EN: Record<string, string> = {
-'Minecraft 皮肤与服装工作台':'Minecraft Skin & Outfit Studio','当前皮肤':'Current Skin','已就绪':'Ready','正在加载':'Loading','导入皮肤':'Import Skin','导出合成皮肤 PNG':'Export Combined Skin PNG','发送到 Blockbench 编辑':'Send to Blockbench','预制服装':'Presets','披肩':'Shawl','外套':'Jacket','披风':'Cape','角色预览':'Character Preview','Steve 粗臂':'Steve · Classic','Alex 细臂':'Alex · Slim','正面':'Front','背面':'Back','切换为披风':'Switch to Cape','切换为鞘翅':'Switch to Elytra','白天':'Day','夜晚':'Night','平原':'Plains','沙漠':'Desert','森林':'Forest','下界':'Nether','末地':'The End','自定义':'Custom','背景调色':'Background Color','恢复天空蓝':'Reset Sky Blue','站立':'Idle','挥手':'Wave','行走':'Walk','飞行':'Fly','切换动作':'Switch action','缩放':'Zoom','X 轴':'X axis','Y 轴':'Y axis','Z 轴':'Z axis','重置视角':'Reset View','重置':'Reset','选择语言':'Language','工作台':'Studio','AI 皮肤工坊':'AI Skin Studio','3D 模型编辑':'3D Model Editor','拖动旋转 · 上下拖动俯仰 · 滚轮缩放 · 正面 / 背面':'Drag to rotate · vertical drag to tilt · wheel to zoom · front / back','正在加载模板…':'Loading presets…','模板已应用，可旋转预览或导出 PNG':'Preset applied. Rotate preview or export PNG.','备用皮肤已就绪':'Fallback skin ready','已导入皮肤，正在应用模板…':'Skin imported. Applying presets…','皮肤仍在加载，请稍后再打开编辑器。':'Skin is loading. Please wait before opening the editor.','已将当前预制皮肤发送到 Blockbench':'Current preset skin sent to Blockbench','已导出合成皮肤 PNG':'Combined skin PNG exported','请导入 PNG 格式的 Minecraft 皮肤。':'Please import a Minecraft skin in PNG format.','皮肤尺寸必须是标准的 64 × 64 PNG，未修改当前皮肤。':'Skin must be a standard 64 × 64 PNG. Current skin was not changed.','无法读取这张 PNG 图片，请选择有效的皮肤文件。':'Could not read this PNG. Choose a valid skin file.','部分远程模板素材加载失败，已显示备用皮肤；可继续编辑或重新导入 PNG。':'Some remote assets failed. A fallback skin is shown; continue editing or import a PNG.','披肩 / 外套模板 · 实时 3D 预览':'Shawl / jacket presets · live 3D preview'
+'Minecraft 皮肤与服装工作台':'Minecraft Skin & Outfit Studio','当前皮肤':'Current Skin','已就绪':'Ready','正在加载':'Loading','导入皮肤':'Import Skin','导入穿搭备份 JSON':'Import Outfit Backup JSON','导出穿搭备份 JSON':'Export Outfit Backup JSON','导出合成皮肤 PNG':'Export Combined Skin PNG','发送到 Blockbench 编辑':'Send to Blockbench','预制服装':'Presets','披肩':'Shawl','外套':'Jacket','披风':'Cape','角色预览':'Character Preview','Steve 粗臂':'Steve · Classic','Alex 细臂':'Alex · Slim','正面':'Front','背面':'Back','切换为披风':'Switch to Cape','切换为鞘翅':'Switch to Elytra','白天':'Day','夜晚':'Night','平原':'Plains','沙漠':'Desert','森林':'Forest','下界':'Nether','末地':'The End','自定义':'Custom','背景调色':'Background Color','恢复天空蓝':'Reset Sky Blue','站立':'Idle','挥手':'Wave','行走':'Walk','飞行':'Fly','切换动作':'Switch action','缩放':'Zoom','X 轴':'X axis','Y 轴':'Y axis','Z 轴':'Z axis','重置视角':'Reset View','重置':'Reset','选择语言':'Language','工作台':'Studio','AI 皮肤工坊':'AI Skin Studio','3D 模型编辑':'3D Model Editor','拖动旋转 · 上下拖动俯仰 · 滚轮缩放 · 正面 / 背面':'Drag to rotate · vertical drag to tilt · wheel to zoom · front / back','正在加载模板…':'Loading presets…','模板已应用，可旋转预览或导出 PNG':'Preset applied. Rotate preview or export PNG.','备用皮肤已就绪':'Fallback skin ready','已导入皮肤，正在应用模板…':'Skin imported. Applying presets…','皮肤仍在加载，请稍后再打开编辑器。':'Skin is loading. Please wait before opening the editor.','已将当前预制皮肤发送到 Blockbench':'Current preset skin sent to Blockbench','已导出合成皮肤 PNG':'Combined skin PNG exported','请导入 PNG 格式的 Minecraft 皮肤。':'Please import a Minecraft skin in PNG format.','皮肤尺寸必须是标准的 64 × 64 PNG，未修改当前皮肤。':'Skin must be a standard 64 × 64 PNG. Current skin was not changed.','无法读取这张 PNG 图片，请选择有效的皮肤文件。':'Could not read this PNG. Choose a valid skin file.','部分远程模板素材加载失败，已显示备用皮肤；可继续编辑或重新导入 PNG。':'Some remote assets failed. A fallback skin is shown; continue editing or import a PNG.','披肩 / 外套模板 · 实时 3D 预览':'Shawl / jacket presets · live 3D preview'
 }
 function tr(text: string, language: StudioLanguage): string { return language === 'en-US' ? (EN[text] || text) : text }
 
 export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const skinInputRef = useRef<HTMLInputElement>(null)
+  const outfitBackupInputRef = useRef<HTMLInputElement>(null)
   const [language, setLanguage] = useState<StudioLanguage>(() => localStorage.getItem('pixcape-language') === 'en-US' ? 'en-US' : 'zh-CN')
   const [skinUrl, setSkinUrl] = useState(BASE_SKIN)
   const [skinName, setSkinName] = useState('Steve 默认皮肤')
@@ -279,6 +280,64 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
     probe.src = url
   }
 
+  const exportOutfitBackup = async () => {
+    let portableSkin: string | undefined
+    try {
+      const image = await loadImage(skinUrl)
+      const canvas = document.createElement('canvas')
+      canvas.width = 64
+      canvas.height = 64
+      const context = canvas.getContext('2d')
+      if (context) { context.drawImage(image, 0, 0, 64, 64); portableSkin = canvas.toDataURL('image/png') }
+    } catch { /* Remote base skins may disallow canvas export; still export the outfit without embedding the image. */ }
+    const capeIds: Record<string, string> = { 'cape_office.png': 'office-cape', 'cape_MCC.png': 'mcc-cape', 'cape_creeper.png': 'creeper-cape', 'cape_tiktok.png': 'tiktok-cape', 'cape_twitch.png': 'twitch-cape' }
+    const itemIds = [
+      ...(shawlId !== 'none' ? [shawlId] : []),
+      ...(coatId !== 'none' ? [coatId] : []),
+      ...(capeId !== 'none' && capeIds[capeId] ? [capeIds[capeId]] : []),
+    ]
+    const outfit = {
+      id: 'outfit-' + Date.now(),
+      name: '工作台穿搭 · ' + new Date().toLocaleDateString(),
+      itemIds, model: modelType, background: customBackground, skinUrl: portableSkin, skinName, savedAt: new Date().toISOString(),
+    }
+    const blob = new Blob([JSON.stringify({ format: 'cdpc-outfit', version: 1, outfit }, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url; link.download = 'cdpc-outfit-backup.json'; link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setStatus(portableSkin ? '穿搭 JSON 备份已导出（含皮肤 PNG）' : '穿搭 JSON 备份已导出；当前皮肤来源不允许嵌入图片，导入后将使用默认皮肤')
+  }
+  const importOutfitBackup = async (file?: File) => {
+    if (!file) return
+    try {
+      if (file.size > 12 * 1024 * 1024) throw new Error('备份文件超过 12 MB')
+      const parsed = JSON.parse(await file.text()) as { format?: string; version?: number; outfit?: { itemIds?: unknown; model?: unknown; background?: unknown; skinUrl?: unknown; skinName?: unknown; name?: unknown } }
+      const outfit = parsed.outfit
+      if (parsed.format !== 'cdpc-outfit' || parsed.version !== 1 || !outfit || !Array.isArray(outfit.itemIds)) throw new Error('文件不是受支持的 CDPC 穿搭备份')
+      const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string')
+      const shawl = PRESETS.find(item => item.kind === 'shawl' && itemIds.includes(item.id))
+      const coat = PRESETS.find(item => item.kind === 'coat' && itemIds.includes(item.id))
+      const capeMap: Record<string, string> = { 'office-cape': 'cape_office.png', 'mcc-cape': 'cape_MCC.png', 'creeper-cape': 'cape_creeper.png', 'tiktok-cape': 'cape_tiktok.png', 'twitch-cape': 'cape_twitch.png' }
+      const capeId = itemIds.map(id => capeMap[id]).find(id => id && CAPES.some(cape => cape.id === id)) || 'none'
+      let importedSkin: string | undefined
+      if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png;base64,')) {
+        const image = await loadImage(outfit.skinUrl)
+        if (image.width !== 64 || image.height !== 64) throw new Error('备份皮肤必须为 64 × 64 PNG')
+        importedSkin = outfit.skinUrl
+      }
+      setSkinUrl(previous => { if (previous.startsWith('blob:')) URL.revokeObjectURL(previous); return importedSkin || BASE_SKIN })
+      setSkinName(importedSkin && typeof outfit.skinName === 'string' ? outfit.skinName : 'Steve 默认皮肤')
+      setModelType(outfit.model === 'alex' ? 'alex' : 'steve')
+      setShawlId(shawl?.id || 'none')
+      setCoatId(coat?.id || 'none')
+      setCapeId(capeId)
+      setElytraVisible(false)
+      if (typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background)) { setCustomBackground(outfit.background); setBackgroundTheme('custom') }
+      setError('')
+      setStatus(importedSkin ? '已导入穿搭，正在应用预设' : '已导入穿搭；备份不含自定义皮肤 PNG，已使用默认皮肤')
+    } catch (error) { setError(error instanceof Error ? '穿搭导入失败：' + error.message : '穿搭导入失败，请检查 JSON 文件') }
+  }
   const reset = () => {
     setSkinUrl(BASE_SKIN)
     setSkinName('Steve 默认皮肤')
@@ -316,10 +375,13 @@ export default function PresetStudio({ onOpenEditor, onOpenAI }: Props) {
       <div className="preset-skin-card"><div className="preset-skin-thumb"><canvas ref={canvasRef} width={64} height={64}/></div><div className="preset-skin-meta"><strong>{skinName}</strong><small>64 × 64 · PNG · 已应用所选披肩 / 外套</small></div></div>
       <div className="preset-current-actions">
         <button className="preset-import" onClick={() => skinInputRef.current?.click()}><Upload size={16}/> {tr('导入皮肤', language)}</button>
+        <button className="preset-import" onClick={() => outfitBackupInputRef.current?.click()}><Upload size={16}/> {tr('导入穿搭备份 JSON', language)}</button>
+        <button className="preset-export-skin" onClick={() => { void exportOutfitBackup() }}><Download size={16}/> {tr('导出穿搭备份 JSON', language)}</button>
         <Tooltip.Provider delayDuration={300}><Tooltip.Root><Tooltip.Trigger asChild><button className="preset-export-skin" onClick={exportPng} disabled={!ready}><Download size={16}/> {tr('导出合成皮肤 PNG', language)}</button></Tooltip.Trigger><Tooltip.Portal><Tooltip.Content className="preset-tooltip" side="bottom" sideOffset={6}>将当前皮肤与所选披肩、外套合成为 64 × 64 PNG。<Tooltip.Arrow className="preset-tooltip-arrow"/></Tooltip.Content></Tooltip.Portal></Tooltip.Root></Tooltip.Provider>
         <button className="preset-open-blockbench" onClick={openEditorWithPreset} disabled={!ready}><ExternalLink size={15}/> {tr('发送到 Blockbench 编辑', language)}</button>
       </div>
       <input ref={skinInputRef} hidden type="file" accept="image/png" onChange={event => { importSkin(event.target.files?.[0]); event.currentTarget.value = '' }}/>
+      <input ref={outfitBackupInputRef} hidden type="file" accept="application/json,.json" onChange={event => { void importOutfitBackup(event.target.files?.[0]); event.currentTarget.value = '' }}/>
       {error && <div className="preset-error">{tr(error, language)}</div>}
     </section>
     <main className="preset-layout">

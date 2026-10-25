@@ -1,0 +1,110 @@
+/* CDPC shared navigation and dress-up feedback states. */
+.site-nav-links .site-nav-primary{background:#dbe7ff;color:#17233a;border-radius:6px;font-weight:750}
+.site-nav-links .site-nav-primary:hover{background:#fff;color:#17233a}
+.dressup-save-notice{margin:10px 0 0;padding:10px 12px;border:1px solid #344b6d;border-radius:7px;background:#17263b;color:#c9dcff;font-size:12px;line-height:1.6}
+.dressup-actions button:focus-visible,.dressup-actions a:focus-visible,.dressup-category:focus-visible,.dressup-item:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.dressup-actions button,.dressup-actions a,.dressup-item,.dressup-category{transition:none!important}}
+
+/* Shared product surface: calm studio UI instead of a full-page checkerboard. */
+:root{--cdpc-action:#a8c7ff;--cdpc-action-ink:#17243a;--cdpc-surface:#171c25;--cdpc-border:#303949;--cdpc-muted:#a4adba}
+body{background:#10141b!important;background-image:radial-gradient(ellipse at 50% -25%,#202c3d 0,transparent 55%)!important;color:#edf1f7}
+.site-nav{background:rgba(16,20,27,.94)!important;border-bottom:1px solid #303949!important;box-shadow:0 6px 22px #0003!important}
+.site-brand-mark{border:1px solid #7e9ccf!important;background:#263750!important;box-shadow:none!important}
+.site-nav-links a[aria-current=page]{background:#273449;color:#edf3ff}
+.site-nav-links .site-nav-primary{background:#dbe7ff;color:#17233a;border-radius:6px;font-weight:750}
+.site-nav-links .site-nav-primary:hover{background:#fff;color:#17233a}
+.cdpc-home{color:#edf1f7}
+.cdpc-hero{background:#171d27;border-color:#303949;box-shadow:0 18px 55px #0003}
+.cdpc-hero:before{background:#a8c7ff}
+.cdpc-kicker,.cdpc-section-kicker{color:#a8c7ff}
+.cdpc-button-primary{background:#dbe7ff;border-color:#dbe7ff;color:#17233a}
+.cdpc-button-primary:hover{background:#fff;border-color:#fff}
+.cdpc-button-quiet{background:#222b39;border-color:#3a4659;color:#edf1f7}
+.cdpc-tool-card,.cdpc-quick-link{background:#171d27;border-color:#303949}
+.cdpc-tool-card.is-featured{background:#1c2737;border-color:#435777}
+.cdpc-card-tag{background:#222d3d;border-color:#3b4b62;color:#dbe7ff}
+.cdpc-tool-glyph{background:#222d3d;border-color:#3b4b62;color:#dbe7ff}
+.cdpc-card-link{color:#c6d9ff}
+.cdpc-legal-note{color:#8995a7}
+.dressup-save-notice{margin:10px 0 0;padding:10px 12px;border:1px solid #344b6d;border-radius:7px;background:#17263b;color:#c9dcff;font-size:12px;line-height:1.6}
+.dressup-actions button:focus-visible,.dressup-actions a:focus-visible,.dressup-category:focus-visible,.dressup-item:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
+@media(max-width:720px){.site-nav{background:#10141b!important}.cdpc-hero{min-height:0}.cdpc-home{padding-inline:12px}}
+@media(prefers-reduced-motion:reduce){.dressup-actions button,.dressup-actions a,.dressup-item,.dressup-category,.cdpc-tool-card{transition:none!important}}
+
+/* Bring legacy account, creator and admin surfaces into the same UI language. */
+.inventory-shell{color:#edf1f7}
+.topbar{background:#171d27!important;border:1px solid #303949!important;box-shadow:none!important;border-radius:10px;padding:18px!important}
+.topbar h1,.inventory-panel h2,.inventory-panel h3{color:#edf1f7!important}
+.inventory-panel,.application-card,.health-card,.health-summary>div,.admin-config-grid article{background:#171d27!important;border-color:#303949!important;border-radius:10px!important;box-shadow:none!important}
+.inventory-panel p,.application-card p{color:#aeb8c7}
+.pixel-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 14px;border:1px solid #3b4b62!important;border-radius:7px!important;background:#222d3d!important;color:#edf3ff!important;text-decoration:none!important;font:inherit;font-weight:700;cursor:pointer}
+.pixel-button.primary,.pixel-button.primary:hover{background:#dbe7ff!important;border-color:#dbe7ff!important;color:#17233a!important}
+.pixel-button:hover{border-color:#819cc7!important;background:#2b3a50!important}
+.application-form input,.application-form textarea,.application-form select,.inventory-panel input,.inventory-panel textarea,.inventory-panel select{max-width:100%;border:1px solid #3a4659!important;border-radius:6px!important;background:#10151d!important;color:#edf1f7!important;padding:10px 12px}
+.application-form input:focus-visible,.application-form textarea:focus-visible,.inventory-panel input:focus-visible,.inventory-panel textarea:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
+.application-form label{color:#c8d1df}
+@media(max-width:680px){.inventory-shell{padding:14px 10px 28px}.topbar{align-items:flex-start;gap:12px;flex-wrap:wrap}.inventory-panel{padding:14px!important}}
+
+.dressup-outfit-manager{display:grid;gap:7px;margin-top:14px;padding:12px;border:1px solid #303949;border-radius:8px;background:#121821}
+.dressup-outfit-manager label{margin-top:4px;color:#aeb8c7;font-size:11px;font-weight:700}
+.dressup-outfit-manager input,.dressup-outfit-manager select{width:100%;min-width:0;min-height:38px;padding:8px 10px;border:1px solid #3a4659;border-radius:6px;background:#0f141c;color:#edf1f7;font:inherit;font-size:12px}
+.dressup-outfit-manager-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.dressup-outfit-manager-actions button{min-height:36px;padding:7px 9px;border:1px solid #3b4b62;border-radius:6px;background:#222d3d;color:#edf3ff;font:inherit;font-size:12px;cursor:pointer}
+.dressup-outfit-manager-actions button:disabled{opacity:.45;cursor:not-allowed}
+
+
+/* Outfit portability and responsive controls — phase 2/3. */
+.dressup-actions button,.dressup-actions a,.dressup-preview-tools button,.dressup-outfit-manager-actions button{transition:background-color .15s ease,border-color .15s ease,transform .15s ease}
+.dressup-actions button:hover:not(:disabled),.dressup-preview-tools button:hover:not(:disabled),.dressup-outfit-manager-actions button:hover:not(:disabled){border-color:#819cc7;background:#2b3a50}
+.dressup-actions button:disabled,.dressup-preview-tools button:disabled{opacity:.48;cursor:not-allowed}
+.dressup-actions button:focus-visible,.dressup-preview-tools button:focus-visible,.dressup-outfit-manager-actions button:focus-visible,.dressup-outfit-manager input:focus-visible,.dressup-outfit-manager select:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
+.dressup-outfit-manager-actions button{overflow-wrap:anywhere}
+.dressup-save-notice{overflow-wrap:anywhere}
+@media(max-width:900px){.dressup-layout{grid-template-columns:minmax(0,1fr)!important}.dressup-preview{order:-1}.dressup-preview-stage{min-height:320px}}
+@media(max-width:560px){.dressup-heading{align-items:flex-start;flex-direction:column;gap:12px}.dressup-heading>div{min-width:0}.dressup-heading h1{font-size:clamp(26px,8vw,38px)}.dressup-preview-tools{flex-wrap:wrap;gap:8px}.dressup-bottom-tools>*{max-width:100%}.dressup-skin-name{flex-basis:100%;overflow-wrap:anywhere}.dressup-actions{grid-template-columns:1fr 1fr}.dressup-outfit-manager-actions{grid-template-columns:1fr 1fr}.dressup-items{grid-template-columns:repeat(2,minmax(0,1fr))}.dressup-item{min-width:0}.dressup-item strong,.dressup-item small{overflow-wrap:anywhere}.dressup-preview-stage{min-height:280px}}
+@media(prefers-reduced-motion:reduce){.dressup-actions button,.dressup-actions a,.dressup-preview-tools button,.dressup-outfit-manager-actions button{transition:none!important}}
+
+
+/* Outfit portability and responsive controls — phase 2/3. */
+.dressup-actions button,.dressup-actions a,.dressup-preview-tools button,.dressup-outfit-manager-actions button{transition:background-color .15s ease,border-color .15s ease,transform .15s ease}
+.dressup-actions button:hover:not(:disabled),.dressup-preview-tools button:hover:not(:disabled),.dressup-outfit-manager-actions button:hover:not(:disabled){border-color:#819cc7;background:#2b3a50}
+.dressup-actions button:disabled,.dressup-preview-tools button:disabled{opacity:.48;cursor:not-allowed}
+.dressup-actions button:focus-visible,.dressup-preview-tools button:focus-visible,.dressup-outfit-manager-actions button:focus-visible,.dressup-outfit-manager input:focus-visible,.dressup-outfit-manager select:focus-visible{outline:2px solid #9bb8ff;outline-offset:2px}
+.dressup-outfit-manager-actions button{overflow-wrap:anywhere}
+.dressup-save-notice{overflow-wrap:anywhere}
+@media(max-width:900px){.dressup-layout{grid-template-columns:minmax(0,1fr)!important}.dressup-preview{order:-1}.dressup-preview-stage{min-height:320px}}
+@media(max-width:560px){.dressup-heading{align-items:flex-start;flex-direction:column;gap:12px}.dressup-heading>div{min-width:0}.dressup-heading h1{font-size:clamp(26px,8vw,38px)}.dressup-preview-tools{flex-wrap:wrap;gap:8px}.dressup-bottom-tools>*{max-width:100%}.dressup-skin-name{flex-basis:100%;overflow-wrap:anywhere}.dressup-actions{grid-template-columns:1fr 1fr}.dressup-outfit-manager-actions{grid-template-columns:1fr 1fr}.dressup-items{grid-template-columns:repeat(2,minmax(0,1fr))}.dressup-item{min-width:0}.dressup-item strong,.dressup-item small{overflow-wrap:anywhere}.dressup-preview-stage{min-height:280px}}
+@media(prefers-reduced-motion:reduce){.dressup-actions button,.dressup-actions a,.dressup-preview-tools button,.dressup-outfit-manager-actions button{transition:none!important}}
+
+
+/* Navigation and footer resilience pass: keyboard access, narrow screens, and long account labels. */
+.site-nav{min-width:0}
+.site-nav-links{min-width:0}
+.site-nav-links a,.site-nav-account a,.cdpc-footer-links a{transition:background-color .15s ease,border-color .15s ease,color .15s ease}
+.site-nav a:focus-visible,.cdpc-footer-links a:focus-visible{outline:2px solid #a8c7ff;outline-offset:3px;border-radius:5px}
+.site-nav-account{min-width:0}
+.site-nav-user{display:inline-block;max-width:min(24vw,220px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.cdpc-site-footer{margin-top:40px;border-top:1px solid #303949;background:#10141b;color:#aeb8c7}
+.cdpc-footer-inner{width:min(1180px,100%);margin:0 auto;padding:26px 20px 22px;display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,2fr);gap:18px 28px}
+.cdpc-footer-brand{display:flex;align-items:center;gap:10px;color:#edf1f7}
+.cdpc-footer-brand>span:last-child{display:grid;gap:3px}
+.cdpc-footer-brand small{color:#8995a7;font-size:11px}
+.cdpc-footer-links{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px 16px}
+.cdpc-footer-links a{color:#c6d9ff;text-decoration:none;font-size:13px}
+.cdpc-footer-links a:hover{color:#fff;text-decoration:underline}
+.cdpc-footer-inner>p{grid-column:1/-1;margin:0;padding-top:14px;border-top:1px solid #26303d;color:#7f8b9c;font-size:11px;line-height:1.7}
+@media(max-width:760px){
+  .site-nav{align-items:flex-start;flex-wrap:wrap;gap:10px;padding:10px 12px}
+  .site-nav-links{order:3;flex:1 1 100%;display:flex;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;gap:6px;padding:2px 0 5px}
+  .site-nav-links a{flex:0 0 auto;white-space:nowrap;padding:8px 10px}
+  .site-nav-account{margin-left:auto;max-width:55%;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+  .site-nav-user{max-width:35vw}
+  .cdpc-footer-inner{grid-template-columns:1fr;padding:22px 14px}
+  .cdpc-footer-links{justify-content:flex-start}
+  .cdpc-footer-inner>p{grid-column:auto}
+}
+@media(max-width:380px){
+  .site-nav-account{max-width:62%;gap:6px}
+  .site-nav-account a{font-size:12px}
+  .site-nav-user{max-width:28vw}
+}

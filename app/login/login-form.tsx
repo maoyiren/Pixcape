@@ -6,9 +6,8 @@ import { signIn } from 'next-auth/react'
 
 type Method = { id: string; label: string }
 
-export default function LoginForm({ methods, adminEnabled }: { methods: Method[]; adminEnabled: boolean }) {
+export default function LoginForm({ methods, adminEnabled, defaultCallbackUrl }: { methods: Method[]; adminEnabled: boolean; defaultCallbackUrl: string }) {
   const [identifier, setIdentifier] = useState('')
-  const [accountType, setAccountType] = useState<'user' | 'admin'>('user')
   const [password, setPassword] = useState('')
   const [magicEmail, setMagicEmail] = useState('')
   const [busy, setBusy] = useState(false)
@@ -20,7 +19,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     setError('')
     setMessage('')
     try {
-      const result = await signIn(provider, { callbackUrl: '/account', redirect: false })
+      const result = await signIn(provider, { callbackUrl: defaultCallbackUrl, redirect: false })
       if (result?.error) {
         setError('第三方登录启动失败，请检查认证服务配置、回调地址和密钥后重试。')
         setBusy(false)
@@ -44,29 +43,38 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     setError('')
     setMessage('')
     const value = identifier.trim()
-    const isAdmin = accountType === 'admin'
-    if (isAdmin && !adminEnabled) {
-      setError('管理员登录当前未启用，请检查部署环境变量。')
-      setBusy(false)
-      return
-    }
+    const looksLikeEmail = value.includes('@')
+
     try {
-      const provider = isAdmin ? 'admin-credentials' : 'email-password'
-      const callbackUrl = isAdmin ? '/admin' : '/account'
-      const credentials = isAdmin
-        ? { username: value, password, callbackUrl, redirect: false as const }
-        : { email: value.toLowerCase(), password, callbackUrl, redirect: false as const }
-      const result = await signIn(provider, credentials)
-      if (result?.error) {
-        setError(isAdmin ? '管理员用户名或密码错误，或管理员账号未启用。' : '邮箱或密码错误，或账户当前不可登录。')
-      } else if (result?.url) {
-        window.location.assign(result.url)
-        return
-      } else {
-        setError('登录失败，请检查账号、认证密钥和数据库配置。')
+      // Email addresses use the regular-user provider; non-email identifiers use
+      // the environment-configured admin provider. Authorization remains server-side.
+      if (looksLikeEmail) {
+        const result = await signIn('email-password', {
+          email: value.toLowerCase(),
+          password,
+          callbackUrl: defaultCallbackUrl,
+          redirect: false,
+        })
+        if (!result?.error && result?.url) {
+          window.location.assign(result.url)
+          return
+        }
+      } else if (adminEnabled) {
+        const result = await signIn('admin-credentials', {
+          username: value,
+          password,
+          callbackUrl: '/admin',
+          redirect: false,
+        })
+        if (!result?.error && result?.url) {
+          window.location.assign(result.url)
+          return
+        }
       }
+
+      setError('用户名/邮箱或密码错误，或该账户当前不可登录。请检查账号后重试。')
     } catch {
-      setError('登录请求失败，请稍后重试。')
+      setError('登录请求失败，请稍后重试；如果持续失败，请检查认证服务和数据库配置。')
     } finally {
       setBusy(false)
     }
@@ -78,7 +86,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
     setError('')
     setMessage('')
     try {
-      const result = await signIn('email', { email: magicEmail.trim().toLowerCase(), callbackUrl: '/account', redirect: false })
+      const result = await signIn('email', { email: magicEmail.trim().toLowerCase(), callbackUrl: defaultCallbackUrl, redirect: false })
       if (result?.error) setError('邮件发送失败，请检查 SMTP 配置。')
       else setMessage('如果邮箱服务配置正确，请检查收件箱和垃圾邮件。')
     } catch {
@@ -93,31 +101,28 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
   return (
     <div className="auth-form">
       <form onSubmit={(event) => void credentialLogin(event)} className="auth-email-form auth-unified-credentials">
-        {adminEnabled ? <div className="auth-account-type" role="group" aria-label="账户类型">
-          <button type="button" className={accountType === 'user' ? 'is-selected' : ''} aria-pressed={accountType === 'user'} onClick={() => setAccountType('user')} disabled={busy}>普通用户</button>
-          <button type="button" className={accountType === 'admin' ? 'is-selected' : ''} aria-pressed={accountType === 'admin'} onClick={() => setAccountType('admin')} disabled={busy}>管理员</button>
-        </div> : null}
-        <label htmlFor="login-identifier">{accountType === 'admin' ? '管理员用户名' : '邮箱地址'}</label>
+        <label htmlFor="login-identifier">用户名或邮箱地址</label>
         <input
           id="login-identifier"
-          type={accountType === 'admin' ? 'text' : 'email'}
+          className="cdpc-input"
+          type="text"
           autoComplete="username"
           required
           maxLength={254}
           value={identifier}
           onChange={(event) => setIdentifier(event.target.value)}
-          placeholder={accountType === 'admin' ? '管理员用户名' : 'name@example.com'}
+          placeholder="输入邮箱地址；管理员可输入配置的用户名"
         />
         <label htmlFor="login-password">密码</label>
-        <input id="login-password" type="password" autoComplete="current-password" required maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} />
-        <button className="pixel-button primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</button>
-        <small>普通用户使用注册邮箱；管理员选择管理员身份后使用配置的用户名。系统仍会在服务端校验账号权限。</small>
+        <input id="login-password" className="cdpc-input" type="password" autoComplete="current-password" required maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} />
+        <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</button>
+        <small>普通账户使用注册邮箱登录；管理员使用运维配置的用户名登录。普通账户暂不支持昵称登录。</small>
       </form>
       {oauthMethods.length > 0 ? (
         <div className="auth-provider-group">
           <p className="auth-divider-label">或使用第三方账号</p>
           {oauthMethods.map((method) => (
-            <button className="pixel-button auth-provider-button" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)}>
+            <button className="pixel-button auth-provider-button cdpc-control" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)}>
               {busy ? '正在连接…' : method.label}
             </button>
           ))}
@@ -128,7 +133,7 @@ export default function LoginForm({ methods, adminEnabled }: { methods: Method[]
           <summary>改用邮箱登录链接</summary>
           <form onSubmit={(event) => void emailLogin(event)} className="auth-email-form">
             <label htmlFor="magic-email">邮箱地址</label>
-            <input id="magic-email" type="email" autoComplete="email" required maxLength={254} value={magicEmail} onChange={(event) => setMagicEmail(event.target.value)} placeholder="name@example.com" />
+            <input id="magic-email" className="cdpc-input" type="email" autoComplete="email" required maxLength={254} value={magicEmail} onChange={(event) => setMagicEmail(event.target.value)} placeholder="name@example.com" />
             <button className="pixel-button primary" disabled={busy} type="submit">{busy ? '正在发送…' : '发送登录链接'}</button>
           </form>
         </details>

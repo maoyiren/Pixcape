@@ -41,7 +41,7 @@ test('PostgreSQL migration, RBAC ownership constraints, and atomic rate limiting
     const bootstrapped = await prisma.user.findUnique({ where: { id: bootstrapTarget.id }, select: { role: true } })
     assert.equal(bootstrapped.role, 'ADMIN', 'bootstrap script must grant the role through the Prisma 7 PostgreSQL adapter')
 
-    const profile = await prisma.creatorProfile.create({ data: { userId: owner.id, displayName: 'Test Creator' } })
+    const profile = await prisma.creatorProfile.create({ data: { userId: owner.id, displayName: 'Test Creator', reviewStatus: 'PENDING' } })
     const reviewResults = await Promise.all([
       prisma.creatorProfile.updateMany({ where: { id: profile.id, reviewStatus: 'PENDING' }, data: { reviewStatus: 'APPROVED' } }),
       prisma.creatorProfile.updateMany({ where: { id: profile.id, reviewStatus: 'PENDING' }, data: { reviewStatus: 'REJECTED' } }),
