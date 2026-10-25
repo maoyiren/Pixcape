@@ -5,6 +5,13 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   typescript: { tsconfigPath: 'tsconfig.next.json' },
+  async rewrites() {
+    return [
+      { source: '/AI', destination: '/studio?mode=ai' },
+      { source: '/bench', destination: '/studio?mode=editor' },
+      { source: '/wardrobe', destination: '/studio?mode=wardrobe' },
+    ]
+  },
   async headers() {
     const securityHeaders = [
       { key: 'X-Content-Type-Options', value: 'nosniff' },
