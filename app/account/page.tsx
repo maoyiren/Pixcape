@@ -17,7 +17,7 @@ export default async function AccountPage() {
   const displayName = session.user.name ?? session.user.email ?? session.user.id
 
   return (
-    <Container size="md" py={{ base: 'md', sm: 'xl' }} className="cdpc-account-page">
+    <Container size="md" py="xl" className="cdpc-account-page">
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start" wrap="wrap">
           <Stack gap={4}>
