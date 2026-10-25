@@ -4,9 +4,9 @@ import { authOptions } from '@/auth'
 
 const items = [
   { href: '/', label: '首页' },
-  { href: '/studio/?mode=ai', label: 'AI 生成' },
-  { href: '/studio/', label: '编辑器', primary: true },
-  { href: '/studio/?mode=wardrobe', label: '衣服选装' },
+  { href: '/AI', label: 'AI 生成' },
+  { href: '/bench', label: '编辑器', primary: true },
+  { href: '/wardrobe', label: '衣服选装' },
   { href: '/creator', label: '创作者中心' },
 ]
 
