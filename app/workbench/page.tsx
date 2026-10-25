@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { Badge, Button, Card, Container, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { authOptions } from '@/auth'
@@ -43,8 +42,8 @@ export default async function WorkbenchPage() {
             <Title order={1} size="h2">创作工作台</Title>
           </Stack>
           <Group gap="sm" wrap="wrap">
-            <Button component={Link} href="/" variant="default" className="cdpc-control">返回首页</Button>
-            <Button component={Link} href="/creator" variant="default" className="cdpc-control">创作者中心</Button>
+            <Button component="a" href="/" variant="default" className="cdpc-control">返回首页</Button>
+            <Button component="a" href="/creator" variant="default" className="cdpc-control">创作者中心</Button>
           </Group>
         </Group>
 
@@ -59,7 +58,7 @@ export default async function WorkbenchPage() {
             </Text>
             {!user ? (
               <Text size="sm">
-                <Link href="/login">登录</Link> 后可继续使用账户相关功能，也可以先浏览创作入口。
+                <a href="/login">登录</a> 后可继续使用账户相关功能，也可以先浏览创作入口。
               </Text>
             ) : null}
           </Stack>
@@ -76,7 +75,7 @@ export default async function WorkbenchPage() {
                     <Text c="dimmed" size="sm" lh={1.7}>{entry.description}</Text>
                   </Stack>
                   <Button
-                    component={Link}
+                    component="a"
                     href={entry.href}
                     variant="filled"
                     fullWidth
