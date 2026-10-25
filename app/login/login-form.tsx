@@ -125,14 +125,14 @@ export default function LoginForm({ methods, adminEnabled, defaultCallbackUrl }:
           value={password}
           onChange={(event) => setPassword(event.currentTarget.value)}
         />
-        <Button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</Button>
+        <Button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} loading={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</Button>
         <small>普通账户使用注册邮箱登录；管理员使用运维配置的用户名登录。普通账户暂不支持昵称登录。</small>
       </form>
       {oauthMethods.length > 0 ? (
         <div className="auth-provider-group">
           <p className="auth-divider-label">或使用第三方账号</p>
           {oauthMethods.map((method) => (
-            <Button className="pixel-button auth-provider-button cdpc-control" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)} variant="default" fullWidth>
+            <Button className="pixel-button auth-provider-button cdpc-control" type="button" key={method.id} disabled={busy} loading={busy} onClick={() => void oauth(method.id)} variant="default" fullWidth>
               {busy ? '正在连接…' : method.label}
             </Button>
           ))}
@@ -143,7 +143,7 @@ export default function LoginForm({ methods, adminEnabled, defaultCallbackUrl }:
           <summary>改用邮箱登录链接</summary>
           <form onSubmit={(event) => void emailLogin(event)} className="auth-email-form">
             <TextInput id="magic-email" label="邮箱地址" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} type="email" autoComplete="email" required maxLength={254} value={magicEmail} onChange={(event) => setMagicEmail(event.currentTarget.value)} placeholder="name@example.com" />
-            <Button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在发送…' : '发送登录链接'}</Button>
+            <Button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} loading={busy} type="submit">{busy ? '正在发送…' : '发送登录链接'}</Button>
           </form>
         </details>
       )}
