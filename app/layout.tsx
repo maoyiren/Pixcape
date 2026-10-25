@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { SiteNav } from './components/site-nav'
+import { CdpcMantineProvider } from './components/mantine-provider'
+import '@mantine/core/styles.css'
 import './next.css'
 import '../src/design-system.css'
 import './components/cdpc-ui-overrides.css'
@@ -39,9 +41,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN">
       <body>
-        <SiteNav />
-        {children}
-        <footer className="cdpc-site-footer">
+        <CdpcMantineProvider>
+          <SiteNav />
+          {children}
+          <footer className="cdpc-site-footer">
           <div className="cdpc-footer-inner">
             <div className="cdpc-footer-brand">
               <span className="site-brand-mark" aria-hidden="true">▦</span>
@@ -56,7 +59,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </nav>
             <p>CDPC 为独立社区工具项目，不隶属于 Mojang Studios 或 Microsoft，也非 Minecraft 官方产品。</p>
           </div>
-        </footer>
+          </footer>
+        </CdpcMantineProvider>
       </body>
     </html>
   )
