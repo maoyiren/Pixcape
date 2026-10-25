@@ -12,8 +12,8 @@ function getInitialMode(): StudioMode {
   return mode === 'ai' ? 'ai' : mode === 'wardrobe' ? 'wardrobe' : 'editor'
 }
 
-export default function App() {
-  const [initialMode] = useState<StudioMode>(() => getInitialMode())
+export default function App({ mode }: { mode?: StudioMode } = {}) {
+  const [initialMode] = useState<StudioMode>(() => mode ?? getInitialMode())
   const [editorOpen, setEditorOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(() => initialMode === 'ai')
   const [pendingPayload, setPendingPayload] = useState<PresetEditorPayload | null>(null)
@@ -48,8 +48,6 @@ export default function App() {
     if (!pendingPayload) return
     const target = iframeRef.current?.contentWindow
     if (!target) return
-
-    // Blockbench's load event can fire before its editor modules initialize.
     target.postMessage(
       { type: 'pixcape:set-language', language: pendingPayload.language || 'zh-CN' },
       window.location.origin,
@@ -59,10 +57,7 @@ export default function App() {
     const sendImportWhenReady = () => {
       if (!editorOpen || !pendingPayload || iframeRef.current?.contentWindow !== target) return
       importAttemptRef.current += 1
-      target.postMessage(
-        { type: 'pixcape:import-preset', payload: pendingPayload },
-        window.location.origin,
-      )
+      target.postMessage({ type: 'pixcape:import-preset', payload: pendingPayload }, window.location.origin)
     }
     importTimerRef.current = window.setTimeout(sendImportWhenReady, 1200)
   }
@@ -70,39 +65,33 @@ export default function App() {
   return (
     <>
       {!editorOpen && aiOpen ? <AiSkinStudio onBack={() => setAiOpen(false)} /> : (
-      <>
-      <div className={editorOpen ? 'cdpc-studio-hidden' : undefined}>
-        <PresetStudio initialMode={initialMode} onOpenAI={() => setAiOpen(true)} onOpenEditor={(payload) => {
-          setPendingPayload(payload)
-          setEditorOpen(true)
-        }} />
-      </div>
-      {editorOpen && (
-        <div className="cdpc-editor-overlay">
-          <div className="cdpc-editor-toolbar">
-            <button className="cdpc-editor-back" onClick={() => setEditorOpen(false)}>
-              <ArrowLeft size={16} /> {pendingPayload?.language === 'en-US' ? 'Back to Studio' : '返回皮肤工作台'}
-            </button>
-            <span className="cdpc-editor-title">{pendingPayload?.language === 'en-US' ? 'CDPC Studio · Blockbench (GPL-3.0-or-later)' : 'CDPC Studio · Blockbench（GPL-3.0-or-later）'}</span>
-            <a className="cdpc-editor-new-tab" href={BLOCKBENCH_PATH} target="_blank" rel="noreferrer">
-              {pendingPayload?.language === 'en-US' ? 'Open in new tab' : '在新标签页打开'} <ExternalLink size={14} />
-            </a>
+        <>
+          <div className={editorOpen ? 'cdpc-studio-hidden' : undefined}>
+            <PresetStudio initialMode={initialMode} onOpenAI={() => setAiOpen(true)} onOpenEditor={(payload) => {
+              setPendingPayload(payload)
+              setEditorOpen(true)
+            }} />
           </div>
-          <div className="cdpc-editor-disclaimer" role="note" aria-label="Project disclaimer and asset credits">
-            {pendingPayload?.language === 'en-US' ? 'Unofficial Minecraft project · Coat & shawl assets: 邹陈云飞, Th千' : '非官方 Minecraft 项目 · 外套与披肩素材：邹陈云飞、Th千'}
-          </div>
-          {importFeedback && <div className="cdpc-editor-feedback" role="status" aria-live="polite">{importFeedback}</div>}
-          <iframe
-            ref={iframeRef}
-            title="CDPC 内置 Blockbench 完整模型编辑器"
-            src={BLOCKBENCH_PATH}
-            onLoad={handleEditorLoad}
-            allow="clipboard-read; clipboard-write; fullscreen"
-            className="cdpc-editor-frame"
-          />
-        </div>
-      )}
-      </>
+          {editorOpen && (
+            <div className="cdpc-editor-overlay">
+              <div className="cdpc-editor-toolbar">
+                <button className="cdpc-editor-back" onClick={() => setEditorOpen(false)}>
+                  <ArrowLeft size={16} /> {pendingPayload?.language === 'en-US' ? 'Back to Studio' : '返回皮肤工作台'}
+                </button>
+                <span className="cdpc-editor-title">{pendingPayload?.language === 'en-US' ? 'CDPC Studio · Blockbench (GPL-3.0-or-later)' : 'CDPC Studio · Blockbench（GPL-3.0-or-later）'}</span>
+                <a className="cdpc-editor-new-tab" href={BLOCKBENCH_PATH} target="_blank" rel="noreferrer">
+                  {pendingPayload?.language === 'en-US' ? 'Open in new tab' : '在新标签页打开'} <ExternalLink size={14} />
+                </a>
+              </div>
+              <div className="cdpc-editor-disclaimer" role="note" aria-label="Project disclaimer and asset credits">
+                {pendingPayload?.language === 'en-US' ? 'Unofficial Minecraft project · Coat & shawl assets: 邹陈云飞, Th千' : '非官方 Minecraft 项目 · 外套与披肩素材：邹陈云飞、Th千'}
+              </div>
+              {importFeedback && <div className="cdpc-editor-feedback" role="status" aria-live="polite">{importFeedback}</div>}
+              <iframe ref={iframeRef} title="CDPC 内置 Blockbench 完整模型编辑器" src={BLOCKBENCH_PATH}
+                onLoad={handleEditorLoad} allow="clipboard-read; clipboard-write; fullscreen" className="cdpc-editor-frame" />
+            </div>
+          )}
+        </>
       )}
     </>
   )
