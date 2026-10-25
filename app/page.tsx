@@ -1,9 +1,9 @@
 import Link from 'next/link'
 
 const tools = [
-  { number: '00', title: '皮肤与配件编辑器', tag: '核心编辑器', description: '在同一工作区导入皮肤，编辑披肩、外套与披风，实时预览角色并导出 PNG。', href: '/bench', action: '打开编辑器', featured: true },
-  { number: '01', title: 'AI 生成', tag: 'AI 创作', description: '通过文字描述或参考图片生成 Minecraft 皮肤，并在 3D 预览中检查结果。', href: '/AI', action: '开始 AI 创作', featured: true },
-  { number: '02', title: '衣服选装', tag: '角色搭配', description: '浏览已接入的服装素材并进入角色搭配入口；披肩、外套与披风保持独立分类。', href: '/wardrobe', action: '开始搭配', featured: false },
+  { number: '00', title: '皮肤与配件编辑器', tag: '核心编辑器', description: '在同一工作区导入皮肤，编辑披肩、外套与披风，实时预览角色并导出 PNG。', href: '/editor', action: '打开编辑器', featured: true },
+  { number: '01', title: 'AI 生成', tag: 'AI 创作', description: '通过文字描述或参考图片生成 Minecraft 皮肤，并在 3D 预览中检查结果。', href: '/ai', action: '开始 AI 创作', featured: true },
+  { number: '02', title: '衣橱选装', tag: '角色搭配', description: '浏览已接入的服装素材并进入角色搭配入口；披肩、外套与披风保持独立分类。', href: '/wardrobe', action: '开始搭配', featured: false },
   { number: '03', title: '创作者中心', tag: '创作者空间', description: '完善公开展示资料，逐步管理你的原创作品与创作内容。', href: '/creator', action: '进入创作者中心', featured: false },
 ]
 
