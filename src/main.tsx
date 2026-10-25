@@ -1,6 +1,8 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { MantineProvider, createTheme } from '@mantine/core'
+import '@mantine/core/styles.css'
 import './styles.css'
 import './design-system.css'
 
@@ -46,10 +48,14 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
   }
 }
 
+const theme = createTheme({ primaryColor: 'green', defaultRadius: 'sm', fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif' })
+
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AppErrorBoundary>
-      <App />
-    </AppErrorBoundary>
+    <MantineProvider theme={theme}>
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
+    </MantineProvider>
   </React.StrictMode>,
 )
