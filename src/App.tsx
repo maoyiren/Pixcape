@@ -5,14 +5,17 @@ import AiSkinStudio from './AiSkinStudio'
 
 const BLOCKBENCH_PATH = '/blockbench/'
 
-function getInitialMode(): 'editor' | 'ai' | 'wardrobe' {
+type StudioMode = 'editor' | 'ai' | 'wardrobe'
+
+function getInitialMode(): StudioMode {
   const mode = new URLSearchParams(window.location.search).get('mode')
   return mode === 'ai' ? 'ai' : mode === 'wardrobe' ? 'wardrobe' : 'editor'
 }
 
 export default function App() {
+  const [initialMode] = useState<StudioMode>(() => getInitialMode())
   const [editorOpen, setEditorOpen] = useState(false)
-  const [aiOpen, setAiOpen] = useState(() => getInitialMode() === 'ai')
+  const [aiOpen, setAiOpen] = useState(() => initialMode === 'ai')
   const [pendingPayload, setPendingPayload] = useState<PresetEditorPayload | null>(null)
   const [importFeedback, setImportFeedback] = useState<string>('')
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -46,9 +49,7 @@ export default function App() {
     const target = iframeRef.current?.contentWindow
     if (!target) return
 
-    // Blockbench's page load event can fire before all editor modules and
-    // the Undo API are initialized. Importing at that point can throw
-    // "Cannot read properties of undefined (reading 'initEdit')".
+    // Blockbench's load event can fire before its editor modules initialize.
     target.postMessage(
       { type: 'pixcape:set-language', language: pendingPayload.language || 'zh-CN' },
       window.location.origin,
@@ -63,7 +64,6 @@ export default function App() {
         window.location.origin,
       )
     }
-    // Give Blockbench time to finish initializing its editor modules.
     importTimerRef.current = window.setTimeout(sendImportWhenReady, 1200)
   }
 
@@ -72,7 +72,7 @@ export default function App() {
       {!editorOpen && aiOpen ? <AiSkinStudio onBack={() => setAiOpen(false)} /> : (
       <>
       <div className={editorOpen ? 'cdpc-studio-hidden' : undefined}>
-        <PresetStudio onOpenAI={() => setAiOpen(true)} onOpenEditor={(payload) => {
+        <PresetStudio initialMode={initialMode} onOpenAI={() => setAiOpen(true)} onOpenEditor={(payload) => {
           setPendingPayload(payload)
           setEditorOpen(true)
         }} />
