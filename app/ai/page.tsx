@@ -1,7 +1,7 @@
-import EditorEntry from '../components/editor-entry'
+import NextStudio from '../components/next-studio'
 
 export const metadata = { title: 'AI 生成 | CDPC' }
 
 export default function AiPage() {
-  return <EditorEntry mode="ai" />
+  return <NextStudio mode="ai" />
 }

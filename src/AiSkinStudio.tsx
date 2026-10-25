@@ -9,7 +9,9 @@ type ModelOption = { id: string; provider: string; model: string; label: string;
 type ModelResponse = { models: ModelOption[]; providers: { id: string; label: string; configured: boolean }[] }
 type GenerationResponse = { imageDataUrl: string; provider: string; model: string; elapsedMs: number; notice: string; outputKind: 'minecraft-skin' | 'concept-image'; validation?: { dimensions: string; baseLayerOpaque: boolean; unusedPixelsTransparent: boolean; uvMapped: boolean }; error?: string }
 
-const API_BASE = ((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_AI_API_BASE_URL ?? '/api/ai').replace(/\/$/, '')
+declare const process: { env: { NEXT_PUBLIC_AI_API_BASE_URL?: string } }
+
+const API_BASE = ((typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_AI_API_BASE_URL : undefined) ?? '/api/ai').replace(/\/$/, '')
 
 export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
   const [task, setTask] = useState<'text-to-image' | 'image-to-image'>('text-to-image')
@@ -39,7 +41,7 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
         setProviders(data.providers || [])
       })
       .catch(() => {
-        if (active) setError('无法连接 AI 服务。请确认 AI API 已部署，并设置 VITE_AI_API_BASE_URL 或同源 /api 代理。')
+        if (active) setError('无法连接 AI 服务。请确认 AI API 已部署，并设置 NEXT_PUBLIC_AI_API_BASE_URL 或同源 /api 代理。')
       })
     return () => { active = false }
   }, [])

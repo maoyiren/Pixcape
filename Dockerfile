@@ -15,28 +15,15 @@ RUN mkdir -p /runtime \
     && test -s /runtime/dist/bundle.js \
     && test -s /runtime/LICENSE.MD
 
-FROM node:24-alpine AS vite-build
-ARG VITE_AI_API_BASE_URL=/api/ai
-ENV VITE_AI_API_BASE_URL=$VITE_AI_API_BASE_URL VITE_BASE_PATH=/studio/
-RUN apk add --no-cache python3 make g++
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --no-audit --no-fund
-COPY . .
-RUN npm run build:app && test -s dist/index.html
-
 FROM node:24-bookworm-slim AS next-build
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-# Finish the Vite dependency/build stage before installing and compiling Next.js.
-# This reduces peak disk usage on constrained CI runners.
-COPY --from=vite-build /app/dist /tmp/pixcape-vite-dist
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund && npm cache clean --force
 COPY . .
-RUN rm -rf /tmp/pixcape-vite-dist && npm run next:build
+RUN npm run next:build
 
 FROM node:24-bookworm-slim AS ai-api-build
 WORKDIR /ai-api
@@ -52,7 +39,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends bash nginx ca-c
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=127.0.0.1 NEXTAUTH_URL=https://cdpc.cc
 WORKDIR /opt/pixcape-next
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=vite-build /app/dist /usr/share/nginx/html/studio/
 COPY --from=blockbench-build /runtime/ /usr/share/nginx/html/blockbench/
 COPY --from=ai-api-build /ai-api /opt/pixcape-ai-api
 COPY --from=next-build /app/package.json ./package.json

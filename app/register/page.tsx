@@ -81,7 +81,7 @@ export default function RegisterPage() {
             <Text size="xs" fw={700} c="dimmed" tt="uppercase" lts={1.5}>JOIN CDPC</Text>
             <Title order={1} size="h2">创建账户</Title>
           </Stack>
-          <Button component={Link} href="/login" variant="default" className="cdpc-control">已有账户？登录</Button>
+          <Button component="a" href="/login" variant="default" className="cdpc-control">已有账户？登录</Button>
         </Group>
 
         <Paper withBorder radius="md" p={{ base: 'md', sm: 'xl' }} className="cdpc-register-panel">

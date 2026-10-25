@@ -4,11 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "npm run build:blockbench && npm run build:app",
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "npm run next:build",
     "build:app": "tsc -b && vite build",
     "build:blockbench": "node scripts/build-blockbench.mjs",
-    "preview": "vite preview --host 0.0.0.0",
+    "preview": "next start --hostname 0.0.0.0",
     "next:dev": "next dev --hostname 0.0.0.0",
     "next:build": "npm run db:generate:all && next build",
     "next:start": "next start --hostname 0.0.0.0",
@@ -23,7 +23,8 @@
     "test:sqlite-rate-limit": "node --experimental-strip-types --test tests/integration/sqlite-rate-limit.test.mjs",
     "db:generate:all": "prisma generate --schema prisma/schema.prisma && prisma generate --schema prisma/schema.mysql.prisma && prisma generate --schema prisma/schema.sqlite.prisma",
     "db:push": "node scripts/db-push.mjs",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "start": "next start --hostname 0.0.0.0"
   },
   "dependencies": {
     "@mantine/core": "^9.7.3",
