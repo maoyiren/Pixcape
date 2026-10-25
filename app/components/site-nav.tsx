@@ -4,10 +4,9 @@ import { authOptions } from '@/auth'
 
 const items = [
   { href: '/', label: '首页' },
-  { href: '/ai', label: 'AI 生成' },
-  { href: '/editor', label: '单品编辑器', primary: true },
-  { href: '/wardrobe', label: '衣橱选装' },
-  { href: '/workbench', label: '创作工作台' },
+  { href: '/wardrobe', label: '衣服选装' },
+  { href: '/workbench', label: '创作工坊', primary: true },
+  { href: '/ai', label: 'AI 创作' },
   { href: '/creator', label: '创作者中心' },
 ]
 
@@ -28,7 +27,7 @@ export async function SiteNav() {
           {session?.user ? (
             <>
               {isAdmin ? <Link className="site-nav-admin" href="/admin">管理后台</Link> : null}
-              <Link className="site-nav-user" href="/workbench">{session.user.name || session.user.email || '我的账户'}</Link>
+              <Link className="site-nav-user" href="/account" title="打开账户资料">{session.user.name || session.user.email || '我的账户'}</Link>
             </>
           ) : (
             <>
