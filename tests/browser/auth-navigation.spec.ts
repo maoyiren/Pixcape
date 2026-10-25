@@ -4,6 +4,8 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 生成' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '编辑器' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣服选装' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
@@ -33,10 +35,13 @@ test('login page exposes email credentials and account registration', async ({ p
 })
 
 
-test('workbench route is available after login and keeps account settings reachable', async ({ page }) => {
+test('workbench is distinct from the creator profile center', async ({ page }) => {
   await page.goto('/workbench')
-  await expect(page.getByRole('heading', { name: '皮肤与配件编辑' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '账户资料' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '创作工作台' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'AI 生成' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '编辑器' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '创作者中心' })).toBeVisible()
 })
 
 test('registration rejects a short password before sending a request', async ({ page }) => {
