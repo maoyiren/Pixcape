@@ -1,0 +1,8 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-cdpc-ink: #171d2a;
+  --color-cdpc-green: #56883b;
+  --color-cdpc-panel: #c6c6c6;
+}
