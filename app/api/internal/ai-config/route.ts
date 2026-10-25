@@ -17,11 +17,11 @@ function decryptAISecret(value: string) {
 export async function GET(request: Request) {
   const expected = process.env.AI_CONFIG_SYNC_TOKEN
   const supplied = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? ''
-  if (!expected || !supplied) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!expected || !supplied) return NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } })
   const expectedBytes = Buffer.from(expected)
   const suppliedBytes = Buffer.from(supplied)
   if (expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes)) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: 404, headers: { 'Cache-Control': 'no-store' } })
   }
 
   const entries = await prisma.appSetting.findMany({
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
       if (typeof value === 'string') env[envKey] = value ? decryptAISecret(value) : ''
     }
   } catch {
-    return NextResponse.json({ error: 'Stored AI configuration cannot be decrypted' }, { status: 503 })
+    return NextResponse.json({ error: 'Stored AI configuration cannot be decrypted' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
   return NextResponse.json({ env }, { headers: { 'Cache-Control': 'no-store' } })
 }

@@ -1,10 +1,6 @@
-import DressUpStudio from './dress-up-studio'
+import { redirect } from 'next/navigation'
 
-export const metadata = {
-  title: '衣服选装',
-  description: '分别选择上衣、外套、裤子、鞋子、帽子、披肩和披风，规划你的像素角色搭配。',
-}
-
+/** Keep the legacy bookmark working while routing to the canonical wardrobe entry. */
 export default function DressUpPage() {
-  return <DressUpStudio />
+  redirect('/wardrobe')
 }

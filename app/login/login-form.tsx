@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { signIn } from 'next-auth/react'
+import { Button, PasswordInput, TextInput } from '@mantine/core'
 
 type Method = { id: string; label: string }
 
@@ -101,30 +102,39 @@ export default function LoginForm({ methods, adminEnabled, defaultCallbackUrl }:
   return (
     <div className="auth-form">
       <form onSubmit={(event) => void credentialLogin(event)} className="auth-email-form auth-unified-credentials">
-        <label htmlFor="login-identifier">用户名或邮箱地址</label>
-        <input
+        <TextInput
           id="login-identifier"
-          className="cdpc-input"
-          type="text"
+          label="用户名或邮箱地址"
+          className="cdpc-mantine-field"
+          classNames={{ input: 'cdpc-input' }}
           autoComplete="username"
           required
           maxLength={254}
           value={identifier}
-          onChange={(event) => setIdentifier(event.target.value)}
+          onChange={(event) => setIdentifier(event.currentTarget.value)}
           placeholder="输入邮箱地址；管理员可输入配置的用户名"
         />
-        <label htmlFor="login-password">密码</label>
-        <input id="login-password" className="cdpc-input" type="password" autoComplete="current-password" required maxLength={256} value={password} onChange={(event) => setPassword(event.target.value)} />
-        <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</button>
+        <PasswordInput
+          id="login-password"
+          label="密码"
+          className="cdpc-mantine-field"
+          classNames={{ input: 'cdpc-input' }}
+          autoComplete="current-password"
+          required
+          maxLength={256}
+          value={password}
+          onChange={(event) => setPassword(event.currentTarget.value)}
+        />
+        <Button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} loading={busy} type="submit">{busy ? '正在验证…' : '登录 CDPC'}</Button>
         <small>普通账户使用注册邮箱登录；管理员使用运维配置的用户名登录。普通账户暂不支持昵称登录。</small>
       </form>
       {oauthMethods.length > 0 ? (
         <div className="auth-provider-group">
           <p className="auth-divider-label">或使用第三方账号</p>
           {oauthMethods.map((method) => (
-            <button className="pixel-button auth-provider-button cdpc-control" type="button" key={method.id} disabled={busy} onClick={() => void oauth(method.id)}>
+            <Button className="pixel-button auth-provider-button cdpc-control" type="button" key={method.id} disabled={busy} loading={busy} onClick={() => void oauth(method.id)} variant="default" fullWidth>
               {busy ? '正在连接…' : method.label}
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}
@@ -132,9 +142,8 @@ export default function LoginForm({ methods, adminEnabled, defaultCallbackUrl }:
         <details className="auth-magic-link">
           <summary>改用邮箱登录链接</summary>
           <form onSubmit={(event) => void emailLogin(event)} className="auth-email-form">
-            <label htmlFor="magic-email">邮箱地址</label>
-            <input id="magic-email" className="cdpc-input" type="email" autoComplete="email" required maxLength={254} value={magicEmail} onChange={(event) => setMagicEmail(event.target.value)} placeholder="name@example.com" />
-            <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在发送…' : '发送登录链接'}</button>
+            <TextInput id="magic-email" label="邮箱地址" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} type="email" autoComplete="email" required maxLength={254} value={magicEmail} onChange={(event) => setMagicEmail(event.currentTarget.value)} placeholder="name@example.com" />
+            <Button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} loading={busy} type="submit">{busy ? '正在发送…' : '发送登录链接'}</Button>
           </form>
         </details>
       )}

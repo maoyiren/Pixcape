@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Alert, Button, Card, Container, Group, Stack, Text, Textarea, TextInput, Title } from '@mantine/core'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
@@ -16,29 +17,62 @@ export default async function CreatorPage({ searchParams }: { searchParams?: Pro
   const profile = await prisma.creatorProfile.findUnique({ where: { userId: user.id } })
   const params = await searchParams
 
-  return <main className="inventory-shell cdpc-page">
-    <header className="topbar cdpc-panel">
-      <div><p className="eyebrow">CREATOR STUDIO</p><h1>创作者中心</h1></div>
-      <Link className="pixel-button cdpc-control" href="/">返回首页</Link>
-    </header>
-    <section className="hero inventory-panel cdpc-panel">
-      <h2>你的创作空间</h2>
-      <p>注册即拥有创作者身份。你可以完善公开资料并开始创作，无需申请或切换身份。</p>
-      <p>账户：{user.name ?? user.email ?? 'CDPC 用户'} · {user.role === 'ADMIN' ? '管理员' : '创作者'}</p>
-      {params?.saved === '1' ? <p role="status">资料已保存。</p> : null}
-      {params?.error === 'display_name' ? <p role="alert">展示名称至少需要 2 个字符。</p> : null}
-      <form action={updateCreatorProfile} className="application-form cdpc-stack">
-        <label htmlFor="displayName">公开展示名称</label>
-        <input id="displayName" className="cdpc-input" name="displayName" required minLength={2} maxLength={48} defaultValue={profile?.displayName ?? user.name ?? user.email?.split('@')[0] ?? ''} />
-        <label htmlFor="bio">创作简介 <span>（最多 500 字）</span></label>
-        <textarea id="bio" className="cdpc-input" name="bio" rows={4} maxLength={500} defaultValue={profile?.bio ?? ''} placeholder="介绍你擅长的像素创作类型、作品风格或创作方向" />
-        <button className="pixel-button primary cdpc-control cdpc-control-primary" type="submit">保存创作者资料</button>
-      </form>
-    </section>
-    <section className="hero inventory-panel cdpc-panel">
-      <h2>作品管理</h2>
-      <p>草稿管理、公开发布、版本历史和作品数据正在按阶段接入。当前页面不会显示虚构的作品数量或互动统计。</p>
-      <p><Link href="/workbench">前往创作工坊</Link></p>
-    </section>
-  </main>
+  return (
+    <Container size="md" py={{ base: 'md', sm: 'xl' }} className="cdpc-creator-page">
+      <Stack gap="lg">
+        <Group justify="space-between" align="flex-start" wrap="wrap">
+          <Stack gap={4}>
+            <Text size="xs" fw={700} c="dimmed" tt="uppercase" lts={1.5}>CREATOR STUDIO</Text>
+            <Title order={1} size="h2">创作者中心</Title>
+          </Stack>
+          <Button component={Link} href="/" variant="default" className="cdpc-control">返回首页</Button>
+        </Group>
+
+        <Card withBorder radius="md" padding={{ base: 'md', sm: 'xl' }} className="cdpc-creator-card">
+          <Stack gap="md">
+            <Title order={2} size="h3">你的创作空间</Title>
+            <Text c="dimmed" lh={1.7}>注册即拥有创作者身份。你可以完善公开资料并开始创作，无需申请或切换身份。</Text>
+            <Text size="sm">账户：{user.name ?? user.email ?? 'CDPC 用户'} · {user.role === 'ADMIN' ? '管理员' : '创作者'}</Text>
+            {params?.saved === '1' ? <Alert color="green" variant="light" role="status" title="保存成功">创作者资料已保存。</Alert> : null}
+            {params?.error === 'display_name' ? <Alert color="red" variant="light" role="alert" title="请检查资料">公开展示名称至少需要 2 个字符。</Alert> : null}
+            <form action={updateCreatorProfile} className="application-form cdpc-stack">
+              <Stack gap="md">
+                <TextInput
+                  id="displayName"
+                  name="displayName"
+                  label="公开展示名称"
+                  className="cdpc-mantine-field"
+                  classNames={{ input: 'cdpc-input' }}
+                  required
+                  minLength={2}
+                  maxLength={48}
+                  defaultValue={profile?.displayName ?? user.name ?? user.email?.split('@')[0] ?? ''}
+                />
+                <Textarea
+                  id="bio"
+                  name="bio"
+                  label="创作简介（最多 500 字）"
+                  className="cdpc-mantine-field"
+                  classNames={{ input: 'cdpc-input' }}
+                  rows={4}
+                  maxLength={500}
+                  defaultValue={profile?.bio ?? ''}
+                  placeholder="介绍你擅长的像素创作类型、作品风格或创作方向"
+                />
+                <Button className="cdpc-control cdpc-control-primary" type="submit">保存创作者资料</Button>
+              </Stack>
+            </form>
+          </Stack>
+        </Card>
+
+        <Card withBorder radius="md" padding={{ base: 'md', sm: 'xl' }} className="cdpc-creator-card">
+          <Stack gap="sm">
+            <Title order={2} size="h3">作品管理</Title>
+            <Text c="dimmed" lh={1.7}>草稿管理、公开发布、版本历史和作品数据正在按阶段接入。当前页面不会显示虚构的作品数量或互动统计。</Text>
+            <Button component={Link} href="/workbench" variant="light" className="cdpc-control cdpc-control-primary" w="fit-content">前往创作工作台</Button>
+          </Stack>
+        </Card>
+      </Stack>
+    </Container>
+  )
 }

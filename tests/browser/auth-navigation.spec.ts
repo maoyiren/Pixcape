@@ -4,25 +4,57 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 生成' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '单品编辑器' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣橱选装' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
+})
+
+test('primary creation routes render their intended mode entry points', async ({ page }) => {
+  const routes = [
+    { path: '/ai', heading: 'AI 生成', mode: 'ai' },
+    { path: '/editor', heading: '单品编辑器', mode: 'editor' },
+    { path: '/wardrobe', heading: '衣橱选装', mode: 'wardrobe' },
+  ]
+
+  for (const route of routes) {
+    await page.goto(route.path)
+    await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
+    await expect(page.getByRole('link', { name: /打开/ })).toHaveAttribute('href', `/studio/?mode=${route.mode}`)
+  }
+})
+
+test('workbench nested routes map to their intended workflows', async ({ page }) => {
+  const routes = [
+    { path: '/workbench/ai', heading: 'AI 生成' },
+    { path: '/workbench/edit', heading: '单品编辑器' },
+    { path: '/workbench/dress', heading: '衣橱选装' },
+  ]
+
+  for (const route of routes) {
+    await page.goto(route.path)
+    await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
+  }
 })
 
 test('login page exposes email credentials and account registration', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
   await expect(page.getByLabel('用户名或邮箱地址')).toBeVisible()
-  await expect(page.getByLabel('密码', { exact: true })).toBeVisible()
+  await expect(page.locator('#login-password')).toBeVisible()
   await expect(page.getByRole('link', { name: '创建账户', exact: true }).first()).toBeVisible()
 })
 
-
-test('workbench route is available after login and keeps account settings reachable', async ({ page }) => {
+test('workbench is distinct from the creator profile center', async ({ page }) => {
   await page.goto('/workbench')
-  await expect(page.getByRole('heading', { name: '皮肤与配件编辑' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '账户资料' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '创作工作台' })).toBeVisible()
+  const creationEntries = page.getByRole('region', { name: '创作入口' })
+  await expect(creationEntries.getByRole('link', { name: '开始生成 ↗' })).toBeVisible()
+  await expect(creationEntries.getByRole('link', { name: '打开编辑器 ↗' })).toBeVisible()
+  await expect(creationEntries.getByRole('link', { name: '开始搭配 ↗' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
 })
 
 test('registration rejects a short password before sending a request', async ({ page }) => {
@@ -56,4 +88,32 @@ test('Vite skin editor app starts and renders its interactive surface', async ({
   await expect(page.getByRole('tab', { name: /外套/ })).toBeVisible()
   await expect(page.getByRole('tab', { name: /披风/ })).toBeVisible()
   await expect(page.getByRole('button', { name: '发送到 Blockbench 编辑' })).toBeVisible()
+})
+
+test('Vite AI route opens the actual AI creation interface', async ({ page }) => {
+  await page.goto('http://127.0.0.1:5173/?mode=ai')
+  await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
+  await expect(page.getByText('CDPC AI 工坊')).toBeVisible()
+})
+
+test('Vite wardrobe route opens outfit selection instead of the default shawl tab', async ({ page }) => {
+  await page.goto('http://127.0.0.1:5173/?mode=wardrobe')
+  await expect(page.getByText('Minecraft 皮肤与服装工作台')).toBeVisible()
+  await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
+})
+
+
+test('workbench remains usable at a narrow mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 })
+  await page.goto('/workbench')
+  await expect(page.getByRole('heading', { name: '创作工作台' })).toBeVisible()
+  const entries = page.getByRole('region', { name: '创作入口' })
+  await expect(entries.getByRole('link', { name: '开始生成 ↗' })).toBeVisible()
+  await expect(entries.getByRole('link', { name: '打开编辑器 ↗' })).toBeVisible()
+  await expect(entries.getByRole('link', { name: '开始搭配 ↗' })).toBeVisible()
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }))
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport + 1)
 })

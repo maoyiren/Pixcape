@@ -142,7 +142,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
   return <main className="inventory-shell">
     <header className="topbar"><div><p className="eyebrow">SERVER OPERATIONS</p><h1>管理员后台</h1></div><Link className="pixel-button" href="/">返回</Link></header>
     <nav className="admin-subnav" aria-label="管理后台分区">
-      <a href="#overview">总览</a><a href="#health">系统健康</a><a href="#creators">创作者审核</a><a href="#users">用户管理</a><a href="#audit">操作审计</a><a href="#configuration">配置中心</a>
+      <a href="#overview">总览</a><a href="#health">系统健康</a><a href="#creators">创作者审核</a><a href="/admin/user">用户管理</a><a href="/admin/audit">操作审计</a><a href="/admin/stat">平台统计</a><a href="#configuration">配置中心</a>
     </nav>
     {params?.aiConfigurationSaved === '1' ? <p role="status" className="config-status">AI 配置已保存到数据库。服务间同步已启用时，AI API 会在后续请求中自动读取新配置。</p> : null}
     {params?.systemConfigurationSaved === '1' ? <p role="status" className="config-status">默认登录页面已保存。</p> : null}

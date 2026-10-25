@@ -73,3 +73,42 @@ test('AI API advertises configured Seedream model IDs without exposing the API k
     child.kill('SIGTERM')
   }
 })
+
+
+test('AI API refreshes provider settings from the authenticated CDPC config endpoint', async () => {
+  const configPort = 18789
+  const apiPort = 18790
+  const token = 'test-config-sync-token'
+  const { createServer } = await import('node:http')
+  const configServer = createServer((req, res) => {
+    if (req.headers.authorization !== `Bearer ${token}`) {
+      res.writeHead(404, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Not found' }))
+      return
+    }
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+    res.end(JSON.stringify({ env: {
+      ARK_API_KEY: 'test-secret-from-admin-config',
+      SEEDREAM_IMAGE_MODELS: 'seedream-from-admin',
+      AI_DEFAULT_PROVIDER: 'seedream',
+    } }))
+  })
+  await new Promise((resolve, reject) => {
+    configServer.once('error', reject)
+    configServer.listen(configPort, '127.0.0.1', resolve)
+  })
+  const { child, base } = await startApi(apiPort, {
+    AI_CONFIG_URL: `http://127.0.0.1:${configPort}/api/internal/ai-config`,
+    AI_CONFIG_SYNC_TOKEN: token,
+  })
+  try {
+    const response = await fetch(`${base}/api/ai/models`, { headers: { Origin: 'http://localhost:5173' } })
+    assert.equal(response.status, 200)
+    const inventory = await response.json()
+    assert.deepEqual(inventory.models.map(item => item.id), ['seedream:seedream-from-admin'])
+    assert.equal(JSON.stringify(inventory).includes('test-secret-from-admin-config'), false)
+  } finally {
+    child.kill('SIGTERM')
+    await new Promise(resolve => configServer.close(resolve))
+  }
+})

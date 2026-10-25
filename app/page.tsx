@@ -1,14 +1,14 @@
 import Link from 'next/link'
 
 const tools = [
-  { number: '00', title: '衣服选装', tag: '独立搭配', description: '用已接入的服装素材搭配角色，实时查看 3D 效果，并把临时穿搭保存在当前设备。', href: '/dress-up', action: '开始选装', featured: true },
-  { number: '01', title: '创作工坊', tag: '编辑器入口', description: '导入穿搭备份，继续调整皮肤与配件，并导出可用的 PNG 文件。', href: '/studio', action: '打开创作工坊', featured: true },
-  { number: '02', title: '角色预览与导出', tag: '预览工作流', description: '在编辑器中检查搭配结果，确认后导出皮肤 PNG，方便带回游戏使用。', href: '/studio', action: '开始搭配', featured: false },
-  { number: '03', title: '创作者中心', tag: '创作者计划', description: '申请创作者身份，完善展示名称与简介，查看审核进度。', href: '/creator', action: '了解创作者入口', featured: false },
+  { number: '00', title: '单品编辑器', tag: 'Blockbench 编辑入口', description: '在同一工作区导入皮肤，编辑披肩、外套与披风，实时预览角色并导出 PNG。', href: '/editor', action: '打开单品编辑器', featured: true },
+  { number: '01', title: 'AI 生成', tag: 'AI 创作', description: '通过文字描述或参考图片生成 Minecraft 皮肤，并在 3D 预览中检查结果。', href: '/ai', action: '开始 AI 创作', featured: true },
+  { number: '02', title: '衣橱选装', tag: '角色搭配', description: '浏览已接入的服装素材并进入角色搭配入口；披肩、外套与披风保持独立分类。', href: '/wardrobe', action: '开始搭配', featured: false },
+  { number: '03', title: '创作者中心', tag: '创作者空间', description: '完善公开展示资料，逐步管理你的原创作品与创作内容。', href: '/creator', action: '进入创作者中心', featured: false },
 ]
 
 const quickLinks = [
-  { label: '我的账户', detail: '查看账户状态与个人资料', href: '/account', symbol: '◉' },
+  { label: '创作工作台', detail: '进入生成、编辑与衣服选装流程', href: '/workbench', symbol: '◉' },
   { label: '登录 / 注册', detail: '保存账户，管理自己的创作', href: '/login', symbol: '↗' },
 ]
 
@@ -21,8 +21,8 @@ export default function MigrationHome() {
           <h1>让角色更像<br /><span>你想要的样子。</span></h1>
           <p className="cdpc-hero-description">从 Minecraft 皮肤开始，搭配披肩、外套和披风。导入、预览、调整，再把满意的作品带进游戏。</p>
           <div className="cdpc-hero-actions">
-            <Link className="cdpc-button cdpc-button-primary cdpc-control cdpc-control-primary" href="/dress-up">开始衣服选装 <span aria-hidden="true">↗</span></Link>
-            <Link className="cdpc-button cdpc-button-quiet cdpc-control" href="/studio">进入创作工坊</Link>
+            <Link className="cdpc-button cdpc-button-primary cdpc-control cdpc-control-primary" href="/editor">开始编辑皮肤与配件 <span aria-hidden="true">↗</span></Link>
+            <Link className="cdpc-button cdpc-button-quiet cdpc-control" href="/ai">尝试 AI 生成</Link>
           </div>
           <div className="cdpc-hero-footnote"><span className="cdpc-mini-pixel" aria-hidden="true">▦</span> 为皮肤搭配与像素配件设计而做</div>
         </div>
@@ -45,8 +45,8 @@ export default function MigrationHome() {
       </section>
 
       <section className="cdpc-section-heading">
-        <div><p className="cdpc-section-kicker">TOOLS / 01</p><h2>从搭配到创作，一步开始</h2></div>
-        <p>搭配角色、编辑皮肤，或管理你的创作者资料。</p>
+        <div><p className="cdpc-section-kicker">TOOLS / 01</p><h2>编辑与生成，在同一入口开始</h2></div>
+        <p>编辑皮肤与披肩、外套、披风，或使用 AI 辅助生成新设计。</p>
       </section>
 
       <section className="cdpc-tool-grid" aria-label="工具与功能">
@@ -62,7 +62,7 @@ export default function MigrationHome() {
       </section>
 
       <section className="cdpc-quick-row" aria-label="账户快捷入口">
-        <div className="cdpc-quick-intro"><p className="cdpc-section-kicker">YOUR SPACE / 02</p><h2>你的账户空间</h2><p>登录后查看账户资料，并管理创作者申请。</p></div>
+        <div className="cdpc-quick-intro"><p className="cdpc-section-kicker">YOUR SPACE / 02</p><h2>你的账户空间</h2><p>创作工作台负责进入创作流程；创作者中心单独管理公开展示资料。</p></div>
         {quickLinks.map((item) => <Link className="cdpc-quick-link cdpc-control" href={item.href} key={item.href}><span className="quick-symbol">{item.symbol}</span><span><b>{item.label}</b><small>{item.detail}</small></span><span className="quick-arrow" aria-hidden="true">↗</span></Link>)}
       </section>
 
