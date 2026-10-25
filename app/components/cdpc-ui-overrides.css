@@ -226,3 +226,46 @@ body{color:var(--cdpc-text)}
 @media(max-width:960px){.inventory-shell:has(.admin-subnav)>.topbar,.inventory-shell:has(.admin-subnav)>.admin-overview,.inventory-shell:has(.admin-subnav)>section,.inventory-shell:has(.admin-subnav)>.config-status,.inventory-shell:has(.admin-subnav)>[role=alert],.inventory-shell:has(.admin-subnav)>[role=status]{margin-left:0}.admin-subnav{position:static;top:auto;left:auto;width:100%;max-height:none;flex-direction:row;flex-wrap:wrap;margin:12px 0}.admin-subnav a{flex:0 0 auto}}
 @media(max-width:640px){.mantine-Container-root{padding-inline:12px}.mantine-Group-root{min-width:0}.mantine-Title-root{overflow-wrap:anywhere}.mantine-Button-root{white-space:normal}.admin-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-filters{grid-template-columns:minmax(0,1fr)}.admin-config-grid{grid-template-columns:minmax(0,1fr)}.application-card .actions{gap:8px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* Phase 2: one shared interaction baseline for every Next.js route. */
+:root {
+  --cdpc-bg: #10141b;
+  --cdpc-surface: #171c25;
+  --cdpc-surface-raised: #1c2430;
+  --cdpc-border: #303949;
+  --cdpc-text: #edf1f7;
+  --cdpc-muted: #a4adba;
+  --cdpc-action: #a8c7ff;
+  --cdpc-action-ink: #17243a;
+  --cdpc-danger: #ffb4ab;
+  color-scheme: dark;
+}
+html { background: var(--cdpc-bg); }
+body { color: var(--cdpc-text); }
+:where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--cdpc-action);
+  outline-offset: 3px;
+}
+:where(button, input, textarea, select) { font: inherit; }
+:where(img, video, canvas, svg) { max-width: 100%; }
+:where(main, section, article, form, .mantine-Container-root, .mantine-Paper-root, .mantine-Card-root) { min-width: 0; }
+:where(.mantine-TextInput-input, .mantine-PasswordInput-input, .mantine-Textarea-input, .mantine-Select-input) {
+  background: #10151d;
+  border-color: var(--cdpc-border);
+  color: var(--cdpc-text);
+}
+:where(.mantine-TextInput-input, .mantine-PasswordInput-input, .mantine-Textarea-input, .mantine-Select-input)::placeholder { color: #8995a7; }
+:where(.mantine-Card-root, .mantine-Paper-root) { border-color: var(--cdpc-border); }
+:where(.mantine-Alert-root) { overflow-wrap: anywhere; }
+:where(.mantine-Button-root, .cdpc-control) { max-width: 100%; }
+:where(.mantine-Button-label, .cdpc-control) { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .mantine-Container-root { padding-inline: 12px; }
+  .mantine-Group-root { min-width: 0; }
+  .mantine-Title-root { overflow-wrap: anywhere; }
+  .mantine-Button-root { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
