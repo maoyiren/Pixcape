@@ -7,6 +7,7 @@ const items = [
   { href: '/ai', label: 'AI 生成' },
   { href: '/editor', label: '单品编辑器', primary: true },
   { href: '/wardrobe', label: '衣橱选装' },
+  { href: '/workbench', label: '创作工作台' },
   { href: '/creator', label: '创作者中心' },
 ]
 
