@@ -54,7 +54,7 @@ test('workbench is distinct from the creator profile center', async ({ page }) =
   await expect(page.getByRole('heading', { name: '创作工作台' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'AI 生成' })).toBeVisible()
   await expect(page.getByRole('link', { name: '编辑器' })).toBeVisible()
-  await expect(page.getByRole('link', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('link', { name: '衣橱选装' })).toBeVisible()
   await expect(page.getByRole('link', { name: '创作者中心' })).toBeVisible()
 })
 
