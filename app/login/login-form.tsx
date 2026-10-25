@@ -134,7 +134,7 @@ export default function LoginForm({ methods, adminEnabled, defaultCallbackUrl }:
           <form onSubmit={(event) => void emailLogin(event)} className="auth-email-form">
             <label htmlFor="magic-email">邮箱地址</label>
             <input id="magic-email" className="cdpc-input" type="email" autoComplete="email" required maxLength={254} value={magicEmail} onChange={(event) => setMagicEmail(event.target.value)} placeholder="name@example.com" />
-            <button className="pixel-button primary" disabled={busy} type="submit">{busy ? '正在发送…' : '发送登录链接'}</button>
+            <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在发送…' : '发送登录链接'}</button>
           </form>
         </details>
       )}
