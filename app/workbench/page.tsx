@@ -58,7 +58,7 @@ export default async function WorkbenchPage() {
             </Text>
             {!user ? (
               <Text size="sm">
-                <Link href="/login">登录</Link> 后可继续使用账户相关功能，也可以先浏览创作入口。
+                <a href="/login">登录</a> 后可继续使用账户相关功能，也可以先浏览创作入口。
               </Text>
             ) : null}
           </Stack>
