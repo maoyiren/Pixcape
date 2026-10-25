@@ -136,3 +136,18 @@ body{background:#10141b!important;background-image:radial-gradient(ellipse at 50
   .cdpc-workbench .cdpc-workbench-card { transition: none; }
   .cdpc-workbench .cdpc-workbench-card:hover { transform: none; }
 }
+
+
+/* Canonical AI/editor/wardrobe entry pages share the same Mantine surface rules. */
+.cdpc-editor-entry { color: var(--cdpc-text, #edf1f7); }
+.cdpc-editor-entry .cdpc-editor-entry-panel {
+  background: var(--cdpc-surface, #171d27);
+  border-color: var(--cdpc-border, #303949);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 14%);
+}
+.cdpc-editor-entry a { color: #c6d9ff; }
+.cdpc-editor-entry .cdpc-control-primary { color: #17233a; }
+@media (max-width: 480px) {
+  .cdpc-editor-entry { padding-inline: 12px; }
+  .cdpc-editor-entry .mantine-Title-root { overflow-wrap: anywhere; }
+}
