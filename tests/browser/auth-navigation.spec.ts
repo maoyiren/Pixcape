@@ -4,9 +4,9 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 生成' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 创作' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '单品编辑器' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣橱选装' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣服选装' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
@@ -116,4 +116,12 @@ test('workbench remains usable at a narrow mobile viewport', async ({ page }) =>
     content: document.documentElement.scrollWidth,
   }))
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport + 1)
+})
+
+
+test('account entry points to the actual personal center route', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作工坊' })).toHaveAttribute('href', '/workbench')
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣服选装' })).toHaveAttribute('href', '/wardrobe')
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 创作' })).toHaveAttribute('href', '/ai')
 })
