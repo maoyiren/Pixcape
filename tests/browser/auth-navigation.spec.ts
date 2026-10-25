@@ -16,8 +16,8 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
 test('primary creation routes render their intended mode entry points', async ({ page }) => {
   const routes = [
     { path: '/ai', heading: 'AI 生成' },
-    { path: '/editor', heading: '皮肤与配件编辑器' },
-    { path: '/wardrobe', heading: '衣服选装' },
+    { path: '/editor', heading: '单品编辑器' },
+    { path: '/wardrobe', heading: '衣橱选装' },
   ]
 
   for (const route of routes) {
