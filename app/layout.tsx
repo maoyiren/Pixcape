@@ -52,9 +52,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <span><strong>cdpc</strong><small>像素角色创作工具</small></span>
             </div>
             <nav className="cdpc-footer-links" aria-label="页脚导航">
-              <Link href="/bench">皮肤与配件编辑器</Link>
-              <Link href="/AI">AI 生成</Link>
-              <Link href="/wardrobe">衣服选装</Link>
+              <Link href="/editor">单品编辑器</Link>
+              <Link href="/ai">AI 生成</Link>
+              <Link href="/wardrobe">衣橱选装</Link>
               <Link href="/creator">创作者中心</Link>
               <Link href="/workbench">我的工作台</Link>
               <Link href="/login">登录 / 注册</Link>
