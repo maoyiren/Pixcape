@@ -35,7 +35,7 @@
 
 ## 本次实现边界
 
-本分支已建立独立衣服选装页面，并将已知披肩、外套和披风素材接入 skinview3d 实时预览，支持本地 64×64 PNG 导入、Steve/Alex 模型、旋转/缩放和背景色调整。上衣、裤子、鞋子和帽子当前没有确认可用的正式素材，页面明确显示尚未接入。穿搭持久化和本页导出仍未实现。Mantine/Tailwind CSS v4/shadcn 的依赖迁移尚未完成；需要在具备 npm registry 的开发环境中更新锁文件并通过双入口构建后再扩大迁移。
+本分支已建立独立衣服选装页面，并将已知披肩、外套和披风素材接入 skinview3d 实时预览，支持本地 64×64 PNG 导入、Steve/Alex 模型、旋转/缩放和背景色调整。上衣、裤子、鞋子和帽子当前没有确认可用的正式素材，页面明确显示尚未接入。穿搭持久化和本页导出仍未实现。Mantine 与 Tailwind CSS v4 的依赖及锁文件已在迁移分支接入；登录/注册已开始使用 Mantine 控件，Next.js 与 Vite 入口均已接入 Provider 和 Tailwind utilities。双入口构建与浏览器回归仍待当前 PR 的 GitHub Actions 结果确认。
 
 ## Phase 2 implementation — shared account form primitives
 
@@ -54,3 +54,22 @@ Validation boundary:
 - The repository still needs a reproducible npm environment to install the libraries and regenerate `package-lock.json`. Do not add dependency declarations without updating the lockfile and passing both Next.js and Vite builds.
 - The next phase is a separate root npm package/lockfile migration for Tailwind CSS v4 and Mantine, then a Mantine pilot on login/register only before expanding.
 
+
+
+## Phase 3 — Mantine + Tailwind CSS v4 pilot
+
+Date: 2026-10-25  
+Branch: `feat/cdpc-ui-library-migration`  
+PR: https://github.com/maoyiren/Pixcape/pull/23
+
+Implemented:
+- Added Mantine core/hooks and Tailwind CSS v4 packages; the root package lockfile was generated rather than hand-edited.
+- Added a shared Mantine theme to the Next.js and Vite entry points.
+- Migrated login and registration controls to Mantine while retaining NextAuth provider IDs, callback URLs, registration API, and React Hook Form + Zod validation.
+- Configured `@tailwindcss/postcss` for Next.js and `@tailwindcss/vite` for Vite.
+- Loaded Tailwind theme and utilities without importing the Tailwind preflight reset, to reduce global CSS impact on the skin editor.
+
+Not yet validated:
+- Current GitHub Actions CI, Next.js security/build checks, and Docker smoke build must complete successfully before merge.
+- Check the login/register visual states and mobile layout in a browser; fix any Mantine/CSS specificity issues before expanding the migration.
+- Do not migrate editor canvas, Blockbench surfaces, OAuth internals, or data contracts in this phase.
