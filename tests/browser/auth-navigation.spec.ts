@@ -10,6 +10,20 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
 })
 
+
+test('primary creation routes render their intended mode entry points', async ({ page }) => {
+  const routes = [
+    { path: '/AI', heading: 'AI 生成' },
+    { path: '/bench', heading: '皮肤与配件编辑器' },
+    { path: '/wardrobe', heading: '衣服选装' },
+  ]
+
+  for (const route of routes) {
+    await page.goto(route.path)
+    await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
+  }
+})
+
 test('login page exposes email credentials and account registration', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
