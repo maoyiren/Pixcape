@@ -75,3 +75,19 @@ test('AI studio provides compact touch-friendly layout on narrow screens', () =>
   assert.match(css, /@media\(max-width:520px\)/)
   assert.match(css, /\.ai-studio__segmented \[role="tab"\]/)
 })
+
+
+test('Phase 2 shared controls cover account forms and magic-link submission', () => {
+  const css = read('../../src/design-system.css')
+  const login = read('../../app/login/login-form.tsx')
+  const register = read('../../app/register/page.tsx')
+  for (const token of ['--cdpc-control-height: 44px', '--cdpc-control-radius: 7px', '--cdpc-control-focus']) {
+    assert.ok(css.includes(token), `missing shared control token: ${token}`)
+  }
+  for (const selector of ['.cdpc-page .cdpc-input', '.cdpc-page .cdpc-control-primary', '.cdpc-page .auth-email-form']) {
+    assert.ok(css.includes(selector), `missing shared control rule: ${selector}`)
+  }
+  assert.match(login, /发送登录链接[^<]*<\/button>/)
+  assert.match(login, /cdpc-control cdpc-control-primary/)
+  assert.match(register, /className="pixel-button primary cdpc-control cdpc-control-primary"/)
+})
