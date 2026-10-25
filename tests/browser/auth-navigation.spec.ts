@@ -26,6 +26,20 @@ test('primary creation routes render their intended mode entry points', async ({
   }
 })
 
+
+test('workbench nested routes map to their intended workflows', async ({ page }) => {
+  const routes = [
+    { path: '/workbench/ai', heading: 'AI 生成' },
+    { path: '/workbench/edit', heading: '单品编辑器' },
+    { path: '/workbench/dress', heading: '衣橱选装' },
+  ]
+
+  for (const route of routes) {
+    await page.goto(route.path)
+    await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
+  }
+})
+
 test('login page exposes email credentials and account registration', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
