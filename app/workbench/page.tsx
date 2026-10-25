@@ -50,7 +50,7 @@ export default async function WorkbenchPage() {
           <p><Link href="/login">登录</Link> 后可继续使用账户相关功能；也可以先浏览创作入口。</p>
         ) : null}
       </section>
-      <section className="cdpc-grid" aria-label="创作入口">
+      <section className="cdpc-tool-grid" aria-label="创作入口">
         {entries.map((entry) => (
           <article className="application-card cdpc-panel" key={entry.href}>
             <h2>{entry.title}</h2>
