@@ -281,7 +281,8 @@ async function runProvider(model, prompt, image) {
 }
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
-app.get('/api/ai/models', (_req, res) => {
+app.get('/api/ai/models', async (_req, res) => {
+  await refreshRemoteConfig()
   const models = getModels()
   res.json({
     models,
@@ -298,6 +299,7 @@ app.post('/api/ai/generate', upload.single('reference'), async (req, res) => {
   const startedAt = Date.now()
   const requestId = randomUUID()
   try {
+    await refreshRemoteConfig()
     const prompt = String(req.body?.prompt || '').trim()
     if (prompt.length < 3 || prompt.length > 2000) return res.status(400).json({ error: '提示词长度需为 3–2000 个字符' })
     const variant = req.body?.variant === 'slim' ? 'slim' : 'classic'
