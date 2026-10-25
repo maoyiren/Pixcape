@@ -4382,3 +4382,160 @@ Pixcape 是一个轻量级像素画工作区，使用 64×64 像素画布创建�
 - 飞行动作使用 skinview3d 的 Minecraft 飞行动画驱动角色俯身与鞘翅展开，避免手臂、腿部和翅膀由互相覆盖的手动旋转造成姿态错误。
 - 披肩 / 外套只合成到皮肤图集的躯干与手臂 UV 区域，保留用户原有的头部、头发和腿部；发送到 Blockbench 前会重新读取当前皮肤源图并按当前模型类型合成，避免传入上一帧的旧画布。
 
+
+
+---
+
+# 原文：`docs/README.md`
+
+> 原文件 Blob SHA：`b05cd68afa78b5f5237f3da47ca644d00d07d6a7`
+
+# Pixcape 文档中心
+
+本目录 `docs/` 是项目文档的**唯一正式文档目录**。旧的 `doc/` 已迁移到这里，不再保留第二套文档。
+
+## 项目总技术文档
+
+- **[CDPC / Pixcape 项目总技术与文档总纲](./PROJECT-MASTER-TECHNICAL-DOCUMENT.md)**：产品定位、技术栈、架构、路由、功能规格、认证、数据库、部署、UI 重构进度、安全、测试、合规和待办事项的统一入口。
+
+## 快速入口
+
+| 你要做什么 | 从这里开始 |
+| --- | --- |
+| 项目定位与当前架构 | [项目概览](./PROJECT_OVERVIEW.md)、[技术架构](./ARCHITECTURE.md) |
+| 编辑器怎么用 | [使用指南](./USER_GUIDE.md) |
+| 本地开发、贡献与 PR | [开发指南](./DEVELOPMENT.md) |
+| 部署与环境变量 | [单镜像生产部署](./SINGLE-IMAGE-PRODUCTION.md)、[部署入口说明](./DEPLOYMENT.md) |
+| 登录、OAuth、邮箱魔法链接与首次管理员初始化 | [登录配置指南](./AUTHENTICATION-SETUP.md) |
+| 独立 Next.js 容器 | [Next.js 容器部署](./NEXTJS-CONTAINER-DEPLOYMENT.md) |
+| 用户、创作者、管理员与数据库迁移 | [角色与迁移方案](./NEXTJS-USER-ROLES-MIGRATION.md) |
+| 发布、验证与回滚 | [发布清单](./RELEASE.md)、[生产安全上线清单](./PRODUCTION-SECURITY-ROLLOUT.md) |
+| AI 图片模型接口 | [AI 模型架构](./AI-MODEL-ARCHITECTURE.md) |
+| PWA、SEO 与分享元数据 | [PWA / SEO 部署](./PWA-SEO-DEPLOYMENT.md) |
+| 第三方许可证和素材署名 | [第三方声明](../THIRD_PARTY_NOTICES.md) |
+
+## 文档分组
+
+- **产品与架构**：PROJECT_OVERVIEW.md、ARCHITECTURE.md、USER_GUIDE.md
+- **开发与协作**：DEVELOPMENT.md
+- **部署与运维**：DEPLOYMENT.md、SINGLE-IMAGE-PRODUCTION.md、NEXTJS-CONTAINER-DEPLOYMENT.md、RELEASE.md、PRODUCTION-SECURITY-ROLLOUT.md
+- **功能与集成**：AUTHENTICATION-SETUP.md、NEXTJS-USER-ROLES-MIGRATION.md、AI-MODEL-ARCHITECTURE.md、PWA-SEO-DEPLOYMENT.md
+- **许可与合规**：根目录 THIRD_PARTY_NOTICES.md
+
+## 推荐阅读顺序
+
+1. 阅读项目概览和技术架构。
+2. 使用编辑器时查看使用指南。
+3. 开发或贡献代码时查看开发指南。
+4. 部署前阅读单镜像部署、环境变量和发布清单。
+5. 配置登录提供商或初始化管理员时，阅读登录配置指南。
+6. 涉及账户、权限、数据库或生产变更时，必须额外阅读角色迁移方案与生产安全清单。
+
+## 文档维护规则
+
+- 所有正式项目文档统一放在 `docs/`；不要重新创建旧的 `doc/` 目录。
+- 环境变量以根目录 `.env.example`、实际读取代码和部署文档交叉核对；示例值不是生产值。
+- 代码、工作流、Docker 入口或 UI 行为变化时，同一 PR 更新对应文档和本索引。
+- 明确区分**已实现**、**需部署配置**、**尚待验证**。文档描述的步骤不等于线上已经执行。
+- 不在文档、提交、截图或日志中写入真实密码、API Key、OAuth Secret 或数据库连接凭据。
+- 避免重复描述同一配置；以单镜像生产部署文档为生产部署的主要依据。
+
+
+
+---
+
+# 原文：`README.md`
+
+> 原文件 Blob SHA：`bfa889a85d40b31f32f7603e2cd9331406ed803c`
+
+# Pixcape｜我的世界皮肤工坊
+
+Pixcape 是面向 Minecraft 皮肤的预制与编辑工作台，支持披肩、外套、披风分类、皮肤合成与 PNG 导出、3D 角色预览，并提供 Blockbench Web 编辑器入口。
+
+## 当前项目入口
+
+- **文档中心：** [docs/README.md](docs/README.md)
+- **编辑器使用指南：** [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
+- **技术架构：** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **开发与贡献：** [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+- **单镜像部署与环境变量：** [docs/SINGLE-IMAGE-PRODUCTION.md](docs/SINGLE-IMAGE-PRODUCTION.md)
+- **登录配置（Google / Microsoft / GitHub / Apple / 邮箱魔法链接）：** [docs/AUTHENTICATION-SETUP.md](docs/AUTHENTICATION-SETUP.md)
+- **用户系统与角色迁移：** [docs/NEXTJS-USER-ROLES-MIGRATION.md](docs/NEXTJS-USER-ROLES-MIGRATION.md)
+- **发布与回滚清单：** [docs/RELEASE.md](docs/RELEASE.md)
+- **生产安全验收：** [docs/PRODUCTION-SECURITY-ROLLOUT.md](docs/PRODUCTION-SECURITY-ROLLOUT.md)
+- **第三方许可证：** [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+
+## 功能概览
+
+- 披肩 / 外套 / 披风独立分类，按当前选中分类展示素材。
+- 皮肤 PNG 导入、预制合成与导出。
+- Steve / Alex 角色与实时 3D 预览。
+- 内置 Blockbench Web 编辑器入口：`/blockbench/`。
+- PWA 安装支持、Service Worker 与 Open Graph 分享元数据。
+- Next.js 用户系统、创作者和管理员功能正在按独立部署/单镜像方案分阶段验证；生产启用状态以真实部署验收为准。
+
+## 技术栈
+
+| 层 | 技术 |
+| --- | --- |
+| 编辑器前端 | React、TypeScript、Vite |
+| 3D 预览 | Three.js、skinview3d |
+| UI | Radix UI、Lucide React |
+| PWA | vite-plugin-pwa、Workbox |
+| Web 服务 | Docker、Nginx |
+| 账户与 API | Next.js、NextAuth、Prisma |
+| 数据库适配 | PostgreSQL、MySQL/MariaDB、SQLite |
+| CI / 依赖 | GitHub Actions、Dependabot |
+
+准确版本以根目录 package.json、锁文件、Dockerfile 和工作流为准。不要仅凭文档中的技术栈判断某个生产服务已启用。
+
+## 本地开发
+
+```bash
+npm install
+npm run dev
+```
+
+## 构建与测试
+
+```bash
+npm run build
+npm run test
+npm run test:e2e
+```
+
+脚本的完整列表以 package.json 为准。数据库专项测试需要配置对应的测试数据库；CI 未运行或环境不可用时，不应将其描述为已通过。
+
+## 部署提示
+
+当前仓库同时包含主站/编辑器和 Next.js 账户相关代码。部署入口、端口、环境变量和迁移策略请以 [单镜像生产部署文档](docs/SINGLE-IMAGE-PRODUCTION.md) 为准；不要混用根目录 Dockerfile 与 Dockerfile.nextjs 的配置。生产数据库迁移前必须确认目标环境和可恢复备份。
+
+## 声明与素材署名
+
+Pixcape 是非官方 Minecraft 社区项目，与 Mojang Studios / Microsoft 无关联。外套与披肩素材署名：**邹陈云飞、Th千**。第三方代码与素材按各自许可证使用，详情见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+
+
+---
+
+# 原文：`THIRD_PARTY_NOTICES.md`
+
+> 原文件 Blob SHA：`ebac794140c383fd9f60cbbb8b3754372b1810ad`
+
+# Third-party notices
+
+## Blockbench
+
+Pixcape embeds a separately built web application derived from Blockbench under `/blockbench/`.
+
+- Upstream project: https://github.com/JannisX11/blockbench
+- Pixcape-maintained fork: https://github.com/liseezn/blockbench
+- Integrated source revision: `f1d0d8504fe16062321306a10e20b4ce7f38a8cf`
+- License: GNU General Public License, version 3 or (at your option) any later version (GPL-3.0-or-later).
+- The corresponding license text is shipped with the embedded editor at `/blockbench/LICENSE.MD`.
+- Pixcape-specific changes to the Blockbench source are maintained in the public fork linked above.
+
+The Blockbench editor is built and served as a separate web application rather than bundled into the Pixcape React JavaScript bundle. When distributing this image or a modified version, preserve the applicable copyright notices, license text, and source-code availability required by the GPL. Review the upstream license and seek qualified legal advice for questions about compliance or the licensing of a combined distribution.
+
+Blockbench is created by JannisX11 and contributors. Pixcape is an independent derivative and is not endorsed by the upstream project.
+
