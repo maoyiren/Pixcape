@@ -26,7 +26,7 @@
 ## 实施顺序
 
 1. 统一全站导航、按钮语义和响应式布局。
-2. 旧的独立衣服选装页面已退役；AI 生成、编辑器、衣服选装三个导航入口统一进入 `/studio/`，通过 `mode=ai|editor|wardrobe` 区分入口。旧 `/dress-up` 地址保留兼容重定向，不再渲染独立搭配页面。
+2. 旧的独立衣服选装页面已退役；主导航使用独立正式路径 `/AI`、`/bench`、`/wardrobe`。Next.js rewrites 将三条路径分别映射到统一工作区的 `mode=ai|editor|wardrobe`，浏览器地址保持用户所见路径。旧 `/studio` 和 `/dress-up` 地址保留兼容跳转/入口。
 3. 以 Mantine 迁移登录/注册和设置表单作为首个组件试点。
 4. 建立 Tailwind CSS v4 token/布局约定，并逐页迁移。
 5. 在明确场景引入 shadcn/ui 组件。
