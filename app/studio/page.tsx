@@ -2,26 +2,41 @@ import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
-export default function StudioHandoffPage() {
+type StudioMode = 'editor' | 'ai' | 'wardrobe'
+
+export default async function StudioHandoffPage({ searchParams }: { searchParams?: Promise<{ mode?: string }> }) {
+  const params = await searchParams
+  const mode: StudioMode = params?.mode === 'ai' ? 'ai' : params?.mode === 'wardrobe' ? 'wardrobe' : 'editor'
+  const copy = {
+    editor: { title: '皮肤与配件编辑器', eyebrow: '皮肤 · 披肩 · 外套 · 披风', heading: '继续编辑你的角色', action: '打开编辑器 ↗' },
+    ai: { title: 'AI 生成', eyebrow: 'AI 创作入口', heading: '从描述开始构思角色', action: '打开 AI 创作入口 ↗' },
+    wardrobe: { title: '衣服选装', eyebrow: '皮肤 · 披肩 · 外套 · 披风', heading: '搭配你的角色外观', action: '打开衣服选装 ↗' },
+  }[mode]
   const editorUrl = process.env.NEXT_PUBLIC_EDITOR_URL
   const validEditorUrl = (() => {
     if (!editorUrl) return null
     try {
       const url = new URL(editorUrl)
-      return url.protocol === 'https:' || url.hostname === 'localhost' || url.hostname === '127.0.0.1' ? url.toString() : null
+      if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') return null
+      url.searchParams.set('mode', mode)
+      return url.toString()
     } catch {
       return null
     }
   })()
 
   return <main className="inventory-shell cdpc-page">
-    <header className="topbar cdpc-panel"><div><p className="eyebrow">CDPC WORKSHOP</p><h1>皮肤与配件编辑</h1></div><div className="actions"><Link className="pixel-button cdpc-control" href="/account">账户资料</Link><Link className="pixel-button cdpc-control" href="/">返回首页</Link></div></header>
+    <header className="topbar cdpc-panel"><div><p className="eyebrow">CDPC WORKSPACE</p><h1>{copy.title}</h1></div><div className="actions"><Link className="pixel-button cdpc-control" href="/workbench">创作工作台</Link><Link className="pixel-button cdpc-control" href="/">返回首页</Link></div></header>
     <section className="hero inventory-panel cdpc-panel">
-      <p className="eyebrow" style={{ color: '#315a24' }}>皮肤 · 披肩 · 外套 · 披风</p>
-      <h2>{validEditorUrl ? '继续编辑你的角色' : '编辑器尚未连接'}</h2>
+      <p className="eyebrow" style={{ color: '#315a24' }}>{copy.eyebrow}</p>
+      <h2>{validEditorUrl ? copy.heading : '编辑器尚未连接'}</h2>
       {validEditorUrl
-        ? <><p>先在衣服选装中导出穿搭备份，再打开编辑器并选择“导入穿搭备份 JSON”。目前支持恢复披肩、外套、披风、角色模型、背景及备份内的皮肤 PNG；未包含皮肤图片时将使用默认皮肤。导入后即可继续编辑并导出 PNG。</p><a className="pixel-button primary cdpc-control cdpc-control-primary" href={validEditorUrl} rel="noreferrer">打开编辑器 ↗</a><p className="dressup-preview-note">穿搭交接采用本地 JSON 文件，不会自动上传到账号或服务器。请勿将含私人内容的备份分享给他人。</p></>
-        : <><p>创作工坊暂不可用，编辑器地址尚未配置。</p><div className="application-card cdpc-panel cdpc-panel-raised"><h3>需要完成部署配置</h3><p>请联系平台管理员完成编辑器部署配置。配置完成后即可进入创作工坊。</p></div><Link className="pixel-button primary" href="/">返回首页</Link></>}
+        ? <><p>{mode === 'ai'
+          ? '已将 AI 生成入口与编辑器工作区统一。若当前编辑器版本支持 mode 参数，将直接进入对应模式；生成能力是否可用取决于已部署的编辑器与 AI 服务配置。'
+          : mode === 'wardrobe'
+            ? '衣服选装不再使用旧的独立搭配页面，而是进入统一工作区。请在工作区选择皮肤、披肩、外套或披风相关工具；实际可用分类以已部署编辑器接入的素材为准。'
+            : '在统一工作区导入皮肤，编辑披肩、外套与披风，检查角色预览并导出 PNG。AI 生成与衣服选装也从这里进入各自模式。'}</p><a className="pixel-button primary cdpc-control cdpc-control-primary" href={validEditorUrl} rel="noreferrer">{copy.action}</a></>
+        : <><p>当前尚未配置可访问的编辑器地址。完成部署配置后，AI 生成、编辑器和衣服选装入口将统一进入此工作区。</p><div className="application-card cdpc-panel cdpc-panel-raised"><h3>需要完成部署配置</h3><p>请管理员配置 NEXT_PUBLIC_EDITOR_URL，并确认编辑器支持对应的 mode 参数。</p></div><Link className="pixel-button primary" href="/">返回首页</Link></>}
     </section>
   </main>
 }
