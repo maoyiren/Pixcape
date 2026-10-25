@@ -74,7 +74,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <Container size="sm" py={{ base: 'md', sm: 'xl' }} className="cdpc-register-page">
+    <Container size="sm" py="xl" className="cdpc-register-page">
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start" wrap="wrap">
           <Stack gap={4}>
