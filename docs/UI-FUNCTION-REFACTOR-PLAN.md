@@ -1096,6 +1096,7 @@ CDPC 的业务界面优先通过现有组件库组合实现，不再为 3D 预�
 
 - [x] 将 `/workbench` 的欢迎区、入口卡片、操作按钮和布局改为复用 Mantine 的 `Container`、`Stack`、`Group`、`Paper`、`Card`、`SimpleGrid`、`Badge`、`Button`、`Title` 与 `Text`。
 - [x] 工作台视觉通过共享 CDPC token 和局部覆盖样式统一，加入窄屏文字换行与减少动态效果支持。
+- [x] 将 `/ai`、`/editor`、`/wardrobe` 的共用入口页迁移到 Mantine `Container`、`Stack`、`Group`、`Paper`、`Badge`、`Title`、`Text` 与 `Button`，统一状态提示和主操作布局。
 - [x] 增加 360px 移动视口下的工作台入口可见性和横向溢出浏览器测试。
 - [ ] 上述补充提交的 CI、Next.js/浏览器测试、安全测试和 Docker 构建尚待最新提交的工作流结果确认；在结果完成前不标记为通过。
 - [ ] 工作台以外的旧式服装卡片、素材列表和编辑器外围仍需逐页迁移；3D 引擎与像素画布继续保留为业务功能引擎，不以 UI 组件替代。
