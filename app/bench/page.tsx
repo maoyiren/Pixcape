@@ -1,7 +1,5 @@
-import EditorEntry from '../components/editor-entry'
+import { redirect } from 'next/navigation'
 
-export const metadata = { title: '编辑器 | CDPC' }
-
-export default function BenchPage() {
-  return <EditorEntry mode="editor" />
+export default function LegacyBenchPage() {
+  redirect('/editor')
 }
