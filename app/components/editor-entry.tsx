@@ -6,7 +6,7 @@ export type EditorMode = 'editor' | 'ai' | 'wardrobe'
 const copy = {
   editor: { title: '单品编辑器', eyebrow: '皮肤 · 披肩 · 外套 · 披风', heading: '继续编辑你的角色', action: '打开编辑器 ↗' },
   ai: { title: 'AI 生成', eyebrow: 'AI 创作入口', heading: '从描述开始构思角色', action: '打开 AI 创作入口 ↗' },
-  wardrobe: { title: '衣橱选装', eyebrow: '皮肤 · 披肩 · 外套 · 披风', heading: '搭配你的角色外观', action: '打开衣服选装 ↗' },
+  wardrobe: { title: '衣橱选装', eyebrow: '皮肤 · 披肩 · 外套 · 披风', heading: '搭配你的角色外观', action: '打开衣橱选装 ↗' },
 } satisfies Record<EditorMode, { title: string; eyebrow: string; heading: string; action: string }>
 
 export default function EditorEntry({ mode }: { mode: EditorMode }) {
