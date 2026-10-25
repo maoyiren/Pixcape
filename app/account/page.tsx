@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { redirect } from 'next/navigation'
@@ -25,7 +24,7 @@ export default async function AccountPage() {
             <Title order={1} size="h2">我的账户</Title>
             <Text c="dimmed">查看账户资料、账户类型与当前状态。</Text>
           </Stack>
-          <Button component={Link} href="/" variant="default" className="cdpc-control">返回首页</Button>
+          <Button component="a" href="/" variant="default" className="cdpc-control">返回首页</Button>
         </Group>
 
         <Card withBorder radius="md" padding={{ base: "md", sm: "xl" }} className="cdpc-account-card">
@@ -46,7 +45,7 @@ export default async function AccountPage() {
               </Group>
             </Stack>
             <Group gap="sm" wrap="wrap">
-              <Button component={Link} href="/creator" className="cdpc-control cdpc-control-primary">查看创作者中心</Button>
+              <Button component="a" href="/creator" className="cdpc-control cdpc-control-primary">查看创作者中心</Button>
               <SignOutButton />
             </Group>
           </Stack>
