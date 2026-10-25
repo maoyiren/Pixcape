@@ -12,20 +12,19 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
 })
 
-
 test('primary creation routes render their intended mode entry points', async ({ page }) => {
   const routes = [
-    { path: '/ai', heading: 'AI 生成' },
-    { path: '/editor', heading: '单品编辑器' },
-    { path: '/wardrobe', heading: '衣橱选装' },
+    { path: '/ai', heading: 'AI 生成', mode: 'ai' },
+    { path: '/editor', heading: '单品编辑器', mode: 'editor' },
+    { path: '/wardrobe', heading: '衣橱选装', mode: 'wardrobe' },
   ]
 
   for (const route of routes) {
     await page.goto(route.path)
     await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
+    await expect(page.getByRole('link', { name: /打开/ })).toHaveAttribute('href', `/studio/?mode=${route.mode}`)
   }
 })
-
 
 test('workbench nested routes map to their intended workflows', async ({ page }) => {
   const routes = [
@@ -47,7 +46,6 @@ test('login page exposes email credentials and account registration', async ({ p
   await expect(page.locator('#login-password')).toBeVisible()
   await expect(page.getByRole('link', { name: '创建账户', exact: true }).first()).toBeVisible()
 })
-
 
 test('workbench is distinct from the creator profile center', async ({ page }) => {
   await page.goto('/workbench')
@@ -89,4 +87,10 @@ test('Vite skin editor app starts and renders its interactive surface', async ({
   await expect(page.getByRole('tab', { name: /外套/ })).toBeVisible()
   await expect(page.getByRole('tab', { name: /披风/ })).toBeVisible()
   await expect(page.getByRole('button', { name: '发送到 Blockbench 编辑' })).toBeVisible()
+})
+
+test('Vite AI route opens the actual AI creation interface', async ({ page }) => {
+  await page.goto('http://127.0.0.1:5173/?mode=ai')
+  await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
+  await expect(page.getByText('CDPC AI 工坊')).toBeVisible()
 })
