@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { MantineProvider, createTheme } from '@mantine/core'
 import '@mantine/core/styles.css'
+import './tailwind.css'
 import './styles.css'
 import './design-system.css'
 
