@@ -14,7 +14,7 @@ test('login page exposes email credentials and account registration', async ({ p
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
   await expect(page.getByLabel('用户名或邮箱地址')).toBeVisible()
-  await expect(page.getByLabel('密码', { exact: true })).toBeVisible()
+  await expect(page.locator('#login-password')).toBeVisible()
   await expect(page.getByRole('link', { name: '创建账户', exact: true }).first()).toBeVisible()
 })
 
