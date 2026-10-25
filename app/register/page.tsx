@@ -7,6 +7,7 @@ import { signIn } from 'next-auth/react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Button, PasswordInput, TextInput } from '@mantine/core'
 
 const registerSchema = z.object({
   name: z.string().trim().max(80, '昵称最多 80 个字符').optional().or(z.literal('')),
@@ -78,16 +79,13 @@ export default function RegisterPage() {
       <h2>创建你的 CDPC 账户</h2>
       <p>使用可正常收信的邮箱注册。密码需至少包含 10 位字符。注册后即成为 CDPC 创作者，可直接进入创作工坊；无需申请或切换创作者身份。</p>
       <form className="auth-email-form cdpc-stack" onSubmit={handleSubmit(submit)}>
-        <label htmlFor="register-name">昵称 <span>（选填）</span></label>
-        <input id="register-name" className="cdpc-input" autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} {...register('name')} />
+        <TextInput id="register-name" label={<>昵称 <span>（选填）</span></>} className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} autoComplete="nickname" maxLength={80} placeholder="你希望显示的名称" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'register-name-error' : undefined} error={errors.name?.message} {...register('name')} />
         {errors.name && <p id="register-name-error" role="alert">{errors.name.message}</p>}
-        <label htmlFor="register-email">邮箱地址</label>
-        <input id="register-email" className="cdpc-input" type="email" maxLength={254} required aria-required="true" autoComplete="email" placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} {...register('email')} />
+        <TextInput id="register-email" label="邮箱地址" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} type="email" maxLength={254} required aria-required="true" autoComplete="email" placeholder="name@example.com" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'register-email-error' : undefined} error={errors.email?.message} {...register('email')} />
         {errors.email && <p id="register-email-error" role="alert">{errors.email.message}</p>}
-        <label htmlFor="register-password">设置密码</label>
-        <input id="register-password" className="cdpc-input" type="password" maxLength={256} minLength={10} required aria-required="true" autoComplete="new-password" placeholder="至少 10 位字符" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'register-password-error' : undefined} {...register('password')} />
+        <PasswordInput id="register-password" label="设置密码" className="cdpc-mantine-field" classNames={{ input: 'cdpc-input' }} maxLength={256} minLength={10} required aria-required="true" autoComplete="new-password" placeholder="至少 10 位字符" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'register-password-error' : undefined} error={errors.password?.message} {...register('password')} />
         {errors.password && <p id="register-password-error" role="alert">{errors.password.message}</p>}
-        <button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit">{busy ? '正在创建账户…' : '创建账户'}</button>
+        <Button className="pixel-button primary cdpc-control cdpc-control-primary" disabled={busy} type="submit" loading={busy}>{busy ? '正在创建账户…' : '创建账户'}</Button>
       </form>
       {error && <p role="alert">{error}</p>}{message && <p role="status">{message} <Link href="/login">前往登录</Link></p>}
       <p>你的创作者身份将在注册时自动开通。作品默认保存在本机；公开发布、商业销售等功能会在对应权限开放后提供。</p>
