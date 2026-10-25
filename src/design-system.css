@@ -495,3 +495,12 @@ button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
     justify-content: center;
   }
 }
+
+
+/* Remove legacy bevel shadows from controls as they adopt the shared system. */
+.cdpc-page .cdpc-control {
+  box-shadow: none;
+}
+.cdpc-page .cdpc-control-primary {
+  box-shadow: none;
+}
