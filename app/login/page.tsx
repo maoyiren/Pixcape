@@ -41,7 +41,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
             <LoginForm methods={enabledMethods.map(({ id, label }) => ({ id, label }))} adminEnabled={adminEnabled} defaultCallbackUrl={defaultCallbackUrl} />
             {enabledMethods.length === 0 && !adminEnabled ? <Alert color="yellow" variant="light">暂未启用第三方登录方式。你仍可使用已开通的邮箱与密码登录。</Alert> : null}
             <Text size="sm" className="auth-switch-copy">还没有账户？<Link href="/register">创建账户</Link>。新注册账号默认不会获得管理员权限。</Text>
-            <Button component={Link} href="/" variant="subtle" color="gray" w="fit-content">返回首页</Button>
+            <Link href="/" className="cdpc-control">返回首页</Link>
           </Stack>
         </Paper>
       </Stack>
