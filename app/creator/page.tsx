@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Button, Textarea, TextInput } from '@mantine/core'
+import { Alert, Button, Textarea, TextInput } from '@mantine/core'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
@@ -26,8 +26,8 @@ export default async function CreatorPage({ searchParams }: { searchParams?: Pro
       <h2>你的创作空间</h2>
       <p>注册即拥有创作者身份。你可以完善公开资料并开始创作，无需申请或切换身份。</p>
       <p>账户：{user.name ?? user.email ?? 'CDPC 用户'} · {user.role === 'ADMIN' ? '管理员' : '创作者'}</p>
-      {params?.saved === '1' ? <p role="status">资料已保存。</p> : null}
-      {params?.error === 'display_name' ? <p role="alert">展示名称至少需要 2 个字符。</p> : null}
+      {params?.saved === '1' ? <Alert color="green" variant="light" role="status" title="保存成功">创作者资料已保存。</Alert> : null}
+      {params?.error === 'display_name' ? <Alert color="red" variant="light" role="alert" title="请检查资料">公开展示名称至少需要 2 个字符。</Alert> : null}
       <form action={updateCreatorProfile} className="application-form cdpc-stack">
         <TextInput
           id="displayName"
