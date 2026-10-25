@@ -4003,3 +4003,382 @@ CDPC 的业务界面优先通过现有组件库组合实现，不再为 3D 预�
 
 **建议执行顺序：** 先审计当前仓库，再统一全站框架和账号认证，然后逐模块迁移业务页面，最后完成回归测试与发布。不要一次性推倒重写全部页面，也不要在尚未确认认证故障根因前重写整个登录系统。
 
+
+
+---
+
+# 原文：`docs/UI-LIBRARY-DECISION.md`
+
+> 原文件 Blob SHA：`8b119e2166d8fd8af97f3b83876369535724a543`
+
+# CDPC UI 技术栈决策（更新版）
+
+日期：2026-10-23  
+适用范围：Next.js 主站与 Vite 创作工坊  
+状态：分阶段迁移；以每个 PR 的锁文件、构建与回归结果为准。
+
+## 用户确认的目标技术栈
+
+- **Mantine**：主要通用交互组件，包括表单控件、弹窗、抽屉、通知、菜单、标签页、表格和加载状态。
+- **Tailwind CSS v4**：布局、响应式、间距、网格与页面级样式。先在明确边界内接入，避免和既有 CSS 全局冲突。
+- **shadcn/ui**：作为精选的补充组件来源，优先考虑 Command、需要 Radix 的定制菜单等。不得将所有组件无差别复制进项目。
+- **Lucide React**：统一图标。
+- **React Hook Form + Zod**：复杂表单校验；保留服务端校验与既有 API 契约。
+- **Playwright**：浏览器级回归测试。
+
+## 迁移原则
+
+1. 不在一个 PR 内无差别替换全站所有控件。
+2. 先检查根目录与 `ai-api` 的包管理和锁文件；两者保持独立、可重复安装。
+3. Tailwind CSS v4 使用对应的 Vite 或 PostCSS 集成方式，确认与 Next.js、Vite 双入口的兼容性后再落地。
+4. Mantine 主题与 CSS reset 必须明确加载位置，避免覆盖皮肤编辑器画布和 Blockbench iframe 外壳。
+5. shadcn/ui 仅在有明确场景时加入；同类控件确定单一默认实现，避免维护两套按钮、表单或弹窗。
+6. UI 迁移不得修改 NextAuth、OAuth 回调、数据模型或导出协议，除非另有独立修复任务。
+7. 每一阶段运行 TypeScript、测试、Next.js 构建、Vite 构建及可执行的浏览器测试；未执行的项目标记为未验证。
+
+## 实施顺序
+
+1. 统一全站导航、按钮语义和响应式布局。
+2. 旧的独立衣服选装页面已退役；主导航使用独立正式路径 `/AI`、`/bench`、`/wardrobe`。Next.js rewrites 将三条路径分别映射到统一工作区的 `mode=ai|editor|wardrobe`，浏览器地址保持用户所见路径。旧 `/studio` 和 `/dress-up` 地址保留兼容跳转/入口。
+3. 以 Mantine 迁移登录/注册和设置表单作为首个组件试点。
+4. 建立 Tailwind CSS v4 token/布局约定，并逐页迁移。
+5. 在明确场景引入 shadcn/ui 组件。
+6. 创作工坊、AI、素材库、社区与后台逐模块迁移。
+7. 认证、导入导出、穿搭保存、移动端与生产镜像全量回归。
+
+## 本次实现边界
+
+历史实现说明：旧独立衣服选装页面曾接入已知披肩、外套和披风素材与 skinview3d 预览。本轮已将旧 `/dress-up` 页面退役并重定向到统一 `/studio/?mode=wardrobe` 入口；统一工作区实际可用能力仍取决于 `NEXT_PUBLIC_EDITOR_URL` 指向的编辑器是否支持 `mode` 参数。上衣、裤子、鞋子和帽子当前没有确认可用的正式素材，页面明确显示尚未接入。穿搭持久化和本页导出仍未实现。Mantine 与 Tailwind CSS v4 的依赖及锁文件已在迁移分支接入；登录/注册已开始使用 Mantine 控件，Next.js 与 Vite 入口均已接入 Provider 和 Tailwind utilities。双入口构建与浏览器回归仍待当前 PR 的 GitHub Actions 结果确认。
+
+## Phase 2 implementation — shared account form primitives
+
+Date: 2026-10-25
+
+Implemented on branch `feat/cdpc-ui-phase2-design-tokens`:
+- Added semantic control tokens for consistent height, radius, borders, and focus treatment.
+- Standardized login/register input sizing, placeholder contrast, validation borders, primary/provider button states, magic-link disclosure, and mobile full-width behavior.
+- Added consistent provider-group spacing and distinct error/success feedback surfaces.
+- Added regression assertions for shared tokens, login/register controls, provider buttons, and feedback states.
+- Added reduced-motion handling to account-page interactions.
+- Kept styles scoped to `.cdpc-page` so the skin editor canvas and Blockbench surface are not affected.
+
+Validation boundary:
+- This phase is the shared CSS primitive implementation using existing class names; it is not a Mantine or Tailwind CSS v4 migration. The regression test is committed with the phase and must pass in CI before merge.
+- The repository still needs a reproducible npm environment to install the libraries and regenerate `package-lock.json`. Do not add dependency declarations without updating the lockfile and passing both Next.js and Vite builds.
+- The next phase is a separate root npm package/lockfile migration for Tailwind CSS v4 and Mantine, then a Mantine pilot on login/register only before expanding.
+
+
+
+## Phase 3 — Mantine + Tailwind CSS v4 pilot
+
+Date: 2026-10-25  
+Branch: `feat/cdpc-ui-library-migration`  
+PR: https://github.com/maoyiren/Pixcape/pull/23
+
+Implemented:
+- Added Mantine core/hooks and Tailwind CSS v4 packages; the root package lockfile was generated rather than hand-edited.
+- Added a shared Mantine theme to the Next.js and Vite entry points.
+- Migrated login and registration controls to Mantine while retaining NextAuth provider IDs, callback URLs, registration API, and React Hook Form + Zod validation.
+- Configured `@tailwindcss/postcss` for Next.js and `@tailwindcss/vite` for Vite.
+- Loaded Tailwind theme and utilities without importing the Tailwind preflight reset, to reduce global CSS impact on the skin editor.
+
+Not yet validated:
+- Current GitHub Actions CI, Next.js security/build checks, and Docker smoke build must complete successfully before merge.
+- Check the login/register visual states and mobile layout in a browser; fix any Mantine/CSS specificity issues before expanding the migration.
+- Do not migrate editor canvas, Blockbench surfaces, OAuth internals, or data contracts in this phase.
+
+
+## Phase 4 — 全站统一组件体系（目标范围扩展）
+
+Date: 2026-10-25
+
+用户确认：不是只迁移登录/注册；**CDPC 所有产品界面都纳入统一 UI 体系**，包含 Next.js 主站、创作者工作台、衣服选装、皮肤/披肩/外套/披风编辑器、AI 生成、素材与模板库、社区/作品详情、账户设置、管理员后台、帮助与空状态/错误状态，以及移动端布局。
+
+### 全站约定
+
+- **Mantine** 是通用业务控件的默认实现：按钮、输入、选择器、弹窗、抽屉、菜单、通知、标签页、表格、分页、加载与反馈状态。
+- **Tailwind CSS v4** 是布局和设计 token 的默认工具：容器、栅格、间距、断点、排版和页面组合；避免每个页面继续新增互不一致的私有布局系统。
+- **shadcn/ui** 是按需引入的可定制组件来源，不要求每个控件都同时维护 Mantine 与 shadcn 两份实现。使用前确认场景和依赖；同类交互在全站只保留一个默认实现。
+- **Lucide React** 统一图标语义与尺寸。按钮、输入、提示、危险操作和键盘焦点行为使用共享规范。
+- **皮肤画布、skinview3d、Blockbench iframe/工作区** 属于专业编辑表面：统一外围工具栏、面板、对话框和响应式框架，但不得让全局 CSS reset 或普通表单组件破坏 canvas、3D 交互、像素精度或 iframe。
+- 所有路由共享导航、页脚、页面宽度、标题层级、加载/错误/空状态和移动端规则；已登录用户进入 `/workbench`，减少登录后再次寻找入口的步骤。
+- 注册即创作者的产品流程、衣服选装独立入口、现有登录/OAuth 回调与后端 API 契约继续保留；UI 迁移不以重写业务逻辑为代价。
+
+### 迁移顺序与验收
+
+1. 建立共享 tokens、页面容器、导航/页脚、按钮/表单/反馈和移动端规范。
+2. 完成登录、注册、账户资料与认证状态。
+3. 迁移创作者工作台、衣服选装、皮肤编辑器外围工具栏和资源面板。
+4. 迁移 AI 生成、素材/模板库、作品发布/详情、社区与个人创作者页面。
+5. 迁移管理员后台、配置表单、健康检查和管理表格。
+6. 覆盖帮助、404/500、权限不足、空列表、加载中、提交失败/成功等状态。
+7. 每组页面完成桌面和移动端浏览器回归，并验证键盘可访问性、焦点状态、表单语义、Next.js 与 Vite 双入口构建。
+
+### 验收边界
+
+“全站统一”表示所有页面逐步遵循同一套 token、布局和默认组件规则，不表示本次提交已经完成全站迁移。PR #23 当前只是 Mantine + Tailwind CSS v4 的基础设施与登录/注册试点；全站其余模块需分批实施并逐批验证。shadcn/ui 尚需按实际场景评估和接入，不应在未安装、未验证前声称已经全面使用。
+
+
+## Phase 4 implementation update — creator profile form
+
+Date: 2026-10-25
+
+- Migrated the creator profile form's public display-name and bio fields to Mantine `TextInput` and `Textarea`, and the submit action to Mantine `Button`.
+- Preserved the existing server action, field names, required/minimum/maximum constraints, profile defaults, and success/error query-state messages.
+- This is an incremental route migration; account overview, admin settings, home page, editor panels and other product surfaces remain in the staged rollout and must not be described as fully migrated yet.
+- The earlier browser regression exposed a Mantine accessible-name difference for the password field. The locator now targets the stable `#login-password` ID; the next CI run must confirm this regression is resolved.
+
+
+
+---
+
+# 原文：`docs/UI-REFACTOR-STATUS.md`
+
+> 原文件 Blob SHA：`05e6b290922e6dcffa4c19266cb52fe7930651df`
+
+# CDPC UI 重构实施记录
+
+日期：2026-10-18  
+分支：`ui/cdpc-unified-design-v3`  
+设计基线：`docs/UNIFIED-UI-DESIGN.md`
+
+## 已实施
+
+### 阶段 1：公共 UI 外壳
+- 新增 `src/design-system.css`，统一暗色主题令牌、焦点态、控件圆角、移动端间距和减少动态效果偏好。
+- Vite 主入口在基础样式之后加载统一设计层。
+- Blockbench 外围工具栏从大量内联样式改为共享 CSS 类；Blockbench iframe 内部上游 UI 不被重写。
+- 预制工作台、AI 工坊和 Next.js 站点使用统一的页脚文案与非官方声明。
+- Next.js 主导航品牌统一为 CDPC。
+
+### 阶段 2：主要用户页面
+- 预制工作台移除冲突的 Minecraft 方块库存主题样式导入；保留现有素材分类、预览和响应式导航行为。
+- 统一当前皮肤卡片、分类标签、按钮、预览面板、错误提示与空状态的视觉基础。
+- AI 工坊复用相同颜色令牌、边框、控件圆角和页脚。
+
+### 阶段 3：创作与管理界面
+- Blockbench 外层容器统一；不改变 iframe 内的 Blockbench 功能、纹理导入桥接或上游许可边界。
+- Next.js 首页、创作者、账户、管理页面的导航、面板、表单、管理筛选和状态卡统一到相同令牌。
+- 继续沿用已安装的 Radix Tabs / Tooltip 与 Lucide React；没有新增未经锁文件验证的依赖。
+
+### 阶段 4：清理与验收
+- 将页面主色、表面色、边框色、文本色和强调色集中到统一 CSS 令牌。
+- 移除预制工作台对冲突的像素库存主题 CSS 的导入。
+- 新增静态回归测试，防止统一主题入口、页脚和冲突样式回归。
+
+## 验证状态
+
+- [x] 代码已写入独立分支。
+- [x] 添加 UI 设计系统静态测试，覆盖统一入口、品牌页脚、响应式断点、键盘焦点、减少动态效果和非官方声明。
+- [ ] 最新提交仍未返回 GitHub Actions / commit status 结果；必须补齐 TypeScript、Vite、Next.js 构建和自动化测试结果，不能把静态检查当成构建通过。
+- [ ] 需要真实浏览器验证 320 / 375 / 768 / 1024 / 1440px 布局及交互，重点检查导航横向滚动、管理员入口、登录注册、预制导入与 iframe 编辑器。
+- [ ] 通过 CI 与浏览器验收后才合并并发布镜像。
+
+注意：CSS 统一不替代服务端权限校验；本次不改认证、素材处理、数据库或 Blockbench 内部逻辑。
+
+
+## 2026-10-18 CI 修复记录
+- 根据 PR #9 的 GitHub Actions 日志定位到 Next.js 构建失败原因：主分支最近加入登录限流后，auth.ts 的 allowCredentialAttempt 参数类型与 NextAuth 的请求类型不兼容。
+- 已同步当前 main 的 auth.ts 修复，保留登录限流逻辑，不通过跳过 TypeScript 检查来规避问题。
+- 修复后的新提交需重新触发 CI；只有新的 Next.js build、Docker build 和测试全部通过后，才能考虑合并和发布。
+
+
+
+---
+
+# 原文：`docs/UNIFIED-UI-DESIGN.md`
+
+> 原文件 Blob SHA：`038877ea4735714847ebc86f66e667c51834ccfd`
+
+# CDPC / Pixcape 统一 UI 设计规范
+
+> 状态：设计与迁移基线（2026-10-18）。本文件定义后续界面重构的统一约束；不代表所有页面已完成迁移。
+
+## 目标
+
+将主站、素材库、皮肤编辑器、AI 皮肤、创作者中心、用户账户和管理后台收敛到同一套产品体验。禁止继续通过新增一份局部 CSS 来修补同类导航、按钮或表单的差异。
+
+## 设计方向
+
+- **视觉**：克制的深色创作工具风格；低饱和石墨背景、清晰的层级边框、单一强调色；减少渐变、发光、装饰性大卡片和“AI 生成式”视觉套路。
+- **布局**：桌面端采用统一顶栏 + 页面容器；编辑器允许在统一顶栏下使用工作区布局；移动端统一折叠菜单、触控尺寸和内容顺序。
+- **信息层级**：一个页面一个主要任务；主要操作最多一个强调按钮；危险操作必须使用确认流程。
+- **可访问性**：键盘可操作、明确焦点、表单有标签、状态不只靠颜色表达、弹窗正确管理焦点。
+- **响应式**：320px 起支持；窄屏不允许页面整体横向溢出；编辑器侧栏改为抽屉或可切换面板。
+
+## 统一导航信息架构
+
+### 全站主导航
+1. 工作台
+2. 素材库
+3. 皮肤编辑
+4. AI 皮肤
+5. 创作者中心（登录后显示；未登录可显示入口但操作需登录）
+6. 帮助 / 文档
+
+右侧统一为语言切换、主题偏好（如支持）、通知入口（如已实现）、头像/登录入口。不要把管理员入口放入所有用户的主导航；管理员从账户菜单或权限专属入口进入。
+
+### 页脚
+全站共用一个 Footer 组件，统一包含：产品入口、帮助与文档、反馈/社区（仅在有真实链接时展示）、隐私政策、服务条款、第三方许可、Minecraft 非官方声明。移动端分组折叠；编辑器全屏模式可隐藏普通页脚，但退出编辑器后恢复站点外壳。
+
+### 编辑器工作区
+- 顶部：返回、当前项目/素材名称、保存状态、导入/导出等当前页面动作。
+- 左侧：分类与素材浏览。
+- 中央：皮肤/角色预览或画布。
+- 右侧：属性、模型、动作与预览设置。
+- 小屏：左右面板变为可切换抽屉，画布始终优先显示。
+- Blockbench 保持独立编辑器边界，不重写或覆盖其内部 UI。
+
+### 管理后台
+统一二级侧栏：概览、用户与角色、素材审核、创作者/投稿、AI 服务配置、登录与安全、系统健康、审计/运行记录（仅限已有后端能力）。列表统一使用表格、搜索/筛选、分页、空状态、加载状态和错误状态。前端隐藏入口不等于权限控制，所有权限仍必须由服务端校验。
+
+## UI 库职责
+
+- **Mantine**：计划作为主站常规界面组件层，覆盖按钮、输入、选择器、弹窗、菜单、通知、表格容器和布局工具。
+- **Radix UI**：只在已有组件或 Mantine 不适合的复杂无障碍交互中保留；新页面不得无理由同时引入两套同类控件。
+- **Lucide React**：全站唯一图标来源，统一尺寸、线宽和对齐。
+- **skinview3d / Three.js**：仅负责 3D 预览、模型与动画，不承担常规 UI。
+- **Blockbench**：作为嵌入/独立打开的完整模型编辑器，保留其上游界面和许可边界。
+
+不得为了“多用库”而把多个库的默认主题混搭。统一主题由 CDPC 设计令牌配置；业务页面应优先组合库组件，而不是自己手写同类控件。
+
+## 组件标准
+
+统一组件包括：
+- AppShell、TopNavigation、MobileNavigation、Footer
+- PageHeader、PageContainer、Breadcrumbs
+- Primary/Secondary/Ghost/Danger Button
+- FormField、TextInput、PasswordInput、Select、Checkbox、Switch
+- Dialog、ConfirmDialog、Drawer、Menu、Tooltip、Toast
+- DataTable、Pagination、FilterBar
+- LoadingState、EmptyState、ErrorState、PermissionDenied
+- PresetCard、AssetPreview、EditorPanel（业务组件）
+
+不要用内联 style 拼接主要页面布局；不要在各页面重复实现相同的弹窗、导航和表单控件。确有必要的画布定位、3D 尺寸或动态变换可保留局部样式。
+
+## 视觉令牌基线
+
+- 页面背景：#101318
+- 一级表面：#191D24
+- 二级表面：#202630
+- 边框：#303844
+- 主文本：#F0F2F5
+- 次级文本：#A4ADBA
+- 强调色：#8BA8FF（仅用于主要动作、链接、焦点）
+- 成功：#58B887；警告：#D6A451；错误：#E47777
+- 圆角：小控件 6px；卡片/面板 10px；弹窗 12px
+- 间距基线：4 / 8 / 12 / 16 / 24 / 32
+- 正文行高：1.5；控件高度优先 36–40px；触控目标尽量达到 44px
+
+## 迁移顺序
+
+1. 先完成 AppShell、主导航、移动导航、页脚与设计令牌。
+2. 迁移主页、素材库与分类浏览。
+3. 迁移登录/注册、账户、创作者中心。
+4. 迁移 AI 皮肤与编辑器外围 UI；不改 3D 核心逻辑。
+5. 迁移管理后台及系统健康页。
+6. 删除已被替代的旧导航与重复 CSS，避免双重样式继续累积。
+
+## 验收清单
+
+- [ ] 所有普通页面使用同一个导航与 Footer。
+- [ ] 所有普通页面使用同一套按钮、表单、弹窗、菜单、状态组件。
+- [ ] 管理员入口与操作按真实角色授权；无权限时服务端拒绝。
+- [ ] 320px、375px、768px、1024px、1440px 宽度无整体横向溢出。
+- [ ] 登录、素材导入、PNG 导出、3D 预览、Blockbench 导入桥接仍可用。
+- [ ] 加载、空数据、错误、未授权状态都有统一表现。
+- [ ] 生产构建、自动化测试和关键用户流程回归通过后，才允许合并发布。
+
+
+
+---
+
+# 原文：`docs/USER_GUIDE.md`
+
+> 原文件 Blob SHA：`7181255f48e892c04c797296048f19630c60543b`
+
+# Pixcape 使用指南
+
+> 本文说明常见编辑器操作。功能是否已在当前部署启用，请以实际界面与发布验收为准；生产架构和环境变量见 [单镜像生产部署](./SINGLE-IMAGE-PRODUCTION.md)。
+
+## 1. 简介
+
+Pixcape 是一个轻量级像素画工作区，使用 64×64 像素画布创建像素图，并可导入图像作为起点，最后导出透明背景 PNG。
+
+## 2. 画布与绘制
+
+- 画布分辨率：64×64 像素。
+- 选择颜色：点击预设色板中的颜色，或使用自定义颜色选择器。
+- 铅笔：在画布上按住并拖动即可绘制。
+- 橡皮擦：擦除经过的像素。
+- 填充：从点击位置开始，对相连的同色区域进行填充。
+- 取色器：从画布已有的非透明像素中取色。
+- 直线：按下起点并拖到终点，松开后绘制直线。
+- 网格：可切换网格显示，以便观察像素边界。
+- 缩放：通过界面缩放控件或快捷键调整画布显示比例。
+- 清空：使用清空画布操作移除当前像素内容。执行前请确认目标画布正确。
+
+## 3. 导入图片
+
+1. 点击导入图片按钮并选择本地图片。
+2. 根据界面提供的缩放选项调整图像比例。
+3. 图像会缩放并居中绘制到 64×64 画布。
+4. 导入后的图像会转换为画布像素数据；透明度很低的像素会被忽略。
+
+导入会替换当前画布内容。建议先导出当前作品，以免覆盖尚未保存的内容。
+
+## 4. 导出作品
+
+使用导出按钮下载 PNG 图像。画布未绘制区域保持透明，适合用于像素素材和图标。导出前建议检查作品名称、画布内容与透明区域。
+
+## 5. 撤销、重做与快捷键
+
+| 操作 | 快捷键 |
+| --- | --- |
+| 撤销 | Ctrl/⌘ + Z |
+| 重做 | Ctrl/⌘ + Shift + Z 或 Ctrl/⌘ + Y |
+| 铅笔 | B |
+| 橡皮擦 | E |
+| 填充 | G |
+| 取色器 | I |
+| 直线 | L |
+| 显示/隐藏网格 | H |
+| 缩小画布 | [ |
+| 放大画布 | ] |
+
+快捷键在输入框中编辑文本时不会用于切换工具。macOS 使用 Command 键，其他平台通常使用 Ctrl 键。
+
+## 6. 当前范围与注意事项
+
+- 当前核心画布为固定的 64×64 像素。
+- 当前项目提供 PNG 导出；不要将其理解为已支持 PSD、SVG 或 GIF 导出。
+- 浏览器刷新或关闭页面后，未导出的作品可能丢失。请及时导出重要作品。
+- 当前界面中的保存状态提示不等于云端保存或跨设备同步。
+- 在导入新图片或清空画布前，请先导出需要保留的内容。
+
+## 7. 问题排查
+
+- 画布无法绘制：刷新页面后重试，检查浏览器是否支持 Canvas 2D。
+- 导入图片失败：尝试使用常见的 PNG、JPEG 或 WebP 图片，并确认文件能正常打开。
+- 导出文件未出现：检查浏览器下载提示、下载权限和默认下载目录。
+- 页面样式异常：尝试刷新页面；当前字体通过 Google Fonts 加载，网络限制可能影响字体显示，但不应影响核心绘图。
+
+## 8. Minecraft 场景预览与语言
+
+- 预览中的白天、夜晚、平原、沙漠、森林、下界和末地使用像素化方块地形风格；自定义选项用于调整天空底色。
+- 动作预览包含待机、挥手、行走和飞行。飞行姿态模拟鞘翅滑翔，属于预览动画，并不等同于游戏内物理模拟。
+- 工作台顶部可切换简体中文与英文。语言选择保存在当前浏览器中。
+- 打开内置 Blockbench 时，Pixcape 会将当前语言和预制皮肤数据通过同源消息发送给编辑器；如果编辑器构建没有对应的消息接收端，语言和纹理导入仍需在 Blockbench 端接入处理逻辑。
+
+## 9. 预制皮肤导入说明
+
+- 标准皮肤导入要求 64×64 PNG，导入后会作为底图并应用当前选择的披肩 / 外套纹理。
+- 发送到 Blockbench 的数据包含合成皮肤 PNG、模型类型和所选装备信息。披风纹理独立传递，不应覆盖皮肤 UV 图。
+- 如果编辑器中没有出现新皮肤，请确认 pixcape:import-preset 消息处理逻辑已经启用，并查看浏览器控制台中的跨窗口消息错误。
+
+## 10. 3D 生物群系、飞行姿态与皮肤传递修正
+
+- 生物群系背景使用 Minecraft 官方网站发布的实际游戏截图，并通过 skinview3d 的 WebGL 背景加载；CSS 仅作为 WebGL 加载失败时的后备显示；夜景使用官方发布的夜间 pale-garden 游戏截图。
+- 飞行动作使用 skinview3d 的 Minecraft 飞行动画驱动角色俯身与鞘翅展开，避免手臂、腿部和翅膀由互相覆盖的手动旋转造成姿态错误。
+- 披肩 / 外套只合成到皮肤图集的躯干与手臂 UV 区域，保留用户原有的头部、头发和腿部；发送到 Blockbench 前会重新读取当前皮肤源图并按当前模型类型合成，避免传入上一帧的旧画布。
+
