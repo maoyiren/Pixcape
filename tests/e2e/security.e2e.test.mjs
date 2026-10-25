@@ -48,3 +48,15 @@ test('login entry point is rate-limited and emits Retry-After', async () => {
   })
   assert.notEqual(otherAddress.status, 429, 'rate limit must be isolated by client address')
 })
+
+
+test('internal AI configuration endpoint is private and non-cacheable without a service token', async () => {
+  const response = await fetch(new URL('/api/internal/ai-config', base), {
+    headers: { Authorization: 'Bearer invalid-test-token' },
+    redirect: 'manual',
+  })
+  assert.equal(response.status, 404)
+  assert.equal(response.headers.get('cache-control'), 'no-store')
+  const body = await response.text()
+  assert.doesNotMatch(body, /GEMINI_API_KEY|OPENAI_API_KEY|ARK_API_KEY|AI_SECRET_/)
+})
