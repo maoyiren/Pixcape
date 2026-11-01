@@ -7,6 +7,8 @@ import { AssetCategorySchema, AssetVisibilitySchema } from '@/src/domain/asset'
 
 export const runtime = 'nodejs'
 
+const MAX_MULTIPART_BYTES = 9 * 1024 * 1024
+
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: '请先登录。' }, { status: 401 })
@@ -43,6 +45,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const contentLength = Number(request.headers.get('content-length') || 0)
+  if (contentLength > MAX_MULTIPART_BYTES) return NextResponse.json({ error: '上传请求不能超过 9 MB。' }, { status: 413 })
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: '请先登录。' }, { status: 401 })
   const actor = await loadAssetActor(session.user.id)
