@@ -9,7 +9,11 @@ import type { AssetCategory, AssetKind, AssetSource, AssetVisibility } from '@/s
 const MAX_ASSET_BYTES = 8 * 1024 * 1024
 const STORAGE_ROOT = path.resolve(process.env.ASSET_STORAGE_DIR || '/data/assets')
 
-export class AssetInputError extends Error {\n  constructor(message: string) { super(message); this.name = 'AssetInputError' }\n}\n\nexport type AssetActor = { id: string; role: string; status: string }
+export class AssetInputError extends Error {
+  constructor(message: string) { super(message); this.name = 'AssetInputError' }
+}
+
+export type AssetActor = { id: string; role: string; status: string }
 
 export async function loadAssetActor(userId: string): Promise<AssetActor | null> {
   const actor = await prisma.user.findUnique({
@@ -38,7 +42,8 @@ export async function saveAssetFile(input: {
   if (input.file.type !== 'image/png') throw new AssetInputError('目前仅支持 PNG 图片。')
   const bytes = Buffer.from(await input.file.arrayBuffer())
   if (bytes.length !== input.file.size) throw new AssetInputError('上传文件大小校验失败。')
-  let dimensions: { width: number; height: number }\n  try { dimensions = parsePng(bytes) } catch (error) { throw new AssetInputError(error instanceof Error ? error.message : 'PNG 图片无效。') }
+  let dimensions: { width: number; height: number }
+  try { dimensions = parsePng(bytes) } catch (error) { throw new AssetInputError(error instanceof Error ? error.message : 'PNG 图片无效。') }
   if (input.category === 'SKIN' && (dimensions.width !== 64 || dimensions.height !== 64)) {
     throw new AssetInputError('Minecraft 皮肤必须为 64×64 PNG。')
   }
