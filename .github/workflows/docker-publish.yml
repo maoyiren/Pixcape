@@ -26,7 +26,6 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
-# Keep only the newest image build active for each branch; stale runs must not publish over latest.
 concurrency:
   group: docker-publish-${{ github.ref }}
   cancel-in-progress: true
@@ -71,10 +70,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-
       - name: Build the single runtime-switchable image
         uses: docker/build-push-action@v7
         with:
@@ -83,7 +80,6 @@ jobs:
           tags: pixcape:runtime-multidb-test
           cache-from: type=gha,scope=runtime-multidb
           cache-to: type=gha,mode=max,scope=runtime-multidb
-
       - name: Start the same image with PostgreSQL, MySQL and SQLite
         shell: bash
         run: |
@@ -95,21 +91,13 @@ jobs:
             docker rm -f pixcape-smoke >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
-
           for PROVIDER in postgresql mysql sqlite; do
             echo "Smoke-testing runtime provider: $PROVIDER"
             case "$PROVIDER" in
-              postgresql)
-                DATABASE_URL='postgresql://pixcape:pixcape@host.docker.internal:5432/pixcape?schema=public'
-                ;;
-              mysql)
-                DATABASE_URL='mysql://root:pixcape@host.docker.internal:3306/pixcape'
-                ;;
-              sqlite)
-                DATABASE_URL='file:/data/pixcape.db'
-                ;;
+              postgresql) DATABASE_URL='postgresql://pixcape:pixcape@host.docker.internal:5432/pixcape?schema=public' ;;
+              mysql) DATABASE_URL='mysql://root:pixcape@host.docker.internal:3306/pixcape' ;;
+              sqlite) DATABASE_URL='file:/data/pixcape.db' ;;
             esac
-
             docker rm -f pixcape-smoke >/dev/null 2>&1 || true
             docker run -d --name pixcape-smoke \
               --add-host=host.docker.internal:host-gateway \
@@ -120,24 +108,14 @@ jobs:
               -e NEXTAUTH_URL='http://localhost:18787' \
               -v /tmp/pixcape-smoke-data:/data \
               pixcape:runtime-multidb-test >/dev/null
-
             ready=0
             for attempt in $(seq 1 60); do
               health_ok=0
               app_ok=0
-              if curl --fail --silent http://127.0.0.1:18787/health >/tmp/pixcape-health.json; then
-                health_ok=1
-              fi
-              # /health is served directly by nginx; also wait for the Next.js upstream
-              # so a transient 502 during process startup is not mistaken for app readiness.
+              if curl --fail --silent http://127.0.0.1:18787/health >/tmp/pixcape-health.json; then health_ok=1; fi
               app_code="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18787/ || true)"
-              if [ "$app_code" = "200" ]; then
-                app_ok=1
-              fi
-              if [ "$health_ok" -eq 1 ] && [ "$app_ok" -eq 1 ]; then
-                ready=1
-                break
-              fi
+              if [ "$app_code" = "200" ]; then app_ok=1; fi
+              if [ "$health_ok" -eq 1 ] && [ "$app_ok" -eq 1 ]; then ready=1; break; fi
               if [ "$attempt" -eq 60 ]; then
                 echo "Container did not become ready for $PROVIDER (health=$health_ok app_http=$app_code)" >&2
                 docker logs pixcape-smoke >&2 || true
@@ -171,9 +149,7 @@ jobs:
             check_http /blockbench/ '<html'
             check_http /api/ai/models
             docker exec pixcape-smoke sh -c 'test -s /opt/pixcape-next/generated/prisma-postgresql/index.js && test -s /opt/pixcape-next/generated/prisma-mysql/index.js && test -s /opt/pixcape-next/generated/prisma-sqlite/index.js'
-            if [ "$PROVIDER" = sqlite ]; then
-              test -s /tmp/pixcape-smoke-data/pixcape.db
-            fi
+            if [ "$PROVIDER" = sqlite ]; then test -s /tmp/pixcape-smoke-data/pixcape.db; fi
             cleanup
           done
           echo "Single image passed runtime startup checks for PostgreSQL, MySQL and SQLite."
@@ -185,17 +161,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v6
@@ -206,7 +179,6 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=sha,prefix=sha-
-
       - name: Build and publish one multi-database image
         uses: docker/build-push-action@v7
         with:
@@ -218,59 +190,35 @@ jobs:
           cache-to: type=gha,mode=max,scope=runtime-multidb
 
   deploy-1panel:
-    name: Deploy to 1Panel (main only)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Deploy to 1Panel V2
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CDPC_DEPLOY_ENABLED == 'true'
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout deployment files
+      - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Start SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Copy Compose definition and deployment script to 1Panel project
+        uses: appleboy/scp-action@v0.1.7
         with:
-          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
-
-      - name: Configure verified SSH host key
-        shell: bash
+          host: ${{ secrets.CDPC_DEPLOY_HOST }}
+          username: ${{ secrets.CDPC_DEPLOY_USER }}
+          key: ${{ secrets.CDPC_DEPLOY_SSH_KEY }}
+          port: ${{ secrets.CDPC_DEPLOY_PORT || '22' }}
+          source: "docker-compose.yml,deploy-1panel.sh"
+          target: ${{ secrets.CDPC_DEPLOY_PATH }}
+      - name: Deploy exact commit image and verify container health
+        uses: appleboy/ssh-action@v1.2.0
         env:
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          test -n "$DEPLOY_KNOWN_HOSTS" || { echo "DEPLOY_KNOWN_HOSTS secret is required"; exit 1; }
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Upload Compose and deployment script
-        shell: bash
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-        run: |
-          set -euo pipefail
-          : "${DEPLOY_HOST:?Missing DEPLOY_HOST secret}"
-          : "${DEPLOY_USER:?Missing DEPLOY_USER secret}"
-          : "${DEPLOY_PATH:?Missing DEPLOY_PATH secret}"
-          DEPLOY_PORT="${DEPLOY_PORT:-22}"
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH'"
-          scp -P "$DEPLOY_PORT" docker-compose.yml deploy/1panel-deploy.sh "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
-
-      - name: Deploy immutable commit image and verify
-        shell: bash
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          GHCR_USERNAME: ${{ secrets.GHCR_PULL_USERNAME }}
-          GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-          IMAGE_TAG: sha-${{ github.sha }}
-        run: |
-          set -euo pipefail
-          DEPLOY_PORT="${DEPLOY_PORT:-22}"
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "GHCR_USERNAME='$GHCR_USERNAME' GHCR_TOKEN='$GHCR_TOKEN' bash '$DEPLOY_PATH/1panel-deploy.sh' '$DEPLOY_PATH' '$IMAGE_TAG'"
+          DEPLOY_PATH: ${{ secrets.CDPC_DEPLOY_PATH }}
+          COMMIT_SHA: ${{ github.sha }}
+        with:
+          host: ${{ secrets.CDPC_DEPLOY_HOST }}
+          username: ${{ secrets.CDPC_DEPLOY_USER }}
+          key: ${{ secrets.CDPC_DEPLOY_SSH_KEY }}
+          port: ${{ secrets.CDPC_DEPLOY_PORT || '22' }}
+          envs: DEPLOY_PATH,COMMIT_SHA
+          script: |
+            set -eu
+            cd "$DEPLOY_PATH"
+            chmod 700 deploy-1panel.sh
+            ./deploy-1panel.sh "$COMMIT_SHA"
