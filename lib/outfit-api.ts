@@ -1,10 +1,8 @@
 import 'server-only'
-import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { AssetCategorySchema, SkinModelSchema } from '@/src/domain/asset'
 
-export { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'
 import { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'
+export { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'
 export async function validateOutfitAssets(actorId: string, input: OutfitInput) {
   const ids = [...new Set([
     ...(input.skinAssetId ? [input.skinAssetId] : []),
