@@ -3,6 +3,16 @@ set -Eeuo pipefail
 
 # Run from the 1Panel Compose project directory.
 cd "$(dirname "$0")"
+# Reuse the running container's Compose project label so 1Panel and this script
+# operate on the same project (and the same project-scoped named volumes).
+if docker inspect pixcape >/dev/null 2>&1; then
+  EXISTING_PROJECT="$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' pixcape 2>/dev/null || true)"
+  if [[ -n "$EXISTING_PROJECT" && "$EXISTING_PROJECT" != "<no value>" ]]; then
+    export COMPOSE_PROJECT_NAME="$EXISTING_PROJECT"
+  fi
+fi
+COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')}"
+export COMPOSE_PROJECT_NAME
 COMMIT_SHA="${1:-}"
 if [[ ! "$COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
   echo "Usage: $0 <full-git-commit-sha>" >&2
