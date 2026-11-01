@@ -43,8 +43,8 @@ export default async function WorkbenchPage() {
             <Title order={1} size="h2">创作工作台</Title>
           </Stack>
           <Group gap="sm" wrap="wrap">
-            <Button component={Link} href="/" variant="default" className="cdpc-control">返回首页</Button>
-            <Button component={Link} href="/creator" variant="default" className="cdpc-control">创作者中心</Button>
+            <Button component="a" href="/" variant="default" className="cdpc-control">返回首页</Button>
+            <Button component="a" href="/creator" variant="default" className="cdpc-control">创作者中心</Button>
           </Group>
         </Group>
 
@@ -76,7 +76,7 @@ export default async function WorkbenchPage() {
                     <Text c="dimmed" size="sm" lh={1.7}>{entry.description}</Text>
                   </Stack>
                   <Button
-                    component={Link}
+                    component="a"
                     href={entry.href}
                     variant="filled"
                     fullWidth

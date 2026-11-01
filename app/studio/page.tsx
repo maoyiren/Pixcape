@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { Alert, Badge, Button, Card, Container, Group, Paper, Stack, Text, Title } from '@mantine/core'
 
 export const dynamic = 'force-dynamic'
@@ -36,8 +35,8 @@ export default async function StudioHandoffPage({ searchParams }: { searchParams
             <Title order={1} size="h2">{copy.title}</Title>
           </Stack>
           <Group gap="sm" wrap="wrap">
-            <Button component={Link} href="/workbench" variant="default">创作工作台</Button>
-            <Button component={Link} href="/" variant="subtle">返回首页</Button>
+            <Button component="a" href="/workbench" variant="default">创作工作台</Button>
+            <Button component="a" href="/" variant="subtle">返回首页</Button>
           </Group>
         </Group>
 
@@ -51,7 +50,7 @@ export default async function StudioHandoffPage({ searchParams }: { searchParams
             {validEditorUrl ? (
               <Group gap="sm" wrap="wrap">
                 <Button component="a" href={validEditorUrl} target="_self" size="md">{copy.action} ↗</Button>
-                <Button component={Link} href="/workbench" variant="default" size="md">选择其他创作工具</Button>
+                <Button component="a" href="/workbench" variant="default" size="md">选择其他创作工具</Button>
               </Group>
             ) : (
               <Alert color="yellow" title="需要完成部署配置" variant="light">
