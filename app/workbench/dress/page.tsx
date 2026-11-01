@@ -1,7 +1,7 @@
-import NextStudio from '../../components/next-studio'
+import WardrobeWorkspace from '../../wardrobe/wardrobe-workspace'
 
-export const metadata = { title: '衣橱选装 | 创作工作台 | CDPC' }
+export const metadata = { title: '服装换装工作台 | 创作工作台 | CDPC' }
 
-export default function WorkbenchRoute() {
-  return <NextStudio mode="wardrobe" />
+export default function WorkbenchDressPage() {
+  return <WardrobeWorkspace />
 }
