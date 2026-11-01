@@ -18,6 +18,11 @@ model User {
   status        String          @default("ACTIVE")
   creator       CreatorProfile?
   projects      Project[]
+  assets        Asset[] @relation("AssetOwner")
+  outfits       Outfit[]
+  favorites     AssetFavorite[]
+  publications  Publication[]
+  workspaceState WorkspaceState?
   auditAsActor  AuditLog[]       @relation("AuditActor")
   accounts      Account[]
   sessions      Session[]
@@ -46,6 +51,8 @@ model Project {
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  assets      Asset[]
+  workspaces  WorkspaceState[]
   @@index([ownerId, updatedAt])
 }
 
