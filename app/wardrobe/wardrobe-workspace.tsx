@@ -45,6 +45,7 @@ export default function WardrobeWorkspace() {
   const hostRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<SkinViewerType | null>(null)
   const [assets, setAssets] = useState<Asset[]>([])
+  const [viewerReady, setViewerReady] = useState(false)
   const [outfits, setOutfits] = useState<Outfit[]>([])
   const [category, setCategory] = useState<Category | 'ALL'>('ALL')
   const [selected, setSelected] = useState<Record<string, Asset>>({})
@@ -101,6 +102,7 @@ export default function WardrobeWorkspace() {
         viewer.controls.rotateSpeed = 0.9
         hostRef.current.replaceChildren(canvas)
         viewerRef.current = viewer
+        setViewerReady(true)
       } catch {
         setError('3D 预览初始化失败，请使用支持 WebGL 的浏览器')
       }
@@ -117,6 +119,7 @@ export default function WardrobeWorkspace() {
       window.removeEventListener('resize', resize)
       viewer?.dispose()
       viewerRef.current = null
+      setViewerReady(false)
     }
   }, [])
 
@@ -162,7 +165,7 @@ export default function WardrobeWorkspace() {
     }
     void render()
     return () => { cancelled = true }
-  }, [selected, model, background, equipped])
+  }, [selected, model, background, equipped, viewerReady])
 
   const visibleAssets = assets.filter((asset) => category === 'ALL' || asset.category === category)
 
@@ -229,16 +232,45 @@ export default function WardrobeWorkspace() {
     }
   }
 
-  const loadOutfit = (outfit: Outfit) => {
+  const loadOutfit = async (outfit: Outfit) => {
+    const requiredIds = [...new Set([
+      ...(outfit.skinAssetId ? [outfit.skinAssetId] : []),
+      ...outfit.items.filter((item) => item.equipped).map((item) => item.assetId),
+    ])]
+    const known = new Map(assets.map((asset) => [asset.id, asset]))
+    const missingIds = requiredIds.filter((id) => !known.has(id))
+    if (missingIds.length) {
+      try {
+        const response = await fetch(`/api/assets?ids=${encodeURIComponent(missingIds.join(','))}`, { cache: 'no-store' })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || '读取搭配素材失败')
+        const fetched = (Array.isArray(data.items) ? data.items : []) as Asset[]
+        for (const asset of fetched) known.set(asset.id, asset)
+        setAssets((current) => {
+          const merged = new Map(current.map((asset) => [asset.id, asset]))
+          for (const asset of fetched) merged.set(asset.id, asset)
+          return [...merged.values()]
+        })
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : '读取搭配素材失败')
+        return
+      }
+    }
     const next: Record<string, Asset> = {}
     if (outfit.skinAssetId) {
-      const skin = assets.find((asset) => asset.id === outfit.skinAssetId)
+      const skin = known.get(outfit.skinAssetId)
       if (skin) next.SKIN = skin
     }
     for (const item of outfit.items) {
       if (!item.equipped) continue
-      const asset = assets.find((entry) => entry.id === item.assetId)
+      const asset = known.get(item.assetId)
       if (asset?.category) next[asset.category] = asset
+    }
+    const unresolved = requiredIds.filter((id) => !known.has(id))
+    if (unresolved.length) {
+      setError('搭配中的部分素材当前不可访问，已保留可用素材。')
+    } else {
+      setError('')
     }
     setSelected(next)
     setModel(outfit.skinModel)
