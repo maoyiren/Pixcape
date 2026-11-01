@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { z } from 'zod'
 import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { loadAssetActor, saveAssetFile } from '@/lib/asset-api'
-import { AssetCategorySchema, AssetSourceSchema, AssetVisibilitySchema } from '@/src/domain/asset'
+import { AssetCategorySchema, AssetVisibilitySchema } from '@/src/domain/asset'
 
 export const runtime = 'nodejs'
 
@@ -53,18 +52,17 @@ export async function POST(request: Request) {
     const form = await request.formData()
     const file = form.get('file')
     const category = AssetCategorySchema.safeParse(form.get('category'))
-    const source = AssetSourceSchema.safeParse(form.get('source') || 'UPLOAD')
     const visibility = AssetVisibilitySchema.safeParse(form.get('visibility') || 'PRIVATE')
     const attribution = form.get('attribution')
     if (!(file instanceof File)) return NextResponse.json({ error: '请选择 PNG 文件。' }, { status: 400 })
-    if (!category.success || !source.success || !visibility.success) {
+    if (!category.success || !visibility.success) {
       return NextResponse.json({ error: '素材分类、来源或可见性无效。' }, { status: 400 })
     }
     if (attribution !== null && typeof attribution !== 'string') {
       return NextResponse.json({ error: '署名格式无效。' }, { status: 400 })
     }
     const asset = await saveAssetFile({
-      actorId: actor.id, file, category: category.data, source: source.data,
+      actorId: actor.id, file, category: category.data, source: 'UPLOAD',
       visibility: visibility.data, attribution: typeof attribution === 'string' ? attribution : null,
     })
     return NextResponse.json({ item: { ...asset, fileUrl: `/api/assets/${asset.id}/file` } }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
