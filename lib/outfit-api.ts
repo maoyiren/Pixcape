@@ -27,7 +27,7 @@ export async function validateOutfitAssets(actorId: string, input: OutfitInput) 
   }
   for (const item of input.items) {
     const asset = byId.get(item.assetId)
-    if (!asset || asset.category !== item.category || item.category === 'SKIN') {
+    if (!asset || asset.category !== item.category) {
       throw new OutfitInputError('穿戴素材分类与实际素材不匹配。')
     }
     if (asset.kind !== 'CLOTHING_TEXTURE' && asset.kind !== 'ACCESSORY_TEXTURE') {
