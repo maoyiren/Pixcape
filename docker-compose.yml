@@ -1,8 +1,6 @@
 services:
   pixcape:
-    build:
-      context: .
-    image: ghcr.io/liseezn/pixcape:${PIXSCAPE_IMAGE_TAG:-latest}
+    image: ghcr.io/maoyiren/pixcape:${PIXSCAPE_IMAGE_TAG:-latest}
     container_name: pixcape
     restart: unless-stopped
     ports:

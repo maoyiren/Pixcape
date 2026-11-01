@@ -178,6 +178,44 @@ jobs:
           done
           echo "Single image passed runtime startup checks for PostgreSQL, MySQL and SQLite."
 
+  deploy-1panel:
+    name: Deploy to 1Panel V2
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CDPC_DEPLOY_ENABLED == 'true'
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Copy Compose definition and deployment script to 1Panel project
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CDPC_DEPLOY_HOST }}
+          username: ${{ secrets.CDPC_DEPLOY_USER }}
+          key: ${{ secrets.CDPC_DEPLOY_SSH_KEY }}
+          fingerprint: ${{ secrets.CDPC_DEPLOY_FINGERPRINT }}
+          port: ${{ secrets.CDPC_DEPLOY_PORT || '22' }}
+          source: "docker-compose.yml,deploy-1panel.sh"
+          target: ${{ secrets.CDPC_DEPLOY_PATH }}
+      - name: Deploy exact commit image and verify container health
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.CDPC_DEPLOY_PATH }}
+          COMMIT_SHA: ${{ github.sha }}
+          CDPC_GHCR_USERNAME: ${{ secrets.CDPC_GHCR_USERNAME }}
+          CDPC_GHCR_TOKEN: ${{ secrets.CDPC_GHCR_TOKEN }}
+        with:
+          host: ${{ secrets.CDPC_DEPLOY_HOST }}
+          username: ${{ secrets.CDPC_DEPLOY_USER }}
+          key: ${{ secrets.CDPC_DEPLOY_SSH_KEY }}
+          fingerprint: ${{ secrets.CDPC_DEPLOY_FINGERPRINT }}
+          port: ${{ secrets.CDPC_DEPLOY_PORT || '22' }}
+          envs: DEPLOY_PATH,COMMIT_SHA,CDPC_GHCR_USERNAME,CDPC_GHCR_TOKEN
+          script: |
+            set -eu
+            cd "$DEPLOY_PATH"
+            chmod 700 deploy-1panel.sh
+            ./deploy-1panel.sh "$COMMIT_SHA"
+
   publish:
     if: github.event_name != 'pull_request'
     needs: smoke-test
