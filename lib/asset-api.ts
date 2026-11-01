@@ -2,12 +2,12 @@ import 'server-only'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { parsePng } from '@/src/domain/png'
 import { prisma } from '@/lib/prisma'
 import type { AssetCategory, AssetKind, AssetSource, AssetVisibility } from '@/src/domain/asset'
 
 const MAX_ASSET_BYTES = 8 * 1024 * 1024
 const STORAGE_ROOT = path.resolve(process.env.ASSET_STORAGE_DIR || '/data/assets')
-const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 
 export type AssetActor = { id: string; role: string; status: string }
 
@@ -17,19 +17,6 @@ export async function loadAssetActor(userId: string): Promise<AssetActor | null>
     select: { id: true, role: true, status: true },
   })
   return actor?.status === 'ACTIVE' ? actor : null
-}
-
-export function parsePng(buffer: Buffer) {
-  if (buffer.length < 33 || !buffer.subarray(0, 8).equals(PNG_SIGNATURE)) {
-    throw new Error('仅支持有效的 PNG 图片。')
-  }
-  if (buffer.toString('ascii', 12, 16) !== 'IHDR') throw new Error('PNG 图片头无效。')
-  const width = buffer.readUInt32BE(16)
-  const height = buffer.readUInt32BE(20)
-  if (!width || !height || width > 1024 || height > 1024) {
-    throw new Error('图片尺寸必须在 1×1 至 1024×1024 之间。')
-  }
-  return { width, height }
 }
 
 function storagePath(storageKey: string) {
