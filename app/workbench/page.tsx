@@ -35,7 +35,7 @@ export default async function WorkbenchPage() {
   const user = session?.user
 
   return (
-    <Container size="xl" py={{ base: 'md', sm: 'xl' }} className="cdpc-workbench">
+    <Container size="xl" py="xl" className="cdpc-workbench">
       <Stack gap="xl">
         <Group justify="space-between" align="center" wrap="wrap">
           <Stack gap={4}>
