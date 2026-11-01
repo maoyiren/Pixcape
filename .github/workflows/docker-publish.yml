@@ -203,6 +203,7 @@ jobs:
           host: ${{ secrets.CDPC_DEPLOY_HOST }}
           username: ${{ secrets.CDPC_DEPLOY_USER }}
           key: ${{ secrets.CDPC_DEPLOY_SSH_KEY }}
+          fingerprint: ${{ secrets.CDPC_DEPLOY_FINGERPRINT }}
           port: ${{ secrets.CDPC_DEPLOY_PORT || '22' }}
           source: "docker-compose.yml,deploy-1panel.sh"
           target: ${{ secrets.CDPC_DEPLOY_PATH }}
@@ -211,12 +212,15 @@ jobs:
         env:
           DEPLOY_PATH: ${{ secrets.CDPC_DEPLOY_PATH }}
           COMMIT_SHA: ${{ github.sha }}
+          CDPC_GHCR_USERNAME: ${{ secrets.CDPC_GHCR_USERNAME }}
+          CDPC_GHCR_TOKEN: ${{ secrets.CDPC_GHCR_TOKEN }}
         with:
           host: ${{ secrets.CDPC_DEPLOY_HOST }}
           username: ${{ secrets.CDPC_DEPLOY_USER }}
           key: ${{ secrets.CDPC_DEPLOY_SSH_KEY }}
+          fingerprint: ${{ secrets.CDPC_DEPLOY_FINGERPRINT }}
           port: ${{ secrets.CDPC_DEPLOY_PORT || '22' }}
-          envs: DEPLOY_PATH,COMMIT_SHA
+          envs: DEPLOY_PATH,COMMIT_SHA,CDPC_GHCR_USERNAME,CDPC_GHCR_TOKEN
           script: |
             set -eu
             cd "$DEPLOY_PATH"
