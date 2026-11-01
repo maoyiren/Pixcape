@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { AssetCategorySchema, SkinModelSchema } from './asset.ts'
+import { AssetCategorySchema, SkinModelSchema } from './asset'
 
 const WearableCategorySchema = AssetCategorySchema.exclude(['SKIN'])
 
