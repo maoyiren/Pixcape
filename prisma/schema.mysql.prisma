@@ -26,11 +26,39 @@ enum CreatorReviewStatus {
   REJECTED
 }
 
-enum AssetCategory { SKIN SHAWL COAT CAPE HAT PANTS SHOES OTHER_ACCESSORY }
-enum AssetKind { SKIN_TEXTURE CLOTHING_TEXTURE ACCESSORY_TEXTURE PROJECT_FILE PREVIEW_IMAGE }
-enum AssetSource { UPLOAD AI_GENERATION PIXEL_EDITOR IMPORT COMMUNITY }
-enum AssetVisibility { PRIVATE UNLISTED PUBLIC }
-enum SkinModel { CLASSIC SLIM }
+enum AssetCategory {
+  SKIN
+  SHAWL
+  COAT
+  CAPE
+  HAT
+  PANTS
+  SHOES
+  OTHER_ACCESSORY
+}
+enum AssetKind {
+  SKIN_TEXTURE
+  CLOTHING_TEXTURE
+  ACCESSORY_TEXTURE
+  PROJECT_FILE
+  PREVIEW_IMAGE
+}
+enum AssetSource {
+  UPLOAD
+  AI_GENERATION
+  PIXEL_EDITOR
+  IMPORT
+  COMMUNITY
+}
+enum AssetVisibility {
+  PRIVATE
+  UNLISTED
+  PUBLIC
+}
+enum SkinModel {
+  CLASSIC
+  SLIM
+}
 
 model User {
   id            String          @id @default(cuid())
