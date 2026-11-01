@@ -65,7 +65,9 @@ rollback() {
         CID="$(docker compose ps -q pixcape 2>/dev/null | head -n1 || true)"
         [[ -n "$CID" ]] || { sleep 2; continue; }
         HEALTH="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$CID" 2>/dev/null || true)"
-        [[ "$HEALTH" == "healthy" ]] && { echo "Rollback healthy: $ROLLBACK_TAG"; break; }
+        APP_READY=0
+        docker exec "$CID" wget -q -O /dev/null http://127.0.0.1/ && APP_READY=1 || true
+        [[ "$HEALTH" == "healthy" && "$APP_READY" -eq 1 ]] && { echo "Rollback healthy: $ROLLBACK_TAG"; break; }
         sleep 2
       done
     else
@@ -76,6 +78,7 @@ rollback() {
     fi
   fi
   [[ -n "$ENV_BACKUP" ]] && rm -f "$ENV_BACKUP"
+  cleanup
   return "$status"
 }
 trap rollback EXIT
@@ -91,7 +94,9 @@ for attempt in $(seq 1 60); do
   CID="$(docker compose ps -q pixcape 2>/dev/null | head -n1 || true)"
   if [[ -n "$CID" ]]; then
     HEALTH="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$CID" 2>/dev/null || true)"
-    if [[ "$HEALTH" == "healthy" ]]; then
+    APP_READY=0
+    docker exec "$CID" wget -q -O /dev/null http://127.0.0.1/ && APP_READY=1 || true
+    if [[ "$HEALTH" == "healthy" && "$APP_READY" -eq 1 ]]; then
       healthy=1
       break
     fi
