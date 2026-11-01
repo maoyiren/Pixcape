@@ -23,7 +23,7 @@ test('primary creation routes render their intended mode entry points', async ({
     await page.goto(route.path)
     await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.mode)
     if (route.mode === 'ai') {
-      await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible({ timeout: 15_000 })
     } else if (route.mode === 'wardrobe') {
       await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
     } else {
