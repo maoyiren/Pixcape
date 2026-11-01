@@ -2,7 +2,7 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 
 import { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'
-export { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'
+export { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'\n\nexport class OutfitInputError extends Error {\n  constructor(message: string) { super(message); this.name = 'OutfitInputError' }\n}
 export async function validateOutfitAssets(actorId: string, input: OutfitInput) {
   const ids = [...new Set([
     ...(input.skinAssetId ? [input.skinAssetId] : []),
@@ -13,21 +13,21 @@ export async function validateOutfitAssets(actorId: string, input: OutfitInput) 
     where: { id: { in: ids }, OR: [{ ownerId: actorId }, { visibility: 'PUBLIC' }] },
     select: { id: true, kind: true, category: true },
   })
-  if (assets.length !== ids.length) throw new Error('搭配中包含不存在或无权使用的素材。')
+  if (assets.length !== ids.length) throw new OutfitInputError('搭配中包含不存在或无权使用的素材。')
   const byId = new Map(assets.map((asset) => [asset.id, asset]))
   if (input.skinAssetId) {
     const skin = byId.get(input.skinAssetId)
     if (!skin || skin.category !== 'SKIN' || skin.kind !== 'SKIN_TEXTURE') {
-      throw new Error('基础皮肤必须引用有效的皮肤纹理素材。')
+      throw new OutfitInputError('基础皮肤必须引用有效的皮肤纹理素材。')
     }
   }
   for (const item of input.items) {
     const asset = byId.get(item.assetId)
     if (!asset || asset.category !== item.category || item.category === 'SKIN') {
-      throw new Error('穿戴素材分类与实际素材不匹配。')
+      throw new OutfitInputError('穿戴素材分类与实际素材不匹配。')
     }
     if (asset.kind !== 'CLOTHING_TEXTURE' && asset.kind !== 'ACCESSORY_TEXTURE') {
-      throw new Error('该素材类型不能作为穿戴配件。')
+      throw new OutfitInputError('该素材类型不能作为穿戴配件。')
     }
   }
 }
