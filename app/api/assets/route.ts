@@ -18,6 +18,11 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const category = url.searchParams.get('category')
   const cursor = url.searchParams.get('cursor')
+  const requestedIds = url.searchParams.get('ids')
+  const ids = requestedIds ? [...new Set(requestedIds.split(',').map((id) => id.trim()).filter(Boolean))] : null
+  if (ids && (ids.length > 65 || ids.some((id) => id.length > 128))) {
+    return NextResponse.json({ error: '素材 ID 查询范围无效。' }, { status: 400 })
+  }
   const requestedLimit = Number(url.searchParams.get('limit') || 30)
   const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(Math.trunc(requestedLimit), 1), 60) : 30
   const parsedCategory = category ? AssetCategorySchema.safeParse(category) : null
@@ -26,18 +31,19 @@ export async function GET(request: Request) {
   const assets = await prisma.asset.findMany({
     where: {
       ...(parsedCategory?.success ? { category: parsedCategory.data } : {}),
+      ...(ids ? { id: { in: ids } } : {}),
       OR: [{ ownerId: actor.id }, { visibility: 'PUBLIC' }],
     },
     orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-    take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    take: ids ? Math.max(ids.length, 1) : limit + 1,
+    ...(!ids && cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: {
       id: true, ownerId: true, kind: true, category: true, mimeType: true,
       byteSize: true, width: true, height: true, source: true, visibility: true,
       attribution: true, createdAt: true, updatedAt: true,
     },
   })
-  const hasMore = assets.length > limit
+  const hasMore = !ids && assets.length > limit
   const data = hasMore ? assets.slice(0, limit) : assets
   return NextResponse.json({
     items: data.map((asset) => ({ ...asset, fileUrl: `/api/assets/${asset.id}/file` })),
