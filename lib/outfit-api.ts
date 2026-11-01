@@ -2,7 +2,11 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 
 import { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'
-export { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'\n\nexport class OutfitInputError extends Error {\n  constructor(message: string) { super(message); this.name = 'OutfitInputError' }\n}
+export { OutfitInputSchema, type OutfitInput } from '@/src/domain/outfit-input'
+
+export class OutfitInputError extends Error {
+  constructor(message: string) { super(message); this.name = 'OutfitInputError' }
+}
 export async function validateOutfitAssets(actorId: string, input: OutfitInput) {
   const ids = [...new Set([
     ...(input.skinAssetId ? [input.skinAssetId] : []),
