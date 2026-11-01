@@ -1,7 +1,5 @@
 services:
   pixcape:
-    build:
-      context: .
     image: ghcr.io/maoyiren/pixcape:${PIXSCAPE_IMAGE_TAG:-latest}
     container_name: pixcape
     restart: unless-stopped
