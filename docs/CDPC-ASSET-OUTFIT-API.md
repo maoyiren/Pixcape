@@ -62,5 +62,5 @@ Responses carrying private user data use `Cache-Control: private, no-store`.
 - PNG upload only; JPEG, WebP, ZIP and project bundles are not accepted.
 - Public file reads currently also require a signed-in user.
 - Asset metadata editing, favorites, storage cleanup jobs and object-storage adapters are not part of this API slice.
-- Existing wardrobe UI is not yet wired to these endpoints.
+- `/wardrobe` and `/workbench/dress` now use a shared native Next.js workspace that calls the asset and outfit APIs for listing, PNG upload, equip/unequip, save, load and delete. The 3D preview uses skinview3d and is driven by the selected cloud assets. This first integration still needs authenticated browser E2E validation, including cape rendering and cross-device restore.
 - Do not run production migrations or deploy until CI, backup/restore and end-to-end checks pass.
