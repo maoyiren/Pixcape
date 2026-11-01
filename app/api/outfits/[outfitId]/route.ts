@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { loadAssetActor } from '@/lib/asset-api'
-import { deleteOutfitForActor, getOutfitForActor, OutfitInputSchema, updateOutfitForActor } from '@/lib/outfit-api'
+import { deleteOutfitForActor, getOutfitForActor, OutfitInputError, OutfitInputSchema, updateOutfitForActor } from '@/lib/outfit-api'
 
 export const runtime = 'nodejs'
 
@@ -34,8 +34,8 @@ export async function PUT(request: Request, context: Context) {
     if (!item) return NextResponse.json({ error: '搭配不存在或无权修改。' }, { status: 404 })
     return NextResponse.json({ item }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
-    const message = error instanceof Error ? error.message : '更新搭配失败。'
-    return NextResponse.json({ error: message }, { status: 400 })
+    if (error instanceof OutfitInputError) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ error: '更新搭配失败，请稍后重试。' }, { status: 500 })
   }
 }
 
