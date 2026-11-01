@@ -9,7 +9,7 @@ import type { AssetCategory, AssetKind, AssetSource, AssetVisibility } from '@/s
 const MAX_ASSET_BYTES = 8 * 1024 * 1024
 const STORAGE_ROOT = path.resolve(process.env.ASSET_STORAGE_DIR || '/data/assets')
 
-export type AssetActor = { id: string; role: string; status: string }
+export class AssetInputError extends Error {\n  constructor(message: string) { super(message); this.name = 'AssetInputError' }\n}\n\nexport type AssetActor = { id: string; role: string; status: string }
 
 export async function loadAssetActor(userId: string): Promise<AssetActor | null> {
   const actor = await prisma.user.findUnique({
@@ -33,20 +33,20 @@ export async function saveAssetFile(input: {
   attribution?: string | null
 }) {
   if (!input.file || input.file.size < 1 || input.file.size > MAX_ASSET_BYTES) {
-    throw new Error('图片大小必须在 1 B 至 8 MB 之间。')
+    throw new AssetInputError('图片大小必须在 1 B 至 8 MB 之间。')
   }
-  if (input.file.type !== 'image/png') throw new Error('目前仅支持 PNG 图片。')
+  if (input.file.type !== 'image/png') throw new AssetInputError('目前仅支持 PNG 图片。')
   const bytes = Buffer.from(await input.file.arrayBuffer())
-  if (bytes.length !== input.file.size) throw new Error('上传文件大小校验失败。')
-  const dimensions = parsePng(bytes)
+  if (bytes.length !== input.file.size) throw new AssetInputError('上传文件大小校验失败。')
+  let dimensions: { width: number; height: number }\n  try { dimensions = parsePng(bytes) } catch (error) { throw new AssetInputError(error instanceof Error ? error.message : 'PNG 图片无效。') }
   if (input.category === 'SKIN' && (dimensions.width !== 64 || dimensions.height !== 64)) {
-    throw new Error('Minecraft 皮肤必须为 64×64 PNG。')
+    throw new AssetInputError('Minecraft 皮肤必须为 64×64 PNG。')
   }
 
   const actor = await loadAssetActor(input.actorId)
-  if (!actor) throw new Error('账号不可用。')
+  if (!actor) throw new AssetInputError('账号不可用。')
   if (input.visibility === 'PUBLIC' && actor.role !== 'CREATOR' && actor.role !== 'ADMIN') {
-    throw new Error('只有创作者可以公开发布素材。')
+    throw new AssetInputError('只有创作者可以公开发布素材。')
   }
 
   const id = randomUUID()
