@@ -1,7 +1,7 @@
-import EditorEntry from '../components/editor-entry'
+import NextStudio from '../components/next-studio'
 
 export const metadata = { title: '衣橱选装 | CDPC' }
 
 export default function WardrobePage() {
-  return <EditorEntry mode="wardrobe" />
+  return <NextStudio mode="wardrobe" />
 }

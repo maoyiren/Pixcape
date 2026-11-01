@@ -1,7 +1,7 @@
-import EditorEntry from '../../components/editor-entry'
+import NextStudio from '../../components/next-studio'
 
 export const metadata = { title: '单品编辑 | 创作工作台 | CDPC' }
 
-export default function WorkbenchEditPage() {
-  return <EditorEntry mode="editor" />
+export default function WorkbenchRoute() {
+  return <NextStudio mode="editor" />
 }

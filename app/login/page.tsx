@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
   const adminEnabled = Boolean(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL)
 
   return (
-    <Container size="sm" py={{ base: 'md', sm: 'xl' }} className="cdpc-login-page">
+    <Container size="sm" py="xl" className="cdpc-login-page">
       <Stack gap="lg">
         <Stack gap={4}>
           <Text size="xs" fw={700} c="dimmed" tt="uppercase" lts={1.5}>CDPC ACCOUNT</Text>

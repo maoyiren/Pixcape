@@ -21,8 +21,14 @@ test('primary creation routes render their intended mode entry points', async ({
 
   for (const route of routes) {
     await page.goto(route.path)
-    await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
-    await expect(page.getByRole('link', { name: /打开/ })).toHaveAttribute('href', `/studio/?mode=${route.mode}`)
+    await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.mode)
+    if (route.mode === 'ai') {
+      await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible({ timeout: 15_000 })
+    } else if (route.mode === 'wardrobe') {
+      await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
+    } else {
+      await expect(page.getByText('角色预览')).toBeVisible()
+    }
   }
 })
 
@@ -35,7 +41,7 @@ test('workbench nested routes map to their intended workflows', async ({ page })
 
   for (const route of routes) {
     await page.goto(route.path)
-    await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
+    await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.path.endsWith('/ai') ? 'ai' : route.path.endsWith('/dress') ? 'wardrobe' : 'editor')
   }
 })
 
@@ -79,30 +85,6 @@ test('registration renders mobile layout without horizontal page overflow', asyn
   expect(hasOverflow).toBe(false)
 })
 
-test('Vite skin editor app starts and renders its interactive surface', async ({ page }) => {
-  await page.goto('http://127.0.0.1:5173/')
-  await expect(page.locator('#root')).toBeVisible()
-  await expect(page.getByText('Minecraft 皮肤与服装工作台')).toBeVisible()
-  await expect(page.getByText('角色预览')).toBeVisible()
-  await expect(page.getByRole('tab', { name: /披肩/ })).toBeVisible()
-  await expect(page.getByRole('tab', { name: /外套/ })).toBeVisible()
-  await expect(page.getByRole('tab', { name: /披风/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: '发送到 Blockbench 编辑' })).toBeVisible()
-})
-
-test('Vite AI route opens the actual AI creation interface', async ({ page }) => {
-  await page.goto('http://127.0.0.1:5173/?mode=ai')
-  await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
-  await expect(page.getByText('CDPC AI 工坊')).toBeVisible()
-})
-
-test('Vite wardrobe route opens outfit selection instead of the default shawl tab', async ({ page }) => {
-  await page.goto('http://127.0.0.1:5173/?mode=wardrobe')
-  await expect(page.getByText('Minecraft 皮肤与服装工作台')).toBeVisible()
-  await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
-})
-
-
 test('workbench remains usable at a narrow mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 })
   await page.goto('/workbench')
@@ -117,7 +99,6 @@ test('workbench remains usable at a narrow mobile viewport', async ({ page }) =>
   }))
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport + 1)
 })
-
 
 test('account entry points to the actual personal center route', async ({ page }) => {
   await page.goto('/')
