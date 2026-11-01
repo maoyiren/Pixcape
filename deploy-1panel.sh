@@ -38,12 +38,12 @@ if [[ -n "$CURRENT_ID" ]]; then
 fi
 
 ENV_BACKUP=""
-if [[ -f "$ENV_FILE" ]]; then
-  ENV_BACKUP="$(mktemp)"
-  cp -p "$ENV_FILE" "$ENV_BACKUP"
-else
-  touch "$ENV_FILE"
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo ".env is missing. Create it in the 1Panel project directory before enabling deployment." >&2
+  exit 1
 fi
+ENV_BACKUP="$(mktemp)"
+cp -p "$ENV_FILE" "$ENV_BACKUP"
 
 write_tag() {
   local tag="$1" tmp
@@ -82,6 +82,10 @@ rollback() {
   return "$status"
 }
 trap rollback EXIT
+
+if [[ -n "${CDPC_GHCR_USERNAME:-}" && -n "${CDPC_GHCR_TOKEN:-}" ]]; then
+  printf '%s' "$CDPC_GHCR_TOKEN" | docker login ghcr.io --username "$CDPC_GHCR_USERNAME" --password-stdin
+fi
 
 write_tag "$NEW_TAG"
 docker compose config -q
