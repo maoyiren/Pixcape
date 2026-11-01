@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { loadAssetActor } from '@/lib/asset-api'
-import { createOutfitForActor, listOutfitsForActor, OutfitInputSchema } from '@/lib/outfit-api'
+import { createOutfitForActor, listOutfitsForActor, OutfitInputError, OutfitInputSchema } from '@/lib/outfit-api'
 
 export const runtime = 'nodejs'
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const item = await createOutfitForActor(actor.id, parsed.data)
     return NextResponse.json({ item }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
-    const message = error instanceof Error ? error.message : '保存搭配失败。'
-    return NextResponse.json({ error: message }, { status: 400 })
+    if (error instanceof OutfitInputError) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ error: '保存搭配失败，请稍后重试。' }, { status: 500 })
   }
 }
