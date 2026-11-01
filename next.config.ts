@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // Playwright uses 127.0.0.1 for the Next.js dev server in CI.
+  allowedDevOrigins: ['127.0.0.1'],
   // Keep the current Vite production app intact until migration is verified.
   poweredByHeader: false,
   reactStrictMode: true,
