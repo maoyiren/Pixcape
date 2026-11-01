@@ -17,7 +17,7 @@ export default async function CreatorPage({ searchParams }: { searchParams?: Pro
   const params = await searchParams
 
   return (
-    <Container size="md" py={{ base: 'md', sm: 'xl' }} className="cdpc-creator-page">
+    <Container size="md" py="xl" className="cdpc-creator-page">
       <Stack gap="lg">
         <Group justify="space-between" align="flex-start" wrap="wrap">
           <Stack gap={4}>
