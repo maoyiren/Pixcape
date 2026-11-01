@@ -27,6 +27,9 @@
 | `CDPC_DEPLOY_SSH_KEY` | 对应用户的 SSH 私钥（仅私钥内容，不要提交到仓库） |
 | `CDPC_DEPLOY_PORT` | SSH 端口；默认 22 |
 | `CDPC_DEPLOY_PATH` | 1Panel 中 CDPC Compose 项目的实际目录，目录内应有当前生产环境的 `.env` |
+| `CDPC_DEPLOY_FINGERPRINT` | VPS SSH 主机公钥指纹，用于校验 SSH 主机身份 |
+| `CDPC_GHCR_USERNAME` | GHCR 拉取账号；仅私有镜像需要 |
+| `CDPC_GHCR_TOKEN` | 仅授予 `read:packages` 的 PAT；仅私有镜像需要 |
 
 部署用户需要有权限在该目录写入文件，并执行 Docker / Docker Compose。建议只授予必要的 Docker 管理权限；加入 docker 组本身等同于较高主机权限，请妥善保护 SSH 私钥。
 
@@ -35,9 +38,10 @@
 1. 在 1Panel V2 创建或确认 CDPC Compose 项目，使用本仓库的 `docker-compose.yml`。
 2. 将项目目录的实际绝对路径填入 `CDPC_DEPLOY_PATH`。不要猜测路径；可在 1Panel 项目详情中查看 Compose 文件所在目录。
 3. 保留并检查现有 `.env`。数据库连接、`NEXTAUTH_SECRET`、OAuth、AI API Key 等生产值继续保存在 1Panel 项目的 `.env`，不要放进 GitHub workflow。
-4. 当前 Compose 使用命名卷 `pixcape-data` 持久化 `/data`。不要删除该卷；生产数据库若为外部 PostgreSQL/MySQL，也要确保数据库本身有独立备份。
+4. 当前 Compose 使用命名卷 `pixcape-data` 持久化 `/data`。不要删除该卷；生产数据库若为外部 PostgreSQL/MySQL，也要确保数据库本身有独立备份。Compose 文件只拉取 GHCR 镜像，不在 VPS 本地构建。
 5. 确认服务器已安装 Docker Compose 插件，部署用户可以运行 `docker compose`。
-6. GHCR 若为私有包，在 VPS 上先用有 `read:packages` 权限的专用 GitHub Token 执行一次 `docker login ghcr.io`；建议将镜像包设为 Public，以避免服务器保存长期 Token。
+6. GHCR 若为私有包，在 GitHub Secrets 中设置 `CDPC_GHCR_USERNAME` 和 `CDPC_GHCR_TOKEN`；部署脚本会通过 stdin 登录，不会把 Token 写入 `.env`。若镜像包为 Public，可不设置这两个 Secret。
+7. 部署脚本会优先读取现有 `pixcape` 容器的 Compose project label，以沿用 1Panel 当前项目名和项目级命名卷；首次部署则使用项目目录名。不要在自动部署过程中更换项目目录或 Compose 项目名。
 
 ## 首次接入注意事项
 
@@ -57,6 +61,8 @@ docker compose config -q
 docker compose ps
 docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps -q pixcape)"
 ```
+
+默认容器端口映射为 VPS `8080` → 容器 `80`；如在 `.env` 中更改 `PIXELCAPE_PORT`，需同步修改 1Panel 网站反向代理目标。
 
 部署完成后检查：
 
