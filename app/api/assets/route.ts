@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import { loadAssetActor, saveAssetFile } from '@/lib/asset-api'
+import { AssetInputError, loadAssetActor, saveAssetFile } from '@/lib/asset-api'
 import { AssetCategorySchema, AssetVisibilitySchema } from '@/src/domain/asset'
 
 export const runtime = 'nodejs'
@@ -18,7 +18,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const category = url.searchParams.get('category')
   const cursor = url.searchParams.get('cursor')
-  const limit = Math.min(Math.max(Number(url.searchParams.get('limit') || 30), 1), 60)
+  const requestedLimit = Number(url.searchParams.get('limit') || 30)
+  const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(Math.trunc(requestedLimit), 1), 60) : 30
   const parsedCategory = category ? AssetCategorySchema.safeParse(category) : null
   if (parsedCategory && !parsedCategory.success) return NextResponse.json({ error: '素材分类无效。' }, { status: 400 })
 
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
     })
     return NextResponse.json({ item: { ...asset, fileUrl: `/api/assets/${asset.id}/file` } }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
-    const message = error instanceof Error ? error.message : '素材上传失败。'
-    return NextResponse.json({ error: message }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
+    if (error instanceof AssetInputError) return NextResponse.json({ error: error.message }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
+    return NextResponse.json({ error: '素材上传失败，请稍后重试。' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
 }
