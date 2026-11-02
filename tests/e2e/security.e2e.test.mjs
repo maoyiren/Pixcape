@@ -3,8 +3,39 @@ import assert from 'node:assert/strict'
 import { randomUUID, scryptSync } from 'node:crypto'
 import { PrismaClient } from '../../generated/prisma-postgresql/index.js'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { deflateSync } from 'node:zlib'
 
 const base = process.env.E2E_BASE_URL || 'http://127.0.0.1:3000'
+
+
+function pngChunk(type, data) {
+  const typeBytes = Buffer.from(type)
+  const length = Buffer.alloc(4)
+  length.writeUInt32BE(data.length)
+  let crc = 0xffffffff
+  for (const byte of Buffer.concat([typeBytes, data])) {
+    crc ^= byte
+    for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0)
+  }
+  const checksum = Buffer.alloc(4)
+  checksum.writeUInt32BE((crc ^ 0xffffffff) >>> 0)
+  return Buffer.concat([length, typeBytes, data, checksum])
+}
+
+function createTinyPng() {
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(1, 0)
+  header.writeUInt32BE(1, 4)
+  header[8] = 8
+  header[9] = 6
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk('IHDR', header),
+    pngChunk('IDAT', deflateSync(Buffer.from([0, 0, 0, 0, 0]))),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ])
+}
+
 
 test('security headers are sent on public pages', async () => {
   const response = await fetch(base, { redirect: 'manual' })
@@ -141,13 +172,35 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     ownerSession = await login(emails[0], '198.51.100.91')
     otherSession = await login(emails[1], '198.51.100.92')
 
+    const uploadForm = new FormData()
+    uploadForm.set('file', new File([createTinyPng()], 'shawl.png', { type: 'image/png' }))
+    uploadForm.set('category', 'SHAWL')
+    uploadForm.set('visibility', 'PRIVATE')
+    const upload = await fetch(new URL('/api/assets', base), { method: 'POST', headers: { cookie: ownerSession }, body: uploadForm })
+    assert.equal(upload.status, 201, `authenticated owner can upload PNG (got ${upload.status})`)
+    const { item: asset } = await upload.json()
+    assert.ok(asset.id)
+
     const ownerAssets = await fetch(new URL('/api/assets', base), { headers: { cookie: ownerSession } })
     assert.equal(ownerAssets.status, 200, 'authenticated owner can list own assets')
+    assert.ok((await ownerAssets.json()).items.some((entry) => entry.id === asset.id))
+
+    const ownerFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
+    assert.equal(ownerFile.status, 200, 'owner can read uploaded PNG')
+    assert.equal(Number(ownerFile.headers.get('content-length')), createTinyPng().length)
+
+    const otherAssets = await fetch(new URL('/api/assets', base), { headers: { cookie: otherSession } })
+    assert.equal(otherAssets.status, 200)
+    assert.ok(!(await otherAssets.json()).items.some((entry) => entry.id === asset.id))
+    const otherFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: otherSession } })
+    assert.equal(otherFile.status, 404)
+    const otherAssetDelete = await fetch(new URL(`/api/assets/${asset.id}`, base), { method: 'DELETE', headers: { cookie: otherSession } })
+    assert.equal(otherAssetDelete.status, 404)
 
     const create = await fetch(new URL('/api/outfits', base), {
       method: 'POST',
       headers: { cookie: ownerSession, 'content-type': 'application/json' },
-      body: JSON.stringify({ name: 'Private E2E outfit', items: [] }),
+      body: JSON.stringify({ name: 'Private E2E outfit', items: [{ assetId: asset.id, category: 'SHAWL', sortOrder: 0, equipped: true }] }),
     })
     assert.equal(create.status, 201)
     const { item } = await create.json()
@@ -175,13 +228,17 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     const update = await fetch(new URL(`/api/outfits/${item.id}`, base), {
       method: 'PUT',
       headers: { cookie: ownerSession, 'content-type': 'application/json' },
-      body: JSON.stringify({ name: 'Owner updated outfit', items: [] }),
+      body: JSON.stringify({ name: 'Owner updated outfit', items: [{ assetId: asset.id, category: 'SHAWL', sortOrder: 0, equipped: true }] }),
     })
     assert.equal(update.status, 200)
     assert.equal((await update.json()).item.name, 'Owner updated outfit')
 
     const remove = await fetch(new URL(`/api/outfits/${item.id}`, base), { method: 'DELETE', headers: { cookie: ownerSession } })
     assert.equal(remove.status, 200)
+    const deleteAsset = await fetch(new URL(`/api/assets/${asset.id}`, base), { method: 'DELETE', headers: { cookie: ownerSession } })
+    assert.equal(deleteAsset.status, 200)
+    const missingFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
+    assert.equal(missingFile.status, 404)
   } finally {
     await prisma.user.deleteMany({ where: { id: { in: userIds } } })
     await prisma.$disconnect()
