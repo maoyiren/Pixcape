@@ -75,7 +75,21 @@ export default function PixelCanvasEditor() {
   const composite = useMemo(() => {
     const result = blank()
     layers.forEach(layer => {
-      if (layer.visible) layer.pixels.forEach((pixel, index) => { if (pixel) result[index] = pixel })
+      if (!layer.visible || layer.opacity <= 0) return
+      layer.pixels.forEach((pixel, index) => {
+        if (!pixel) return
+        const match = /^#([0-9a-f]{6})$/i.exec(pixel)
+        if (!match) return
+        const source = [parseInt(match[1].slice(0, 2), 16), parseInt(match[1].slice(2, 4), 16), parseInt(match[1].slice(4, 6), 16)]
+        const previous = result[index]
+        const previousMatch = /^rgba\\((\\d+), (\\d+), (\\d+), ([0-9.]+)\\)$/.exec(previous)
+        const destination = previousMatch ? [Number(previousMatch[1]), Number(previousMatch[2]), Number(previousMatch[3])] : [0, 0, 0]
+        const destinationAlpha = previousMatch ? Number(previousMatch[4]) : 0
+        const sourceAlpha = layer.opacity / 100
+        const alpha = sourceAlpha + destinationAlpha * (1 - sourceAlpha)
+        const channels = source.map((value, channel) => Math.round((value * sourceAlpha + destination[channel] * destinationAlpha * (1 - sourceAlpha)) / alpha))
+        result[index] = 'rgba(' + channels.join(', ') + ', ' + alpha.toFixed(3) + ')'
+      })
     })
     return result
   }, [layers])
