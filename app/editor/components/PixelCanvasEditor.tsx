@@ -82,7 +82,7 @@ export default function PixelCanvasEditor() {
         if (!match) return
         const source = [parseInt(match[1].slice(0, 2), 16), parseInt(match[1].slice(2, 4), 16), parseInt(match[1].slice(4, 6), 16)]
         const previous = result[index]
-        const previousMatch = /^rgba\\((\\d+), (\\d+), (\\d+), ([0-9.]+)\\)$/.exec(previous)
+        const previousMatch = /^rgba\((\d+), (\d+), (\d+), ([0-9.]+)\)$/.exec(previous)
         const destination = previousMatch ? [Number(previousMatch[1]), Number(previousMatch[2]), Number(previousMatch[3])] : [0, 0, 0]
         const destinationAlpha = previousMatch ? Number(previousMatch[4]) : 0
         const sourceAlpha = layer.opacity / 100
