@@ -113,8 +113,28 @@ export async function deleteAssetForActor(assetId: string, actorId: string) {
     select: { id: true, storageKey: true },
   })
   if (!asset) return false
-  const deleted = await prisma.asset.deleteMany({ where: { id: assetId, ownerId: actorId } })
-  if (deleted.count !== 1) return false
-  await unlink(storagePath(asset.storageKey)).catch(() => undefined)
-  return true
+  const filePath = storagePath(asset.storageKey)
+  let backup: Buffer | null = null
+
+  // Remove the file before deleting its database row. If storage is unavailable,
+  // keep the asset record so the owner can retry instead of silently orphaning it.
+  try {
+    backup = await readFile(filePath)
+    await unlink(filePath)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+  }
+
+  try {
+    const deleted = await prisma.asset.deleteMany({ where: { id: assetId, ownerId: actorId } })
+    if (deleted.count !== 1) return false
+    return true
+  } catch (error) {
+    // Compensate for a failed database delete so the still-existing asset row
+    // does not point at a missing file. Never overwrite a file recreated meanwhile.
+    if (backup) {
+      await writeFile(filePath, backup, { flag: 'wx', mode: 0o600 }).catch(() => undefined)
+    }
+    throw error
+  }
 }
