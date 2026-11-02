@@ -19,6 +19,20 @@ The goal is to reduce custom code while preserving CDPC's product-specific data 
 
 ## Reuse decisions
 
+### Identity, authorization and cloud persistence (reuse first; do not rewrite)
+
+| Capability | Existing project / component | Decision |
+|---|---|---|
+| Login, OAuth, email/password, email link, sessions | [Auth.js / NextAuth](https://github.com/nextauthjs/next-auth) already installed as `next-auth` with `@next-auth/prisma-adapter` | Keep the existing provider/session system. Reuse its adapters and callbacks; fix and test current provider configuration rather than introducing a second identity provider or migrating accounts to Clerk/Auth0/Supabase. |
+| User and identity persistence | Existing Prisma `User`, `Account`, `Session`, `VerificationToken` models | Keep existing user IDs and provider account links. Do not replace the user database or create a parallel account table. |
+| Roles and permissions | Existing `UserRole` (`USER/CREATOR/ADMIN`), `UserStatus`, creator review status, owner-scoped API checks and `AuditLog`; optionally [CASL](https://github.com/stalniy/casl) (MIT) if a centralized policy engine is needed | First consolidate and test existing authorization helpers. Add CASL only if policy complexity warrants it; do not add a second RBAC database or duplicate role model. Enforce authorization on the server/API, not only by hiding UI. |
+| Cloud project/workspace save | Existing Prisma `Project` and `WorkspaceState`, authenticated workspace API, owner checks | Reuse these for structured project state, active tool, asset and outfit pointers. Extend with versioned document metadata only where required. |
+| Binary asset persistence | Existing `Asset` metadata + persistent `/data/assets` storage adapter and Docker volume | Keep the current filesystem adapter as a working self-hosted backend. Add an S3-compatible storage adapter using the AWS SDK for JavaScript v3 (Apache-2.0) when remote object storage is configured; support providers such as Cloudflare R2 or any S3-compatible service through environment variables. Keep storage keys opaque and files private by default. |
+| Sync, ownership and recovery | Existing Prisma transactions, per-user workspace state, owner-scoped asset/outfit APIs | Reuse the existing database and API boundary. Add optimistic versioning/conflict handling and save status only where the real multi-device workflow needs it; do not introduce a separate sync SaaS or proprietary lock-in. |
+
+Important: authentication answers *who signed in*; authorization answers *what that user may do*. Auth.js should not be treated as a complete permission system. Every read, write, delete, publication and admin action must perform server-side owner/role/status checks and be covered by cross-user tests.
+
+
 | Capability | Candidate | Decision |
 |---|---|---|
 | Minecraft skin 2D/3D editing, UV mapping, layers, history, 3D raycast painting | [Skin Anvil](https://github.com/spencerfrost/skin-anvil) | Highest-priority code audit. Repository describes a MIT-licensed React/Three.js/skinview3d engine. Extract/adapt focused engine modules only; do not bring its Vite app or Express proxy into CDPC. |
@@ -31,6 +45,10 @@ The goal is to reduce custom code while preserving CDPC's product-specific data 
 | Generic image processing | Sharp and small focused pixel-processing libraries | Prefer existing maintained libraries over hand-written pixel transforms. Audit each dependency and license before adding it. |
 
 ## License and integration guardrails
+
+6. Preserve the current Auth.js/NextAuth + Prisma identity stack and user IDs. A new identity SaaS is not justified while existing users and OAuth account links already live in the database.
+7. Keep cloud persistence provider-neutral: Prisma for structured records, an interchangeable filesystem/S3-compatible object storage adapter for binary assets, and per-user authorization at the API boundary. Never expose private storage keys as public URLs.
+8. Prefer existing Docker persistent-volume storage for the current deployment; S3/R2 is an optional backend, not a mandatory migration or a prerequisite for the editor workflow.
 
 1. MIT, Apache-2.0 and BSD-style dependencies are preferred, subject to preserving notices and checking all transitive dependencies and bundled assets.
 2. GPL/AGPL projects are research or separately deployed integrations by default. No source code is copied into CDPC until legal obligations and distribution/network-use implications have been reviewed.
@@ -53,13 +71,28 @@ The goal is to reduce custom code while preserving CDPC's product-specific data 
 - Persist the editable document through the authenticated workspace/asset APIs; do not rely on localStorage as the only save mechanism.
 - Restore a selected wardrobe skin into the editor and save the resulting PNG/document back to the same user's library.
 
-### R3 — Only then extend specialized features
+### R3 — Reuse and harden identity, permissions and cloud save
+- Keep Auth.js/NextAuth providers and Prisma adapter; test real email/password and configured OAuth/email-link providers.
+- Preserve existing User IDs, Account links, roles, status, sessions and admin bootstrap behavior.
+- Centralize server-side authorization helpers for owner, public/unlisted visibility, creator review state and admin operations. Add CASL only if it reduces duplication rather than adding complexity.
+- Complete authenticated cross-user tests for every asset, outfit, workspace and publication operation.
+- Persist editable project/layer documents through the existing WorkspaceState/Project and Asset APIs; retain the current persistent Docker volume.
+- Add an S3-compatible adapter behind the existing storage interface for optional R2/S3-compatible deployment; test upload, read, delete, private access and failure compensation.
+- Add save versioning/conflict protection and cross-device restore tests.
+
+### R4 — Only then extend specialized features
 - Pose and scene export (MC-Poser evaluation).
 - Bedrock geometry and pack conversion (format/license evaluation).
 - AI generation and image-to-skin post-processing (real output evaluation).
 - Creator publication and community workflows.
 
 ## Acceptance criteria
+
+- Existing accounts, OAuth provider links and user IDs remain unchanged; no parallel login stack is introduced.
+- User/creator/admin permissions are enforced server-side and tested against two separate authenticated users.
+- Project/workspace metadata persists in the existing Prisma database; binary assets persist on the Docker volume or configured S3-compatible backend.
+- Private assets cannot be fetched by another user by guessing IDs or storage keys.
+- A user can save, sign out, sign in on another device and restore the same editable document and outfit state.
 
 - The reused engine builds inside the existing Next.js app without a second Vite page runtime.
 - No duplicate 64x64 editing/UV logic remains without a documented reason.
