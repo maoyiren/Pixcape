@@ -85,6 +85,21 @@ The upstream repository's root `LICENSE` is MIT (copyright Spencer Frost); retai
 3. Add wardrobe-to-editor import and restore selected skin/outfit assets into the same editable document; save both document and flattened PNG.
 4. Only after dependency-tree verification, integrate UV raycasting using the exact Three.js instance owned by the active `skinview3d` runtime.
 
+## Wardrobe information architecture correction (2026-11-02)
+
+The previous `/wardrobe` page mixed a 3D viewer, garment selection, upload controls, favorites, outfit editing and cloud persistence in one screen. This blurred the boundary between collection management and the dress-up tool.
+
+The route now mounts `app/wardrobe/wardrobe-library.tsx`, a collection-first library inspired by Blessing Skin Server's skin-library organization:
+- left-side collection navigation for all assets, favorites, saved outfits and the distinct garment categories;
+- a searchable, consistent asset-card grid with pixel-art thumbnails and concise metadata;
+- one upload entry point with an explicit target category;
+- saved outfits are listed separately and open the dedicated `/dress-up` workspace;
+- no embedded 3D viewport or outfit-composition controls in the collection page.
+
+The dedicated `/dress-up` route remains the place to try on and compose a character outfit. `/editor` remains the place to edit a single asset. The previous `WardrobeWorkspace` implementation is retained temporarily as an unused file until build/browser validation and a reference audit confirm it can be safely removed; do not leave both implementations mounted.
+
+This is a structural/UI separation, not a claim that the complete Blessing Skin Server feature set has been ported. The current library still uses CDPC's authenticated asset/outfit APIs and should be extended with proper pagination, ownership-aware empty states, asset detail/actions and real cloud outfit previews after validation.
+
 ## Implementation order
 
 ### R1 — Skin Anvil engine comparison (next)
