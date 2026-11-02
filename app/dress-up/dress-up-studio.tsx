@@ -492,7 +492,7 @@ export default function DressUpStudio() {
           <h1>衣服选装</h1>
           <p>用真实 Minecraft 角色预览搭配。披肩、外套与披风分开管理；选装完成后可继续进入工作台编辑。</p>
         </div>
-        <Link className="cdpc-button cdpc-button-quiet" href="/studio">进入创作工坊 ↗</Link>
+        <Link className="cdpc-button cdpc-button-quiet" href="/workbench">进入创作工坊 ↗</Link>
       </header>
 
       <div className="dressup-layout">
