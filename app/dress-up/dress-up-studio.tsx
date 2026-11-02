@@ -228,7 +228,7 @@ export default function DressUpStudio() {
         context.drawImage(base, 0, 0, 64, 64)
         for (const item of selectedItems.filter(item => item.category !== '披风')) {
           const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
-          const overlay = await loadImage(ASSET_ROOT + textureName)
+          const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
           if (cancelled) return
           context.save()
           context.beginPath()
@@ -241,7 +241,7 @@ export default function DressUpStudio() {
         await viewer.loadSkin(canvas, { model: model === 'alex' ? 'slim' : 'default' })
         if (cancelled) return
         if (cape) {
-          await viewer.loadCape(ASSET_ROOT + cape.texture, { makeVisible: false })
+          await viewer.loadCape(cape.fileUrl || ASSET_ROOT + cape.texture, { makeVisible: false })
           if (cancelled) return
           viewer.playerObject.backEquipment = 'cape'
         } else {
