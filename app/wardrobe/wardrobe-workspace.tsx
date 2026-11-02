@@ -190,17 +190,6 @@ export default function WardrobeWorkspace() {
     setWorkspaceOutfitId(data.item?.activeOutfitId ?? null)
   }
 
-  useEffect(() => {
-    if (!workspaceLoaded || restoredWorkspace.current) return
-    if (!workspaceOutfitId) {
-      restoredWorkspace.current = true
-      return
-    }
-    const outfit = outfits.find((item) => item.id === workspaceOutfitId)
-    if (!outfit) return
-    restoredWorkspace.current = true
-    void loadOutfit(outfit)
-  }, [workspaceLoaded, workspaceOutfitId, outfits, assets])
 
   const toggleFavorite = async (asset: Asset) => {
     setError('')
@@ -336,6 +325,18 @@ export default function WardrobeWorkspace() {
     }
     setStatus(`已加载搭配：${outfit.name}`)
   }
+
+  useEffect(() => {
+    if (!workspaceLoaded || restoredWorkspace.current) return
+    if (!workspaceOutfitId) {
+      restoredWorkspace.current = true
+      return
+    }
+    const outfit = outfits.find((item) => item.id === workspaceOutfitId)
+    if (!outfit) return
+    restoredWorkspace.current = true
+    void loadOutfit(outfit)
+  }, [workspaceLoaded, workspaceOutfitId, outfits, assets])
 
   const deleteOutfit = async () => {
     if (!activeOutfit) return
