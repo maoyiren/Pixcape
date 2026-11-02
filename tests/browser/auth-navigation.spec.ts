@@ -56,7 +56,15 @@ test('native AI studio exposes text and image generation controls', async ({ pag
 
 
 test('AI-generated skin can be saved into the shared wardrobe and workspace', async ({ page }) => {
-  const pngDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/XioAAAAASUVORK5CYII='
+  const pngDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#123456'
+    context.fillRect(0, 0, 64, 64)
+    return canvas.toDataURL('image/png')
+  })
   let savedAsset: Record<string, unknown> | null = null
   let savedWorkspace: Record<string, unknown> | null = null
   await page.route('**/api/ai/models', route => route.fulfill({
@@ -73,9 +81,12 @@ test('AI-generated skin can be saved into the shared wardrobe and workspace', as
     savedAsset = { received: Boolean(form), category: 'SKIN', visibility: 'PRIVATE' }
     await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: { id: 'asset-ai-demo' } }) })
   })
+  await page.route('**/api/assets/asset-ai-demo/file', route => route.fulfill({
+    status: 200, contentType: 'image/png', body: Buffer.from(pngDataUrl.split(',')[1], 'base64'),
+  }))
   await page.route('**/api/workspace', async route => {
     if (route.request().method() === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedWorkspace ?? {
         projectId: 'project-demo', activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-demo',
       } }) })
       return
@@ -94,6 +105,10 @@ test('AI-generated skin can be saved into the shared wardrobe and workspace', as
     projectId: 'project-demo', activeTool: 'AI_GENERATOR', activeAssetId: 'asset-ai-demo', activeOutfitId: 'outfit-demo',
   })
   await expect(page.getByRole('link', { name: '打开衣橱' })).toHaveAttribute('href', '/wardrobe')
+
+  await page.goto('/editor')
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect.poll(() => canvas.evaluate(element => (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data[2])).toBe(86)
 })
 
 test('workbench nested routes map to their intended workflows', async ({ page }) => {
