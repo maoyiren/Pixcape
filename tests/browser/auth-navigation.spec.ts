@@ -129,3 +129,31 @@ test('legacy dress-up URL redirects to the canonical wardrobe', async ({ page })
   await expect(page.getByRole('tab', { name: /外套/ })).toBeVisible()
   await expect(page.getByRole('tab', { name: /披风/ })).toBeVisible()
 })
+
+
+test('opening the pixel editor persists the current workspace handoff', async ({ page }) => {
+  let savedPointer: Record<string, unknown> | null = null
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: 'project-demo', activeTool: 'WARDROBE', activeAssetId: 'asset-demo', activeOutfitId: 'outfit-demo',
+      } }) })
+      return
+    }
+    if (route.request().method() === 'PUT') {
+      savedPointer = route.request().postDataJSON() as Record<string, unknown>
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedPointer }) })
+      return
+    }
+    await route.continue()
+  })
+
+  await page.goto('/editor')
+  await expect(page.locator('[data-studio-mode="editor"]')).toBeVisible()
+  await expect.poll(() => savedPointer).toEqual({
+    projectId: 'project-demo',
+    activeTool: 'PIXEL_EDITOR',
+    activeAssetId: 'asset-demo',
+    activeOutfitId: 'outfit-demo',
+  })
+})
