@@ -72,3 +72,28 @@ test('preserves the original database error when upload cleanup succeeds', async
     (error) => error === databaseError,
   )
 })
+
+test('does not delete the database row when file removal fails', async () => withAssetFile(async ({ filePath }) => {
+  let databaseCalled = false
+  await assert.rejects(deleteStoredAsset(filePath, async () => {
+    databaseCalled = true
+    return 1
+  }, {
+    readFile,
+    unlink: async () => { throw Object.assign(new Error('permission denied'), { code: 'EACCES' }) },
+    writeFile,
+  }), /permission denied/)
+  assert.equal(databaseCalled, false)
+}))
+
+test('allows metadata cleanup when the file is already missing', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'cdpc-asset-storage-'))
+  const filePath = path.join(directory, 'already-missing.png')
+  let databaseCalled = false
+  try {
+    assert.equal(await deleteStoredAsset(filePath, async () => { databaseCalled = true; return 1 }), true)
+    assert.equal(databaseCalled, true)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
