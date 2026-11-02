@@ -183,7 +183,24 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
 
     const ownerAssets = await fetch(new URL('/api/assets', base), { headers: { cookie: ownerSession } })
     assert.equal(ownerAssets.status, 200, 'authenticated owner can list own assets')
-    assert.ok((await ownerAssets.json()).items.some((entry) => entry.id === asset.id))
+    const ownerAssetItems = (await ownerAssets.json()).items
+    assert.ok(ownerAssetItems.some((entry) => entry.id === asset.id))
+    assert.equal(ownerAssetItems.find((entry) => entry.id === asset.id).isFavorite, false)
+
+    const favorite = await fetch(new URL(`/api/assets/${asset.id}/favorite`, base), {
+      method: 'PUT', headers: { cookie: ownerSession },
+    })
+    assert.equal(favorite.status, 200, 'owner can favorite an accessible asset')
+    assert.equal((await favorite.json()).favorited, true)
+    const favoriteAgain = await fetch(new URL(`/api/assets/${asset.id}/favorite`, base), {
+      method: 'PUT', headers: { cookie: ownerSession },
+    })
+    assert.equal(favoriteAgain.status, 200, 'favoriting twice is idempotent')
+
+    const otherFavoritePrivate = await fetch(new URL(`/api/assets/${asset.id}/favorite`, base), {
+      method: 'PUT', headers: { cookie: otherSession },
+    })
+    assert.equal(otherFavoritePrivate.status, 404, 'another user cannot favorite a private asset')
 
     const ownerFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
     assert.equal(ownerFile.status, 200, 'owner can read uploaded PNG')
@@ -235,6 +252,15 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
 
     const remove = await fetch(new URL(`/api/outfits/${item.id}`, base), { method: 'DELETE', headers: { cookie: ownerSession } })
     assert.equal(remove.status, 200)
+    const unFavorite = await fetch(new URL(`/api/assets/${asset.id}/favorite`, base), {
+      method: 'DELETE', headers: { cookie: ownerSession },
+    })
+    assert.equal(unFavorite.status, 200)
+    assert.equal((await unFavorite.json()).favorited, false)
+    const ownerAssetsAfterUnfavorite = await fetch(new URL('/api/assets', base), { headers: { cookie: ownerSession } })
+    const ownerAssetAfterUnfavorite = (await ownerAssetsAfterUnfavorite.json()).items.find((entry) => entry.id === asset.id)
+    assert.equal(ownerAssetAfterUnfavorite.isFavorite, false)
+
     const deleteAsset = await fetch(new URL(`/api/assets/${asset.id}`, base), { method: 'DELETE', headers: { cookie: ownerSession } })
     assert.equal(deleteAsset.status, 200)
     const missingFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
