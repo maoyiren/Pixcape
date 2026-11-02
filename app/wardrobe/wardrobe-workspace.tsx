@@ -13,6 +13,7 @@ type Asset = {
   attribution: string | null
   fileUrl: string
   createdAt: string
+  isFavorite: boolean
 }
 type Outfit = {
   id: string
@@ -169,6 +170,22 @@ export default function WardrobeWorkspace() {
 
   const visibleAssets = assets.filter((asset) => category === 'ALL' || asset.category === category)
 
+  const toggleFavorite = async (asset: Asset) => {
+    setError('')
+    try {
+      const response = await fetch(`/api/assets/${asset.id}/favorite`, {
+        method: asset.isFavorite ? 'DELETE' : 'PUT',
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || '更新收藏失败')
+      setAssets((current) => current.map((item) => item.id === asset.id
+        ? { ...item, isFavorite: Boolean(data.favorited) }
+        : item))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '更新收藏失败')
+    }
+  }
+
   const toggleAsset = (asset: Asset) => {
     if (!asset.category) return
     setSelected((current) => {
@@ -315,7 +332,9 @@ export default function WardrobeWorkspace() {
         button.primary{background:#2563eb;border-color:#2563eb;color:white}
         button.active{border-color:#60a5fa;background:rgba(37,99,235,.2)}
         .asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:9px;margin-top:12px;max-height:510px;overflow:auto}
-        .asset{display:flex;flex-direction:column;gap:8px;text-align:left;padding:8px;min-width:0}
+        .asset-card{display:flex;flex-direction:column;gap:5px;min-width:0}
+        .asset{display:flex;flex-direction:column;gap:8px;text-align:left;padding:8px;min-width:0;width:100%}
+        .favorite{font-size:12px;padding:5px 8px;align-self:flex-end}
         .asset img{width:100%;aspect-ratio:1;object-fit:contain;image-rendering:pixelated;background:#0b1220;border-radius:6px}
         .asset small{color:var(--mantine-color-dimmed,#94a3b8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .section-title{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -344,7 +363,7 @@ export default function WardrobeWorkspace() {
           <div className="section-title"><h2>云端素材库</h2><span className="status">{assets.length} 件素材</span></div>
           <div className="toolbar"><select className="select" value={uploadCategory} onChange={(event) => setUploadCategory(event.target.value as Category)} aria-label="上传素材分类">{CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><label className="primary" style={{borderRadius:9,padding:'9px 12px',cursor:'pointer'}}>上传 PNG<input type="file" accept="image/png" hidden disabled={busy} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = '' }} /></label></div>
           <div className="toolbar" role="tablist" aria-label="素材分类">{[{value:'ALL',label:'全部'},...CATEGORIES].map((item) => <button key={item.value} type="button" role="tab" aria-selected={category === item.value} className={category === item.value ? 'active' : ''} onClick={() => setCategory(item.value as Category | 'ALL')}>{item.label}</button>)}</div>
-          <div className="asset-grid">{visibleAssets.map((asset) => <button key={asset.id} className={selected[asset.category || '']?.id === asset.id ? 'asset active' : 'asset'} onClick={() => toggleAsset(asset)}><img src={asset.fileUrl} alt="" /><strong>{CATEGORIES.find((item) => item.value === asset.category)?.label || '未分类'}</strong><small>{asset.attribution || asset.id.slice(0, 10)}</small></button>)}</div>
+          <div className="asset-grid">{visibleAssets.map((asset) => <div key={asset.id} className="asset-card"><button className={selected[asset.category || '']?.id === asset.id ? 'asset active' : 'asset'} onClick={() => toggleAsset(asset)}><img src={asset.fileUrl} alt="" /><strong>{CATEGORIES.find((item) => item.value === asset.category)?.label || '未分类'}</strong><small>{asset.attribution || asset.id.slice(0, 10)}</small></button><button type="button" className="favorite" aria-label={asset.isFavorite ? '取消收藏' : '收藏素材'} aria-pressed={asset.isFavorite} onClick={() => void toggleFavorite(asset)}>{asset.isFavorite ? '★ 已收藏' : '☆ 收藏'}</button></div>)}</div>
           {!visibleAssets.length && <p className="status">暂无素材。可以先上传 64×64 皮肤 PNG 或服装贴图。</p>}
         </section>
       </div>
