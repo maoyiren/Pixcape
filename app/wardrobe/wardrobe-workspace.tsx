@@ -56,6 +56,7 @@ export default function WardrobeWorkspace() {
   const [activeOutfit, setActiveOutfit] = useState('')
   const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null)
   const [workspaceOutfitId, setWorkspaceOutfitId] = useState<string | null>(null)
+  const [workspaceAssetId, setWorkspaceAssetId] = useState<string | null>(null)
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false)
   const restoredWorkspace = useRef(false)
   const [uploadCategory, setUploadCategory] = useState<Category>('SHAWL')
@@ -81,6 +82,7 @@ export default function WardrobeWorkspace() {
     setOutfits(Array.isArray(outfitData.items) ? outfitData.items : [])
     setWorkspaceProjectId(workspaceData.item?.projectId ?? null)
     setWorkspaceOutfitId(workspaceData.item?.activeOutfitId ?? null)
+    setWorkspaceAssetId(workspaceData.item?.activeAssetId ?? null)
     setWorkspaceLoaded(true)
     setStatus('云端素材库与工作区状态已就绪')
   }, [])
@@ -188,6 +190,7 @@ export default function WardrobeWorkspace() {
     const data = await response.json()
     if (!response.ok) throw new Error(data.error || '保存工作区状态失败')
     setWorkspaceOutfitId(data.item?.activeOutfitId ?? null)
+    setWorkspaceAssetId(data.item?.activeAssetId ?? null)
   }
 
 
@@ -209,11 +212,13 @@ export default function WardrobeWorkspace() {
 
   const toggleAsset = (asset: Asset) => {
     if (!asset.category) return
-    setSelected((current) => {
-      const next = { ...current }
-      if (next[asset.category!]?.id === asset.id) delete next[asset.category!]
-      else next[asset.category!] = asset
-      return next
+    const next = { ...selected }
+    if (next[asset.category]?.id === asset.id) delete next[asset.category]
+    else next[asset.category] = asset
+    setSelected(next)
+    const activeAssetId = next[asset.category]?.id ?? null
+    void persistWorkspace(activeAssetId, workspaceOutfitId).catch((cause) => {
+      setError(cause instanceof Error ? cause.message : '保存当前素材状态失败')
     })
   }
 
@@ -272,7 +277,7 @@ export default function WardrobeWorkspace() {
     }
   }
 
-  const loadOutfit = async (outfit: Outfit) => {
+  const loadOutfit = async (outfit: Outfit, persist = true) => {
     const requiredIds = [...new Set([
       ...(outfit.skinAssetId ? [outfit.skinAssetId] : []),
       ...outfit.items.filter((item) => item.equipped).map((item) => item.assetId),
@@ -318,25 +323,28 @@ export default function WardrobeWorkspace() {
     setOutfitName(outfit.name)
     setActiveOutfit(outfit.id)
     setWorkspaceOutfitId(outfit.id)
-    try {
-      await persistWorkspace(outfit.skinAssetId ?? outfit.items.find((item) => item.equipped)?.assetId ?? null, outfit.id)
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '保存工作区状态失败')
+    if (persist) {
+      try {
+        await persistWorkspace(workspaceAssetId, outfit.id)
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : '保存工作区状态失败')
+      }
     }
     setStatus(`已加载搭配：${outfit.name}`)
   }
 
   useEffect(() => {
     if (!workspaceLoaded || restoredWorkspace.current) return
-    if (!workspaceOutfitId) {
-      restoredWorkspace.current = true
-      return
-    }
-    const outfit = outfits.find((item) => item.id === workspaceOutfitId)
-    if (!outfit) return
+    const outfit = workspaceOutfitId ? outfits.find((item) => item.id === workspaceOutfitId) : undefined
+    if (workspaceOutfitId && !outfit) return
+    const asset = workspaceAssetId ? assets.find((item) => item.id === workspaceAssetId) : undefined
+    if (workspaceAssetId && !asset && !outfit) return
     restoredWorkspace.current = true
-    void loadOutfit(outfit)
-  }, [workspaceLoaded, workspaceOutfitId, outfits, loadOutfit])
+    void (async () => {
+      if (outfit) await loadOutfit(outfit, false)
+      if (asset?.category) setSelected((current) => ({ ...current, [asset.category as Category]: asset }))
+    })()
+  }, [workspaceLoaded, workspaceOutfitId, workspaceAssetId, outfits, assets, loadOutfit])
 
   const deleteOutfit = async () => {
     if (!activeOutfit) return
