@@ -128,6 +128,91 @@ test('workbench nested routes map to their intended workflows', async ({ page })
   }
 })
 
+
+test('3D studio saves selected garments as cloud assets and an account outfit', async ({ page }) => {
+  const pngDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#345678'
+    context.fillRect(0, 0, 64, 64)
+    return canvas.toDataURL('image/png')
+  })
+  const pngBytes = Buffer.from(pngDataUrl.split(',')[1], 'base64')
+  let outfitInput: Record<string, unknown> | null = null
+  let savedOutfit: Record<string, any> | null = null
+  let assetUploadCount = 0
+
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
+    status: 200,
+    contentType: 'image/png',
+    headers: { 'Access-Control-Allow-Origin': '*' },
+    body: pngBytes,
+  }))
+  await page.route('**/api/assets*', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'POST' && url.pathname === '/api/assets') {
+      assetUploadCount += 1
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({
+        item: { id: 'asset-shawl-cloud', fileUrl: '/api/assets/asset-shawl-cloud/file' },
+      }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname === '/api/assets') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+        id: 'asset-shawl-cloud', category: 'SHAWL', attribution: '眼眸花披肩',
+        fileUrl: '/api/assets/asset-shawl-cloud/file', isFavorite: false,
+      }], nextCursor: null }) })
+      return
+    }
+    await route.continue()
+  })
+  await page.route('**/api/outfits', async route => {
+    if (route.request().method() === 'POST') {
+      outfitInput = route.request().postDataJSON() as Record<string, unknown>
+      savedOutfit = {
+        id: 'outfit-cloud-demo',
+        name: outfitInput.name,
+        skinAssetId: outfitInput.skinAssetId,
+        skinModel: outfitInput.skinModel,
+        background: outfitInput.background,
+        updatedAt: new Date().toISOString(),
+        items: (outfitInput.items as Array<Record<string, unknown>>).map(item => ({
+          assetId: item.assetId, category: item.category, sortOrder: item.sortOrder, equipped: item.equipped,
+        })),
+      }
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: { id: 'outfit-cloud-demo' } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: savedOutfit ? [savedOutfit] : [] }) })
+  })
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: route.request().postDataJSON() }) })
+  })
+
+  await page.goto('/dress-up')
+  await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+  await page.getByRole('button', { name: '披肩', exact: true }).click()
+  await page.getByRole('button', { name: /眼眸花披肩/ }).click()
+  await page.getByLabel('穿搭名称').fill('云端披肩测试')
+  await page.getByRole('button', { name: '保存到账号云端' }).click()
+  await expect(page.getByText(/已保存到账号云端/)).toBeVisible()
+  expect(assetUploadCount).toBe(1)
+  expect(outfitInput).toMatchObject({
+    name: '云端披肩测试',
+    skinModel: 'CLASSIC',
+    items: [{ assetId: 'asset-shawl-cloud', category: 'SHAWL', sortOrder: 0, equipped: true }],
+  })
+})
+
 test('login page exposes email credentials and account registration', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
