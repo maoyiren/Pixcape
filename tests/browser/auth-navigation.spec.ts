@@ -120,7 +120,10 @@ test('workbench nested routes map to their intended workflows', async ({ page })
 
   for (const route of routes) {
     await page.goto(route.path)
-    if ('canonical' in route && route.canonical) await expect(page).toHaveURL(new RegExp(route.canonical.replace('/', '\\/')))
+    if ('canonical' in route && route.canonical) {
+      await expect(page).toHaveURL(new RegExp(route.canonical.replace('/', '\\/')))
+      await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+    }
     await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.path.endsWith('/ai') ? 'ai' : route.path.endsWith('/dress') ? 'dress-up' : 'editor')
   }
 })
