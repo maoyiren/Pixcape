@@ -66,6 +66,64 @@ export default function PixelCanvasEditor() {
     if (!activeId && layers[0]) setActiveId(layers[0].id)
   }, [activeId, layers])
 
+  // Restore the server-selected wardrobe asset when entering the editor.
+  // LocalStorage remains an offline draft cache, not the cross-tool source of truth.
+  useEffect(() => {
+    if (!loaded) return
+    const controller = new AbortController()
+    const restore = async () => {
+      try {
+        const workspaceResponse = await fetch('/api/workspace', {
+          cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
+        })
+        if (!workspaceResponse.ok) return
+        const workspace = await workspaceResponse.json() as { item?: { activeAssetId?: string | null } }
+        const assetId = workspace.item?.activeAssetId
+        if (!assetId) return
+        const assetResponse = await fetch(`/api/assets/${encodeURIComponent(assetId)}/file`, {
+          cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
+        })
+        if (!assetResponse.ok) {
+          setStatus('当前工作区素材无法读取，请检查衣橱权限或重新选择素材')
+          return
+        }
+        const bitmap = await createImageBitmap(await assetResponse.blob())
+        try {
+          if (bitmap.width !== SIZE || bitmap.height !== SIZE) {
+            setStatus('当前素材不是 64×64 皮肤，不能载入皮肤像素画布')
+            return
+          }
+          const source = document.createElement('canvas')
+          source.width = SIZE
+          source.height = SIZE
+          const context = source.getContext('2d', { willReadFrequently: true })
+          if (!context) throw new Error('无法读取皮肤像素')
+          context.drawImage(bitmap, 0, 0)
+          const rgba = context.getImageData(0, 0, SIZE, SIZE).data
+          const pixels = Array.from({ length: SIZE * SIZE }, (_, index) => {
+            const offset = index * 4
+            if (rgba[offset + 3] === 0) return ''
+            return '#' + [rgba[offset], rgba[offset + 1], rgba[offset + 2]]
+              .map(value => value.toString(16).padStart(2, '0')).join('')
+          })
+          const layer = { id: crypto.randomUUID(), name: '衣橱素材', visible: true, opacity: 100, pixels }
+          setLayers([layer])
+          setActiveId(layer.id)
+          setHistory([])
+          setFuture([])
+          setStatus('已从衣橱载入当前皮肤，可继续编辑')
+        } finally {
+          bitmap.close()
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return
+        setStatus(error instanceof Error ? `素材恢复失败：${error.message}` : '素材恢复失败')
+      }
+    }
+    void restore()
+    return () => controller.abort()
+  }, [loaded])
+
   useEffect(() => {
     if (loaded) {
       try { localStorage.setItem('cdpc-pixel-editor-v1', JSON.stringify({ layers, activeId })) }
