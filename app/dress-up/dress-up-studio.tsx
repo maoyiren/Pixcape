@@ -128,6 +128,24 @@ export default function DressUpStudio() {
       }
     })
     setSavedOutfits(current => [...current.filter(item => !item.cloud), ...cloud])
+    const workspaceResponse = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
+    if (workspaceResponse.ok) {
+      const workspace = await workspaceResponse.json()
+      const activeOutfit = cloud.find(item => item.id === workspace.item?.activeOutfitId)
+      if (activeOutfit?.assetItems) {
+        setSelected(activeOutfit.assetItems.reduce<Record<string, CatalogItem>>((items, item) => {
+          items[item.category] = item
+          return items
+        }, {}))
+        setSkinUrl(activeOutfit.skinAssetUrl || BASE_SKIN)
+        setSkinName(activeOutfit.skinName || 'Steve 默认皮肤')
+        setModel(activeOutfit.model)
+        setBackground(activeOutfit.background)
+        setOutfitName(activeOutfit.name)
+        setSelectedSavedOutfitId(activeOutfit.id)
+        setSaveNotice(`已从衣橱恢复云端穿搭“${activeOutfit.name}”`)
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -184,6 +202,7 @@ export default function DressUpStudio() {
         })
         if (!workspaceResponse.ok) return
         const workspace = await workspaceResponse.json()
+        if (workspace.item?.activeOutfitId) return
         const assetId = workspace.item?.activeAssetId
         if (!assetId) return
         const assetResponse = await fetch('/api/assets?ids=' + encodeURIComponent(assetId), {
