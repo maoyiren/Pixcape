@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 type Category = 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE' | 'HAT' | 'PANTS' | 'SHOES' | 'OTHER_ACCESSORY'
@@ -33,6 +34,7 @@ const categoryLabel = (value: Category | null) =>
   categories.find((item) => item.value === value)?.label ?? '未分类'
 
 export default function WardrobeLibrary() {
+  const router = useRouter()
   const [assets, setAssets] = useState<Asset[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -119,6 +121,36 @@ export default function WardrobeLibrary() {
       setAssets((current) => current.map((item) => item.id === asset.id ? { ...item, isFavorite: Boolean(data.favorited) } : item))
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '更新收藏失败')
+    }
+  }
+
+
+  const openInDressUp = async (asset: Asset) => {
+    if (!asset.category || !['SKIN', 'SHAWL', 'COAT', 'CAPE'].includes(asset.category)) {
+      setError('该素材分类尚未接入当前 3D 换装工作台')
+      return
+    }
+    try {
+      const current = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
+      if (!current.ok) throw new Error(current.status === 401 ? '请先登录后再使用云端素材' : '无法读取当前工作区')
+      const workspace = await current.json()
+      const response = await fetch('/api/workspace', {
+        method: 'PUT',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: workspace.item?.projectId ?? null,
+          activeTool: 'WARDROBE',
+          activeAssetId: asset.id,
+          activeOutfitId: workspace.item?.activeOutfitId ?? null,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || '素材交接失败')
+      router.push('/dress-up')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '无法将素材交给 3D 换装工作台')
     }
   }
 
@@ -241,6 +273,7 @@ export default function WardrobeLibrary() {
                   <span className="asset-date">{asset.width && asset.height ? `${asset.width} × ${asset.height}` : 'PNG 素材'}</span>
                   <button className="favorite" type="button" aria-label={asset.isFavorite ? '取消收藏' : '收藏素材'} aria-pressed={asset.isFavorite} onClick={() => void toggleFavorite(asset)}>{asset.isFavorite ? '★' : '☆'}</button>
                 </div>
+                {asset.category && ['SKIN', 'SHAWL', 'COAT', 'CAPE'].includes(asset.category) && <button className="action" type="button" onClick={() => void openInDressUp(asset)}>在 3D 换装中使用</button>}
               </div>
             </article>)}</div>
           ) : (
