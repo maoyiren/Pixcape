@@ -4,6 +4,7 @@ import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { AssetInputError, loadAssetActor, saveAssetFile } from '@/lib/asset-api'
 import { AssetCategorySchema, AssetVisibilitySchema } from '@/src/domain/asset'
+import { readRequestBodyWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
 
@@ -60,7 +61,9 @@ export async function POST(request: Request) {
   if (!actor) return NextResponse.json({ error: '账号不可用。' }, { status: 403 })
 
   try {
-    const form = await request.formData()
+    const body = await readRequestBodyWithLimit(request.body, MAX_MULTIPART_BYTES)
+    const boundedRequest = new Request(request.url, { method: 'POST', headers: request.headers, body })
+    const form = await boundedRequest.formData()
     const file = form.get('file')
     const category = AssetCategorySchema.safeParse(form.get('category'))
     const visibility = AssetVisibilitySchema.safeParse(form.get('visibility') || 'PRIVATE')
@@ -78,6 +81,7 @@ export async function POST(request: Request) {
     })
     return NextResponse.json({ item: { ...asset, fileUrl: `/api/assets/${asset.id}/file` } }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return NextResponse.json({ error: '上传请求不能超过 9 MB。' }, { status: 413, headers: { 'Cache-Control': 'no-store' } })
     if (error instanceof AssetInputError) return NextResponse.json({ error: error.message }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
     return NextResponse.json({ error: '素材上传失败，请稍后重试。' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
