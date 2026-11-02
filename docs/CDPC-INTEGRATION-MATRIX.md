@@ -64,7 +64,7 @@ Publication ── immutable content snapshot + moderation / comments / reaction
 | `/workbench` | 项目与创作工具入口，不复制工具本身 | Project、WorkspaceState | 跳转 AI/编辑器/换装 |
 | `/workbench/ai` | 兼容入口，复用 `/ai` | 同一 AI 任务状态 | 同上 |
 | `/workbench/edit` | 兼容入口，复用 `/editor` | 同一 EditorDocument | 同上 |
-| `/workbench/dress` | 兼容入口；当前仍挂载旧 WardrobeWorkspace | 必须与 3D 换装共享状态 | 统一前不能删除旧实现 |
+| `/workbench/dress` | 兼容入口，服务端重定向到唯一 `/dress-up` 3D 工作台 | 与 `/dress-up` 完全共享路由和状态 | 旧 `WardrobeWorkspace` 组件暂留代码库，但不再作为该入口的活动页面 |
 | `/creator` | 创作者资料、作品和发布管理 | CreatorProfile、Publication | 社区公开详情 |
 | `/admin` | 管理用户、审核、统计和配置 | 服务端 RBAC、AuditLog、真实业务数据 | 管理操作审计 |
 
@@ -101,7 +101,7 @@ Publication ── immutable content snapshot + moderation / comments / reaction
 2. **角色实体缺失**：当前 schema 没有 Character；Outfit 也没有 characterId。多角色管理和角色级穿搭隔离尚不能实现。
 3. **工作区只保存指针**：`WorkspaceState` 只有 project/activeTool/activeAsset/activeOutfit；编辑器图层 JSON 仍保存在浏览器 LocalStorage。
 4. **换装状态保存粒度不足**：旧 `WardrobeWorkspace` 选择单个素材时仅更新 activeAssetId；完整 selected map 需通过 Outfit 保存。未保存的多部位组合不能跨设备恢复。
-5. **衣橱和 3D 换装职责分裂**：`/wardrobe` 新页面是素材集合视图；`/dress-up` 和 `/workbench/dress` 仍有不同工作台实现。旧工作台必须在功能等价与数据恢复验证后再下线。
+5. **衣橱和 3D 换装职责**：已将 `/wardrobe` 定位为素材集合视图、`/dress-up` 定位为唯一 3D 工作台，并将 `/workbench/dress` 改为兼容重定向，避免两套活动换装页面分叉。旧 `WardrobeWorkspace` 源码暂时保留，需等所有依赖审计后再删除。
 6. **服装渲染语义未闭环**：旧工作台把除披风外的服装图像直接按 64×64 全图叠加到皮肤；这不能替代披肩/外套各自正确的 UV 区域、层级、透明度和 3D 几何规则。不可将“素材显示在列表”视为“服装正确穿戴”。
 7. **AI 与统一资产关系**：已新增“保存到我的衣橱”操作：生成的标准皮肤 PNG 经现有受鉴权的 `/api/assets` 校验并写入统一 Asset，再更新 WorkspaceState.activeAssetId；当前 source 仍按真实入口记为 `UPLOAD`，署名注明 AI 供应商/模型，不伪造 `AI_GENERATION` 来源。真正的 GenerationTask、服务端生成证明与 Project lineage 仍待实现。
 8. **编辑器云端文档缺失**：当前像素编辑器自动保存 LocalStorage；必须新增服务端 EditorDocument 保存/恢复。已新增跨工具恢复：进入编辑器后读取 WorkspaceState.activeAssetId，鉴权获取对应 64×64 PNG 并载入像素画布；编辑器保存后也会更新 activeAssetId。完整图层文档仍未云端持久化。
