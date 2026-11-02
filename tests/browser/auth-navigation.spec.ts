@@ -6,7 +6,7 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 创作' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '单品编辑器' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣橱' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
@@ -16,7 +16,8 @@ test('primary creation routes render their intended mode entry points', async ({
   const routes = [
     { path: '/ai', heading: 'AI 生成', mode: 'ai' },
     { path: '/editor', heading: '单品编辑器', mode: 'editor' },
-    { path: '/wardrobe', heading: '衣橱选装', mode: 'wardrobe' },
+    { path: '/wardrobe', heading: '我的衣橱', mode: 'wardrobe' },
+    { path: '/dress-up', heading: '衣服选装', mode: 'dress-up' },
   ]
 
   for (const route of routes) {
@@ -25,7 +26,11 @@ test('primary creation routes render their intended mode entry points', async ({
     if (route.mode === 'ai') {
       await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible({ timeout: 15_000 })
     } else if (route.mode === 'wardrobe') {
-      await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
+      await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
+      await expect(page.getByText('皮肤与服装素材')).toBeVisible()
+    } else if (route.mode === 'dress-up') {
+      await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
+      await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
     } else {
       await expect(page.getByRole('heading', { name: '64 × 64 像素编辑器' })).toBeVisible()
       await expect(page.getByLabel('64 乘 64 像素画布')).toBeVisible()
@@ -52,7 +57,7 @@ test('workbench nested routes map to their intended workflows', async ({ page })
   const routes = [
     { path: '/workbench/ai', heading: 'AI 生成' },
     { path: '/workbench/edit', heading: '单品编辑器' },
-    { path: '/workbench/dress', heading: '衣橱选装' },
+    { path: '/workbench/dress', heading: '衣服选装' },
   ]
 
   for (const route of routes) {
@@ -124,13 +129,12 @@ test('account entry points to the actual personal center route', async ({ page }
 })
 
 
-test('legacy dress-up URL redirects to the canonical wardrobe', async ({ page }) => {
+test('dedicated dress-up route opens the 3D outfit studio, not the asset library', async ({ page }) => {
   await page.goto('/dress-up')
-  await expect(page).toHaveURL(/\/wardrobe$/)
-  await expect(page.locator('[data-studio-mode="wardrobe"]')).toBeVisible()
-  await expect(page.getByRole('tab', { name: /披肩/ })).toBeVisible()
-  await expect(page.getByRole('tab', { name: /外套/ })).toBeVisible()
-  await expect(page.getByRole('tab', { name: /披风/ })).toBeVisible()
+  await expect(page).toHaveURL(/\/dress-up$/)
+  await expect(page.locator('[data-studio-mode="dress-up"]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
 })
 
 
