@@ -54,26 +54,35 @@ export default function WardrobeWorkspace() {
   const [background, setBackground] = useState('#182437')
   const [outfitName, setOutfitName] = useState('我的穿搭')
   const [activeOutfit, setActiveOutfit] = useState('')
+  const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null)
+  const [workspaceOutfitId, setWorkspaceOutfitId] = useState<string | null>(null)
+  const [workspaceLoaded, setWorkspaceLoaded] = useState(false)
+  const restoredWorkspace = useRef(false)
   const [uploadCategory, setUploadCategory] = useState<Category>('SHAWL')
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('正在连接素材库…')
   const [error, setError] = useState('')
 
   const reload = useCallback(async () => {
-    const [assetResponse, outfitResponse] = await Promise.all([
+    const [assetResponse, outfitResponse, workspaceResponse] = await Promise.all([
       fetch('/api/assets?limit=60', { cache: 'no-store' }),
       fetch('/api/outfits', { cache: 'no-store' }),
+      fetch('/api/workspace', { cache: 'no-store' }),
     ])
-    if (assetResponse.status === 401 || outfitResponse.status === 401) {
+    if (assetResponse.status === 401 || outfitResponse.status === 401 || workspaceResponse.status === 401) {
       setStatus('请先登录后使用云端素材库与搭配保存')
       return
     }
-    if (!assetResponse.ok || !outfitResponse.ok) throw new Error('读取云端素材或搭配失败')
+    if (!assetResponse.ok || !outfitResponse.ok || !workspaceResponse.ok) throw new Error('读取云端素材、搭配或工作区状态失败')
     const assetData = await assetResponse.json()
     const outfitData = await outfitResponse.json()
+    const workspaceData = await workspaceResponse.json()
     setAssets(Array.isArray(assetData.items) ? assetData.items : [])
     setOutfits(Array.isArray(outfitData.items) ? outfitData.items : [])
-    setStatus('云端素材库已就绪')
+    setWorkspaceProjectId(workspaceData.item?.projectId ?? null)
+    setWorkspaceOutfitId(workspaceData.item?.activeOutfitId ?? null)
+    setWorkspaceLoaded(true)
+    setStatus('云端素材库与工作区状态已就绪')
   }, [])
 
   useEffect(() => {
@@ -170,6 +179,29 @@ export default function WardrobeWorkspace() {
 
   const visibleAssets = assets.filter((asset) => category === 'ALL' || asset.category === category)
 
+  const persistWorkspace = async (activeAssetId: string | null, activeOutfitId: string | null) => {
+    const response = await fetch('/api/workspace', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId: workspaceProjectId, activeTool: 'WARDROBE', activeAssetId, activeOutfitId }),
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error || '保存工作区状态失败')
+    setWorkspaceOutfitId(data.item?.activeOutfitId ?? null)
+  }
+
+  useEffect(() => {
+    if (!workspaceLoaded || restoredWorkspace.current) return
+    if (!workspaceOutfitId) {
+      restoredWorkspace.current = true
+      return
+    }
+    const outfit = outfits.find((item) => item.id === workspaceOutfitId)
+    if (!outfit) return
+    restoredWorkspace.current = true
+    void loadOutfit(outfit)
+  }, [workspaceLoaded, workspaceOutfitId, outfits, assets])
+
   const toggleFavorite = async (asset: Asset) => {
     setError('')
     try {
@@ -240,6 +272,8 @@ export default function WardrobeWorkspace() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || '保存搭配失败')
       setActiveOutfit(data.item.id)
+      setWorkspaceOutfitId(data.item.id)
+      await persistWorkspace(selected.SKIN?.id ?? equipped[0]?.id ?? null, data.item.id)
       await reload()
       setStatus('搭配已保存到账号，可在其他设备加载')
     } catch (cause) {
@@ -294,6 +328,12 @@ export default function WardrobeWorkspace() {
     if (outfit.background && /^#[0-9a-f]{6}$/i.test(outfit.background)) setBackground(outfit.background)
     setOutfitName(outfit.name)
     setActiveOutfit(outfit.id)
+    setWorkspaceOutfitId(outfit.id)
+    try {
+      await persistWorkspace(outfit.skinAssetId ?? outfit.items.find((item) => item.equipped)?.assetId ?? null, outfit.id)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '保存工作区状态失败')
+    }
     setStatus(`已加载搭配：${outfit.name}`)
   }
 
@@ -353,7 +393,7 @@ export default function WardrobeWorkspace() {
         <section className="panel">
           <div className="section-title"><h2>3D 角色预览</h2><span className="status">{busy ? '处理中…' : status}</span></div>
           <div ref={hostRef} className="preview" />
-          <div className="toolbar"><label>背景 <input aria-label="预览背景颜色" type="color" value={background} onChange={(event) => setBackground(event.target.value)} /></label><button onClick={() => { setSelected({}); setModel('CLASSIC'); setBackground('#182437'); setActiveOutfit(''); setOutfitName('我的穿搭') }}>重置穿搭</button></div>
+          <div className="toolbar"><label>背景 <input aria-label="预览背景颜色" type="color" value={background} onChange={(event) => setBackground(event.target.value)} /></label><button onClick={() => { setSelected({}); setModel('CLASSIC'); setBackground('#182437'); setActiveOutfit(''); setWorkspaceOutfitId(null); setOutfitName('我的穿搭'); void persistWorkspace(null, null).catch((cause) => setError(cause instanceof Error ? cause.message : '保存工作区状态失败')) }}>重置穿搭</button></div>
           <div className="outfit-row"><input className="text-input" aria-label="搭配名称" value={outfitName} onChange={(event) => setOutfitName(event.target.value)} /><button className="primary" disabled={busy} onClick={() => void saveOutfit()}>保存搭配</button><button disabled={busy || !activeOutfit} onClick={() => void deleteOutfit()}>删除</button></div>
           <div className="outfit-row"><select className="select" aria-label="已保存搭配" value={activeOutfit} onChange={(event) => { const found = outfits.find((item) => item.id === event.target.value); if (found) loadOutfit(found); else setActiveOutfit('') }}><option value="">选择已保存搭配</option>{outfits.map((outfit) => <option key={outfit.id} value={outfit.id}>{outfit.name}</option>)}</select><button disabled={!activeOutfit} onClick={() => { const found = outfits.find((item) => item.id === activeOutfit); if (found) loadOutfit(found) }}>加载</button></div>
           {error && <p className="error" role="alert">{error}</p>}
