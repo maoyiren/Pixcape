@@ -103,8 +103,8 @@ Publication ── immutable content snapshot + moderation / comments / reaction
 4. **换装状态保存粒度不足**：旧 `WardrobeWorkspace` 选择单个素材时仅更新 activeAssetId；完整 selected map 需通过 Outfit 保存。未保存的多部位组合不能跨设备恢复。
 5. **衣橱和 3D 换装职责分裂**：`/wardrobe` 新页面是素材集合视图；`/dress-up` 和 `/workbench/dress` 仍有不同工作台实现。旧工作台必须在功能等价与数据恢复验证后再下线。
 6. **服装渲染语义未闭环**：旧工作台把除披风外的服装图像直接按 64×64 全图叠加到皮肤；这不能替代披肩/外套各自正确的 UV 区域、层级、透明度和 3D 几何规则。不可将“素材显示在列表”视为“服装正确穿戴”。
-7. **AI 与统一资产关系尚未证明**：AI 页面复用旧 AI studio；必须验证生成结果确认后是否通过服务端创建 Asset、记录 source=AI_GENERATION、关联 Project，并能被衣橱/编辑器/换装按同一 assetId 读取。
-8. **编辑器云端文档缺失**：当前像素编辑器自动保存 LocalStorage；必须新增服务端 EditorDocument 保存/恢复，导入现有 Asset、保存派生 Asset、返回 3D 预览并保留版本关系。
+7. **AI 与统一资产关系尚未证明**：当前 `AiSkinStudio` 调用 AI API 的 `/models` 与 `/generate`，生成结果仅保存在页面状态并提供 Data URL 下载；尚未保存为 Asset、记录 source=AI_GENERATION 或关联 Project。必须增加可信服务端生成结果入库链路，不能让客户端伪造 source。
+8. **编辑器云端文档缺失**：当前像素编辑器自动保存 LocalStorage；必须新增服务端 EditorDocument 保存/恢复，导入现有 Asset、保存派生 Asset、返回 3D 预览并保留版本关系。另已在 `56a456c` 补上“保存到衣橱后写入 WorkspaceState.activeAssetId”的交接；完整图层文档仍未云端持久化。
 9. **社区链路不完整**：Publication 模型存在不等于有作品广场、发布/撤回、审核、评论、反应、举报和授权展示的完整 API/页面。
 10. **CI 当前阻塞**：已在提交 `c9078cc` 修正 Bresenham 半像素 tie-break，使正向/反向笔画路径一致；此前最新 head 的常规单元测试与安全工作流均因此失败，修复提交后的 CI 尚待 GitHub 重新运行。
 
