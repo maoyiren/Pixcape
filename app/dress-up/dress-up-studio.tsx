@@ -9,7 +9,7 @@ const BASE_SKIN = ASSET_ROOT + 'stevea.png'
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
-type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; modelTexture?: string; note: string }
+type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; modelTexture?: string; note: string; assetId?: string; fileUrl?: string }
 const catalog: CatalogItem[] = [
   { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', modelTexture: 'office_shawl_slim_64.png', note: '正式披肩贴图' },
   { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', modelTexture: 'MCC_shawl_slim_64.png', note: '正式披肩贴图' },
@@ -27,7 +27,21 @@ const catalog: CatalogItem[] = [
 ]
 const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风'])
 type ModelType = 'steve' | 'alex'
-type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; skinUrl?: string; skinName: string; savedAt: string }
+type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
+
+
+function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' {
+  if (category === '披肩') return 'SHAWL'
+  if (category === '外套') return 'COAT'
+  return 'CAPE'
+}
+
+function fromAssetCategory(category: string): GarmentCategory | null {
+  if (category === 'SHAWL') return '披肩'
+  if (category === 'COAT') return '外套'
+  if (category === 'CAPE') return '披风'
+  return null
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
