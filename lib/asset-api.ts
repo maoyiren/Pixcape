@@ -1,6 +1,6 @@
 import 'server-only'
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { cleanupUploadedAssetAfterCreateFailure, deleteStoredAsset } from '@/lib/asset-storage'
 import path from 'node:path'
 import { parsePng } from '@/src/domain/png'
