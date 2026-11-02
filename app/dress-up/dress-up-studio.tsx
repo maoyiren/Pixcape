@@ -202,7 +202,6 @@ export default function DressUpStudio() {
         })
         if (!workspaceResponse.ok) return
         const workspace = await workspaceResponse.json()
-        if (workspace.item?.activeOutfitId) return
         const assetId = workspace.item?.activeAssetId
         if (!assetId) return
         const assetResponse = await fetch('/api/assets?ids=' + encodeURIComponent(assetId), {
