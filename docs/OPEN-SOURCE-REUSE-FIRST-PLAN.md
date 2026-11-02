@@ -1,6 +1,6 @@
 # CDPC Open-Source Reuse-First Plan
 
-Status: adoption policy and first-pass audit, 2026-11-02
+Status: adoption policy, source audit and integration findings, 2026-11-02
 Target: PR #39 branch `architecture/cdpc-unified-platform`
 
 ## Decision
@@ -55,6 +55,35 @@ Important: authentication answers *who signed in*; authorization answers *what t
 3. A repository's top-level license does not automatically cover third-party textures, fonts, models, icons, sample skins or AI model weights.
 4. Never embed a complete Vite app just to reuse one editor capability. Extract framework-independent helpers, React hooks/components, or run a separately deployed tool only when necessary.
 5. Do not add a dependency solely because it has more features. It must solve a demonstrated CDPC gap and pass build, security, mobile and license checks.
+
+## Source-level audit findings (2026-11-02)
+
+### Skin Anvil: adopt focused editing primitives, not its application
+
+The upstream repository's root `LICENSE` is MIT (copyright Spencer Frost); retain the copyright and permission notice for any copied or adapted substantial portions. Its client is a separate React 18 + Vite 7 application and pins `three@0.156.1` with `skinview3d@^3.0.1`. CDPC is React 19 / Next.js 16 and currently declares `three@^0.186.0` and `skinview3d@^3.4.2`. Do not transplant the upstream 3D raycast implementation or assume Three.js object compatibility until the installed dependency graph is checked and both code paths use the same Three.js runtime.
+
+| Upstream module | CDPC equivalent / gap | Decision |
+|---|---|---|
+| `client/src/lib/paintTools.js` | CDPC has its own flood-fill and pixel buffer, but no stroke interpolation helper | Adapt the pure `bresenhamLine`, `uvToTexel`, RGBA and bounded-fill helpers into a typed, unit-tested CDPC domain module; preserve notices |
+| `client/src/constants/skinLayers.js` + `skinParts.js` | CDPC canvas currently treats the whole 64×64 image as one rectangular painting surface | Reuse the UV-region and inner/outer layer model after validating Classic/Slim UV behavior |
+| `client/src/hooks/useSkinEditor.js` | CDPC has a React canvas component with local state and localStorage draft | Do not copy the hook wholesale; adapt its single document-canvas, per-layer masks, history and eyedropper behavior to the CDPC document model |
+| Skin Anvil 3D raycast viewport | CDPC already uses `skinview3d`, but its Three.js dependency version differs | Defer until one shared Three.js instance is proven; then adapt raycast-to-texel mapping and stroke interpolation |
+| Skin Anvil Vite/Express application | CDPC uses Next.js App Router, authenticated APIs and Docker persistence | Reject whole-app integration; do not add its proxy/server or second frontend runtime |
+
+### CDPC findings confirmed in the PR branch
+
+- `PixelCanvasEditor.tsx` currently stores a custom array-based 64×64 document, supports pencil/eraser/fill, layers, undo/redo and PNG import/export. It does not yet implement an eyedropper, UV-part boundaries, or Bresenham interpolation for continuous pointer strokes.
+- The editor draft is stored in browser `localStorage`. “Save to wardrobe” uploads only a flattened PNG; it does not save the editable layer document or update the persisted workspace pointer to the new asset.
+- `WorkspaceState` currently stores project/tool/asset/outfit pointers. It is not yet a versioned canvas-document store.
+- The wardrobe's 3D preview composes non-cape garment PNGs by drawing each full 64×64 image over the base skin. This is not yet a UV-aware garment-layer compositor and needs real texture/format validation before claiming all clothing categories render correctly.
+- PR #29 merged a distinct `/dress-up` 3D studio and a separate `/wardrobe` entry. PR #39 initially redirected `/dress-up` to `/wardrobe`, which discarded that already-merged route distinction. This regression has been corrected on the PR #39 branch: `/dress-up` again renders the existing `DressUpStudio`, and the navigation exposes both `衣橱` and `3D 换装`.
+
+### Immediate reuse sequence
+
+1. Extract/adapt Skin Anvil's pure pixel math and UV-region/layer constants into a typed CDPC domain module, with unit tests and MIT attribution.
+2. Define one versioned editable-document JSON shape and persist it through the existing authenticated `WorkspaceState`/project boundary; retain localStorage only as an offline recovery cache.
+3. Add wardrobe-to-editor import and restore selected skin/outfit assets into the same editable document; save both document and flattened PNG.
+4. Only after dependency-tree verification, integrate UV raycasting using the exact Three.js instance owned by the active `skinview3d` runtime.
 
 ## Implementation order
 
