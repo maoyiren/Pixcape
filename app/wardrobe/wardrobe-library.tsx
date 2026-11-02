@@ -154,6 +154,32 @@ export default function WardrobeLibrary() {
     }
   }
 
+
+  const openOutfit = async (outfit: Outfit) => {
+    try {
+      const current = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
+      if (!current.ok) throw new Error(current.status === 401 ? '请先登录后再载入云端穿搭' : '无法读取当前工作区')
+      const workspace = await current.json()
+      const response = await fetch('/api/workspace', {
+        method: 'PUT',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: workspace.item?.projectId ?? null,
+          activeTool: 'WARDROBE',
+          activeAssetId: workspace.item?.activeAssetId ?? null,
+          activeOutfitId: outfit.id,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || '穿搭交接失败')
+      router.push('/dress-up')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '无法载入云端穿搭')
+    }
+  }
+
   const upload = async (file?: File) => {
     if (!file) return
     setBusy(true)
@@ -261,7 +287,7 @@ export default function WardrobeLibrary() {
           {error && <p className="error" role="alert">{error}</p>}
 
           {filter === 'OUTFITS' ? (
-            outfits.length ? <div className="outfit-list">{outfits.map((outfit) => <article className="outfit-card" key={outfit.id}><strong>{outfit.name}</strong><p className="subtitle">{outfit.items.length} 件已保存单品</p><Link className="action" href="/dress-up">在 3D 换装中管理</Link></article>)}</div>
+            outfits.length ? <div className="outfit-list">{outfits.map((outfit) => <article className="outfit-card" key={outfit.id}><strong>{outfit.name}</strong><p className="subtitle">{outfit.items.length} 件已保存单品</p><button className="action" type="button" onClick={() => void openOutfit(outfit)}>载入这套穿搭</button></article>)}</div>
               : <div className="empty"><strong>还没有保存的穿搭</strong>前往 3D 换装工作台组合并保存你的第一套搭配。<p><Link className="action" href="/dress-up">开始换装</Link></p></div>
           ) : visibleAssets.length ? (
             <div className="asset-grid">{visibleAssets.map((asset) => <article className="asset-card" key={asset.id}>
