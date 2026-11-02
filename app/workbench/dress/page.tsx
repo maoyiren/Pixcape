@@ -1,7 +1,9 @@
-import WardrobeWorkspace from '../../wardrobe/wardrobe-workspace'
+import { redirect } from 'next/navigation'
 
-export const metadata = { title: '服装换装工作台 | 创作工作台 | CDPC' }
+export const metadata = { title: '3D 换装 | 创作工作台 | CDPC' }
 
+// Keep the historical workbench URL as a compatibility alias; the canonical
+// 3D studio owns the only live outfit editing state.
 export default function WorkbenchDressPage() {
-  return <div data-studio-mode="wardrobe"><WardrobeWorkspace /></div>
+  redirect('/dress-up')
 }
