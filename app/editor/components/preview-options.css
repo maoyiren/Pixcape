@@ -1,0 +1,76 @@
+.preset-scene-switch { flex-wrap: wrap; }
+.preset-scene-switch button { padding-inline: 8px; }
+.preset-model-stage.scene-studio { background: radial-gradient(ellipse at 50% 35%, #344d70 0, #1b2b42 45%, #0d1521 100%); }
+.preset-model-stage.scene-sunset { background: radial-gradient(ellipse at 50% 34%, #9b5b53 0, #55354a 42%, #1a1b31 100%); }
+.preset-model-stage.scene-forest { background: radial-gradient(ellipse at 50% 34%, #426b5a 0, #203e3b 43%, #0d1b22 100%); }
+.preset-model-stage.scene-void { background: radial-gradient(ellipse at 50% 30%, #45416e 0, #201f3d 42%, #090d18 100%); }
+.preset-model-stage.scene-sunset:before { background-image: linear-gradient(#ffe8d008 1px, transparent 1px), linear-gradient(90deg,#ffe8d008 1px,transparent 1px); }
+.preset-model-stage.scene-forest:before { background-image: linear-gradient(#d1ffdf08 1px, transparent 1px), linear-gradient(90deg,#d1ffdf08 1px,transparent 1px); }
+@media (max-width: 760px) { .preset-scene-switch { max-width: 100%; } }
+
+
+/* Minecraft-inspired sky and biome palettes */
+.preset-model-stage.scene-day{background:linear-gradient(180deg,#75c7ff 0%,#b6e6ff 57%,#70b84e 57%,#3d8137 100%)}
+.preset-model-stage.scene-night{background:radial-gradient(circle at 18% 17%,#fff7c4 0 1px,transparent 2px),radial-gradient(circle at 73% 13%,#dbe9ff 0 1px,transparent 2px),radial-gradient(circle at 84% 31%,#fff 0 1px,transparent 2px),linear-gradient(180deg,#08152f 0%,#1c315c 60%,#243b43 60%,#111f28 100%)}
+.preset-model-stage.scene-plains{background:linear-gradient(180deg,#8ad5ff 0%,#d7f0ff 52%,#83bd4f 52%,#477e36 100%)}
+.preset-model-stage.scene-desert{background:linear-gradient(180deg,#67c4f3 0%,#f3d8a0 54%,#d5b06b 54%,#a87a42 100%)}
+.preset-model-stage.scene-forest{background:linear-gradient(180deg,#79c8f4 0%,#c5e8dc 48%,#3c7b43 48%,#173e2a 100%)}
+.preset-model-stage.scene-nether{background:linear-gradient(180deg,#321d42 0%,#743b48 52%,#8a392d 52%,#351b27 100%)}
+.preset-model-stage.scene-end{background:linear-gradient(180deg,#251e4b 0%,#6e5d91 52%,#554b68 52%,#28233d 100%)}
+.preset-model-stage.scene-day:after,.preset-model-stage.scene-plains:after,.preset-model-stage.scene-desert:after,.preset-model-stage.scene-forest:after,.preset-model-stage.scene-nether:after,.preset-model-stage.scene-end:after,.preset-model-stage.scene-night:after{content:"";position:absolute;z-index:0;left:0;right:0;bottom:0;height:22%;pointer-events:none;opacity:.8;background:linear-gradient(180deg,transparent 0 18%,#00000008 18% 21%,#00000018 21% 100%),linear-gradient(90deg,transparent 0 9%,#00000013 9% 15%,transparent 15% 32%,#00000012 32% 39%,transparent 39% 63%,#00000010 63% 71%,transparent 71% 89%,#00000014 89% 96%,transparent 96%)}
+.preset-model-stage.scene-day:after,.preset-model-stage.scene-plains:after{height:19%;background:linear-gradient(180deg,#4e963b 0 13%,#6fb94a 13% 28%,#4e963b 28% 100%);clip-path:polygon(0 38%,12% 38%,12% 12%,22% 12%,22% 45%,39% 45%,39% 20%,48% 20%,48% 40%,63% 40%,63% 4%,72% 4%,72% 35%,87% 35%,87% 17%,100% 17%,100% 100%,0 100%)}
+.preset-model-stage.scene-desert:after{height:20%;background:linear-gradient(180deg,#e0bf7c 0 22%,#c9a260 22% 100%);clip-path:polygon(0 20%,25% 20%,25% 42%,43% 42%,43% 8%,70% 8%,70% 32%,100% 32%,100% 100%,0 100%)}
+.preset-model-stage.scene-forest:after{height:28%;background:linear-gradient(180deg,#275a34 0 22%,#34733b 22% 100%);clip-path:polygon(0 28%,8% 28%,8% 0,16% 0,16% 32%,25% 32%,25% 12%,33% 12%,33% 39%,46% 39%,46% 0,55% 0,55% 32%,69% 32%,69% 9%,77% 9%,77% 38%,90% 38%,90% 0,100% 0,100% 100%,0 100%)}
+.preset-model-stage.scene-nether:after{height:25%;background:linear-gradient(180deg,#b84b37 0 18%,#572738 18% 100%);clip-path:polygon(0 24%,18% 24%,18% 5%,29% 5%,29% 34%,48% 34%,48% 0,59% 0,59% 29%,78% 29%,78% 9%,88% 9%,88% 34%,100% 34%,100% 100%,0 100%)}
+.preset-model-stage.scene-end:after{height:20%;background:linear-gradient(180deg,#8475a5 0 20%,#423955 20% 100%);clip-path:polygon(0 25%,22% 25%,22% 9%,38% 9%,38% 36%,58% 36%,58% 0,74% 0,74% 28%,100% 28%,100% 100%,0 100%)}
+.preset-model-stage.scene-night:after{height:18%;background:linear-gradient(180deg,#172c3c 0 18%,#0c1b2b 18% 100%);clip-path:polygon(0 32%,17% 32%,17% 12%,28% 12%,28% 42%,47% 42%,47% 0,58% 0,58% 28%,79% 28%,79% 14%,89% 14%,89% 38%,100% 38%,100% 100%,0 100%)}
+.preset-biome-switch{display:flex;flex-wrap:wrap;max-width:360px}
+.preset-biome-switch button{padding:6px 8px}
+.preset-color-picker{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:8px 0 12px;padding:9px 10px;border:1px solid #2b3b52;border-radius:8px;background:#0d1624;color:#b9c9e0;font-size:11px}
+.preset-color-picker input[type=color]{width:34px;height:28px;padding:2px;border:1px solid #52647d;border-radius:6px;background:#152235;cursor:pointer}
+.preset-color-picker code{color:#e3edff;font-size:10px}
+.preset-color-picker button,.preset-view-adjust button{border:1px solid #34445e;border-radius:6px;padding:6px 8px;background:#172337;color:#c8d7ed;font-size:10px;cursor:pointer}
+.preset-view-adjust{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:9px 12px;border:1px solid #26374e;border-radius:9px;background:#0d1624;color:#aebfd8;font-size:11px}
+.preset-view-adjust label{display:flex;align-items:center;gap:10px;flex:1}
+.preset-view-adjust input[type=range]{width:min(260px,55%);accent-color:#6b9eff}
+.preset-view-adjust span{min-width:38px;text-align:right;color:#dce8fa;font-variant-numeric:tabular-nums}
+.preset-model-stage .three-preview-canvas canvas{touch-action:none;cursor:grab}
+.preset-model-stage .three-preview-canvas canvas:active{cursor:grabbing}
+@media(max-width:760px){.preset-view-adjust{flex-wrap:wrap}.preset-view-adjust label{width:100%}.preset-biome-switch{max-width:100%}}
+
+/* Pixel-art voxel scene dressing for Minecraft biome previews. */
+.preset-model-stage{isolation:isolate;overflow:hidden;background-size:100% 100%}
+.preset-model-stage:before{content:"";position:absolute;z-index:0;inset:0;pointer-events:none;opacity:.98;background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated}
+.preset-model-stage.scene-day:before,.preset-model-stage.scene-plains:before{background-image:linear-gradient(90deg,transparent 0 7%,#3e7b32 7% 10%,#6fb64a 10% 14%,#3e7b32 14% 17%,transparent 17%),linear-gradient(90deg,transparent 0 72%,#4d8c37 72% 75%,#6fb64a 75% 80%,#3d7831 80% 83%,transparent 83%);background-size:100% 100%}
+.preset-model-stage.scene-day:after,.preset-model-stage.scene-plains:after{height:26%;opacity:1;background:linear-gradient(180deg,#75bd4d 0 12%,#57953b 12% 18%,#875b35 18% 100%);clip-path:polygon(0 20%,18% 20%,18% 0,34% 0,34% 27%,52% 27%,52% 9%,68% 9%,68% 31%,82% 31%,82% 14%,100% 14%,100% 100%,0 100%)}
+.preset-model-stage.scene-desert:after{height:25%;background:linear-gradient(180deg,#e8cc83 0 12%,#cba35d 12% 20%,#a97842 20% 100%);clip-path:polygon(0 32%,20% 32%,20% 15%,39% 15%,39% 0,64% 0,64% 28%,83% 28%,83% 12%,100% 12%,100% 100%,0 100%)}
+.preset-model-stage.scene-nether:after{height:28%;background:linear-gradient(180deg,#c24d34 0 15%,#73372c 15% 26%,#3c202b 26% 100%);clip-path:polygon(0 24%,14% 24%,14% 0,26% 0,26% 31%,47% 31%,47% 8%,63% 8%,63% 34%,80% 34%,80% 16%,100% 16%,100% 100%,0 100%)}
+.preset-model-stage.scene-end:after{height:22%;background:linear-gradient(180deg,#8d80a8 0 16%,#554b6c 16% 26%,#29243e 26% 100%);clip-path:polygon(0 27%,22% 27%,22% 7%,39% 7%,39% 33%,61% 33%,61% 0,78% 0,78% 25%,100% 25%,100% 100%,0 100%)}
+.preset-language-switch{display:flex;align-items:center;gap:6px;color:#f7f4df;font-size:11px;font-weight:700;text-shadow:1px 1px #304624}
+.preset-language-switch select{max-width:120px;min-height:30px;padding:4px 7px;border:2px solid #555;background:#c6c6c6;color:#222;font-weight:700}
+@media(max-width:560px){.preset-language-switch{font-size:9px}.preset-language-switch select{max-width:90px}}
+
+/* Biome backgrounds are rendered as actual Three.js voxel meshes in the preview canvas. */
+.preset-model-stage.scene-day,.preset-model-stage.scene-night,.preset-model-stage.scene-plains,.preset-model-stage.scene-desert,.preset-model-stage.scene-forest,.preset-model-stage.scene-nether,.preset-model-stage.scene-end,.preset-model-stage.scene-custom{background:#87ceeb!important}
+.preset-model-stage.scene-day:before,.preset-model-stage.scene-night:before,.preset-model-stage.scene-plains:before,.preset-model-stage.scene-desert:before,.preset-model-stage.scene-forest:before,.preset-model-stage.scene-nether:before,.preset-model-stage.scene-end:before,.preset-model-stage.scene-day:after,.preset-model-stage.scene-night:after,.preset-model-stage.scene-plains:after,.preset-model-stage.scene-desert:after,.preset-model-stage.scene-forest:after,.preset-model-stage.scene-nether:after,.preset-model-stage.scene-end:after{display:none!important}
+.preset-model-stage .three-preview-canvas{position:relative;z-index:1}
+
+/* Real in-game Minecraft screenshots are loaded into the skinview3d WebGL background. */
+.preset-model-stage{background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;background-color:#24313b}
+.preset-model-stage.scene-day,.preset-model-stage.scene-plains{background-image:url('https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/exploration-mindful.jpg')!important}
+.preset-model-stage.scene-night{background-image:url('https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/MCV_holiday_release_Eyeblossom_NightTrail_1280x720_01.jpg')!important}
+.preset-model-stage.scene-desert{background-image:url('https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/exploration-structures.jpg')!important}
+.preset-model-stage.scene-forest{background-image:url('https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/forest-carousel1.jpg')!important}
+.preset-model-stage.scene-nether{background-image:url('https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/waste-carousel1.jpg')!important}
+.preset-model-stage.scene-end{background-image:url('https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/highlands-carousel1.jpg')!important}
+.preset-model-stage:not(.scene-custom):before,.preset-model-stage:not(.scene-custom):after{content:none!important;display:none!important}
+.preset-model-stage .three-preview-canvas{background:transparent!important}
+
+
+/* Precision controls for independent XYZ rotation; compact enough for mobile. */
+.preset-axis-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;margin:8px 0}
+.preset-axis-controls label{display:flex;align-items:center;gap:6px;min-width:0;font-size:12px;font-weight:700}
+.preset-axis-controls input[type=range]{width:100%;min-width:0;accent-color:#5c913e}
+.preset-axis-controls span{min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.preset-view-adjust{flex-wrap:wrap}
+@media(max-width:560px){.preset-axis-controls{grid-template-columns:1fr;gap:4px}.preset-axis-controls label{display:grid;grid-template-columns:42px minmax(0,1fr) 40px}.preset-axis-controls input[type=range]{width:100%}}
