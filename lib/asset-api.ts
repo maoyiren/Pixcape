@@ -1,7 +1,7 @@
 import 'server-only'
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
-import { deleteStoredAsset } from '@/lib/asset-storage'
+import { cleanupUploadedAssetAfterCreateFailure, deleteStoredAsset } from '@/lib/asset-storage'
 import path from 'node:path'
 import { parsePng } from '@/src/domain/png'
 import { prisma } from '@/lib/prisma'
@@ -89,8 +89,7 @@ export async function saveAssetFile(input: {
       },
     })
   } catch (error) {
-    await unlink(filePath).catch(() => undefined)
-    throw error
+    return cleanupUploadedAssetAfterCreateFailure(filePath, error)
   }
 }
 
