@@ -33,7 +33,8 @@ type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelTy
 function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' {
   if (category === '披肩') return 'SHAWL'
   if (category === '外套') return 'COAT'
-  return 'CAPE'
+  if (category === '披风') return 'CAPE'
+  throw new Error('该服装分类尚未接入云端素材类型')
 }
 
 function fromAssetCategory(category: string): GarmentCategory | null {
