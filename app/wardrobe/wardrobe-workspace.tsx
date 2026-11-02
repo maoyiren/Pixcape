@@ -47,7 +47,7 @@ export default function WardrobeWorkspace() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [viewerReady, setViewerReady] = useState(false)
   const [outfits, setOutfits] = useState<Outfit[]>([])
-  const [category, setCategory] = useState<Category | 'ALL'>('ALL')
+  const [category, setCategory] = useState<Category | 'ALL'>('COAT')
   const [selected, setSelected] = useState<Record<string, Asset>>({})
   const [model, setModel] = useState<'CLASSIC' | 'SLIM'>('CLASSIC')
   const [background, setBackground] = useState('#182437')
@@ -299,7 +299,7 @@ export default function WardrobeWorkspace() {
   }
 
   return (
-    <main className="cdpc-wardrobe">
+    <main className="cdpc-wardrobe" data-studio-mode="wardrobe">
       <style jsx>{`
         .cdpc-wardrobe{max-width:1440px;margin:0 auto;padding:28px 24px 56px;color:var(--mantine-color-text,#e8edf5)}
         .wardrobe-head{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:20px;flex-wrap:wrap}
@@ -343,7 +343,7 @@ export default function WardrobeWorkspace() {
         <section className="panel">
           <div className="section-title"><h2>云端素材库</h2><span className="status">{assets.length} 件素材</span></div>
           <div className="toolbar"><select className="select" value={uploadCategory} onChange={(event) => setUploadCategory(event.target.value as Category)} aria-label="上传素材分类">{CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><label className="primary" style={{borderRadius:9,padding:'9px 12px',cursor:'pointer'}}>上传 PNG<input type="file" accept="image/png" hidden disabled={busy} onChange={(event) => { void upload(event.target.files?.[0]); event.currentTarget.value = '' }} /></label></div>
-          <div className="toolbar">{[{value:'ALL',label:'全部'},...CATEGORIES].map((item) => <button key={item.value} className={category === item.value ? 'active' : ''} onClick={() => setCategory(item.value as Category | 'ALL')}>{item.label}</button>)}</div>
+          <div className="toolbar" role="tablist" aria-label="素材分类">{[{value:'ALL',label:'全部'},...CATEGORIES].map((item) => <button key={item.value} type="button" role="tab" aria-selected={category === item.value} className={category === item.value ? 'active' : ''} onClick={() => setCategory(item.value as Category | 'ALL')}>{item.label}</button>)}</div>
           <div className="asset-grid">{visibleAssets.map((asset) => <button key={asset.id} className={selected[asset.category || '']?.id === asset.id ? 'asset active' : 'asset'} onClick={() => toggleAsset(asset)}><img src={asset.fileUrl} alt="" /><strong>{CATEGORIES.find((item) => item.value === asset.category)?.label || '未分类'}</strong><small>{asset.attribution || asset.id.slice(0, 10)}</small></button>)}</div>
           {!visibleAssets.length && <p className="status">暂无素材。可以先上传 64×64 皮肤 PNG 或服装贴图。</p>}
         </section>
