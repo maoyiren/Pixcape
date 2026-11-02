@@ -146,7 +146,7 @@ export default function WardrobeLibrary() {
   }
 
   return (
-    <main className="cdpc-library">
+    <main className="cdpc-library" data-studio-mode="wardrobe">
       <style jsx>{`
         .cdpc-library{max-width:1440px;margin:0 auto;padding:34px 28px 64px;color:var(--mantine-color-text,#e8edf5)}
         .library-head{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:26px;flex-wrap:wrap}
