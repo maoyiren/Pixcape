@@ -24,6 +24,46 @@ const PresetStudio = dynamic(
   },
 )
 
+
+type WorkspacePointer = {
+  projectId: string | null
+  activeTool: 'WARDROBE' | 'PIXEL_EDITOR' | 'AI_GENERATOR'
+  activeAssetId: string | null
+  activeOutfitId: string | null
+}
+
+function usePersistEditorHandoff() {
+  useEffect(() => {
+    const controller = new AbortController()
+    const persist = async () => {
+      try {
+        const current = await fetch('/api/workspace', {
+          method: 'GET', cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
+        })
+        // Workspace persistence is account-scoped; anonymous editing remains available.
+        if (!current.ok) return
+        const payload = await current.json() as { item?: Partial<WorkspacePointer> }
+        if (!payload.item) return
+        const pointer: WorkspacePointer = {
+          projectId: payload.item.projectId ?? null,
+          activeTool: 'PIXEL_EDITOR',
+          activeAssetId: payload.item.activeAssetId ?? null,
+          activeOutfitId: payload.item.activeOutfitId ?? null,
+        }
+        await fetch('/api/workspace', {
+          method: 'PUT', cache: 'no-store', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pointer), signal: controller.signal,
+        })
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return
+        // A transient persistence error must not prevent access to the editor.
+      }
+    }
+    void persist()
+    return () => controller.abort()
+  }, [])
+}
+
 export default function EditorStudio() {
   usePersistEditorHandoff()
   const router = useRouter()
