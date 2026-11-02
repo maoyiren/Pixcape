@@ -485,7 +485,7 @@ export default function DressUpStudio() {
   }
 
   return (
-    <main className="dressup-page">
+    <main className="dressup-page" data-studio-mode="dress-up">
       <header className="dressup-heading">
         <div>
           <div className="dressup-eyebrow">CDPC / OUTFIT BUILDER</div>
