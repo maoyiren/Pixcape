@@ -97,7 +97,7 @@ Publication ── immutable content snapshot + moderation / comments / reaction
 
 以下均由 PR #39 当前代码核实：
 
-1. **衣橱列表分页不完整**：`/api/assets?limit=100` 会被服务端截断到最多 60；API 返回 `nextCursor`，新 `wardrobe-library` 没有继续请求下一页。
+1. **衣橱列表分页**：已在提交 `adae0a1` 修正为 limit=60 并跟随 `nextCursor` 加载更多；仍需最新 CI 与浏览器回归确认。
 2. **角色实体缺失**：当前 schema 没有 Character；Outfit 也没有 characterId。多角色管理和角色级穿搭隔离尚不能实现。
 3. **工作区只保存指针**：`WorkspaceState` 只有 project/activeTool/activeAsset/activeOutfit；编辑器图层 JSON 仍保存在浏览器 LocalStorage。
 4. **换装状态保存粒度不足**：旧 `WardrobeWorkspace` 选择单个素材时仅更新 activeAssetId；完整 selected map 需通过 Outfit 保存。未保存的多部位组合不能跨设备恢复。
@@ -106,7 +106,7 @@ Publication ── immutable content snapshot + moderation / comments / reaction
 7. **AI 与统一资产关系尚未证明**：AI 页面复用旧 AI studio；必须验证生成结果确认后是否通过服务端创建 Asset、记录 source=AI_GENERATION、关联 Project，并能被衣橱/编辑器/换装按同一 assetId 读取。
 8. **编辑器云端文档缺失**：当前像素编辑器自动保存 LocalStorage；必须新增服务端 EditorDocument 保存/恢复，导入现有 Asset、保存派生 Asset、返回 3D 预览并保留版本关系。
 9. **社区链路不完整**：Publication 模型存在不等于有作品广场、发布/撤回、审核、评论、反应、举报和授权展示的完整 API/页面。
-10. **CI 当前阻塞**：最新 head 的单元测试中 `tests/unit/skin-paint.test.ts` 的 Bresenham 方向对称用例失败；安全工作流也在 RBAC/ownership test step 因该测试失败而中止，后续 PostgreSQL integration/security E2E 被跳过。
+10. **CI 当前阻塞**：已在提交 `c9078cc` 修正 Bresenham 半像素 tie-break，使正向/反向笔画路径一致；此前最新 head 的常规单元测试与安全工作流均因此失败，修复提交后的 CI 尚待 GitHub 重新运行。
 
 ## 5. 端到端数据流（目标）
 
