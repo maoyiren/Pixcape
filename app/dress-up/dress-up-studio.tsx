@@ -176,6 +176,52 @@ export default function DressUpStudio() {
   const cape = selected['披风']
 
   useEffect(() => {
+    const controller = new AbortController()
+    const restoreWorkspaceAsset = async () => {
+      try {
+        const workspaceResponse = await fetch('/api/workspace', {
+          cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
+        })
+        if (!workspaceResponse.ok) return
+        const workspace = await workspaceResponse.json()
+        const assetId = workspace.item?.activeAssetId
+        if (!assetId) return
+        const assetResponse = await fetch('/api/assets?ids=' + encodeURIComponent(assetId), {
+          cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
+        })
+        if (!assetResponse.ok) return
+        const payload = await assetResponse.json()
+        const asset = payload.items?.[0]
+        if (!asset?.fileUrl) return
+        if (asset.category === 'SKIN') {
+          setSkinUrl(asset.fileUrl)
+          setSkinName(asset.attribution || '衣橱皮肤')
+          setSaveNotice('已从衣橱载入当前基础皮肤')
+          return
+        }
+        const garmentCategory = fromAssetCategory(asset.category)
+        if (!garmentCategory) return
+        const item: CatalogItem = {
+          id: asset.id,
+          assetId: asset.id,
+          fileUrl: asset.fileUrl,
+          texture: asset.fileUrl,
+          name: asset.attribution || `云端${garmentCategory}`,
+          category: garmentCategory,
+          note: '从衣橱载入的云端素材',
+        }
+        setSelected(current => ({ ...current, [garmentCategory]: item }))
+        setSaveNotice(`已从衣橱载入${garmentCategory}素材`)
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return
+        setSaveNotice(error instanceof Error ? error.message : '衣橱素材恢复失败')
+      }
+    }
+    void restoreWorkspaceAsset()
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
     const host = previewHost.current
     if (!host) return
     let viewer: SkinViewer
