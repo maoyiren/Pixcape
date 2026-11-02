@@ -34,6 +34,8 @@ const categoryLabel = (value: Category | null) =>
 
 export default function WardrobeLibrary() {
   const [assets, setAssets] = useState<Asset[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [outfits, setOutfits] = useState<Outfit[]>([])
   const [filter, setFilter] = useState<Filter>('ALL')
   const [query, setQuery] = useState('')
@@ -45,7 +47,7 @@ export default function WardrobeLibrary() {
 
   const reload = useCallback(async () => {
     const [assetResponse, outfitResponse] = await Promise.all([
-      fetch('/api/assets?limit=100', { cache: 'no-store' }),
+      fetch('/api/assets?limit=60', { cache: 'no-store' }),
       fetch('/api/outfits', { cache: 'no-store' }),
     ])
     if (assetResponse.status === 401 || outfitResponse.status === 401) {
@@ -55,6 +57,7 @@ export default function WardrobeLibrary() {
     if (!assetResponse.ok || !outfitResponse.ok) throw new Error('读取衣橱失败，请稍后重试')
     const [assetData, outfitData] = await Promise.all([assetResponse.json(), outfitResponse.json()])
     setAssets(Array.isArray(assetData.items) ? assetData.items : [])
+    setNextCursor(typeof assetData.nextCursor === 'string' ? assetData.nextCursor : null)
     setOutfits(Array.isArray(outfitData.items) ? outfitData.items : [])
     setNotice('你的素材已同步到云端')
   }, [])
@@ -86,6 +89,27 @@ export default function WardrobeLibrary() {
     })
   }, [assets, filter, query])
 
+  const loadMore = async () => {
+    if (!nextCursor || loadingMore) return
+    setLoadingMore(true)
+    setError('')
+    try {
+      const response = await fetch('/api/assets?limit=60&cursor=' + encodeURIComponent(nextCursor), { cache: 'no-store' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || '加载更多素材失败')
+      const page = Array.isArray(data.items) ? data.items as Asset[] : []
+      setAssets((current) => {
+        const merged = new Map(current.map((asset) => [asset.id, asset]))
+        for (const asset of page) merged.set(asset.id, asset)
+        return [...merged.values()]
+      })
+      setNextCursor(typeof data.nextCursor === 'string' ? data.nextCursor : null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '加载更多素材失败')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
   const toggleFavorite = async (asset: Asset) => {
     setError('')
     try {
@@ -221,6 +245,11 @@ export default function WardrobeLibrary() {
             </article>)}</div>
           ) : (
             <div className="empty"><strong>{filter === 'FAVORITES' ? '还没有收藏素材' : '这个分类还没有素材'}</strong>上传 PNG 素材后，它们会集中显示在这里。<p><button className="action primary" type="button" onClick={() => fileRef.current?.click()}>上传第一件素材</button></p></div>
+          )}
+          {filter !== 'OUTFITS' && nextCursor && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 20 }}>
+              <button className="action" type="button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? '加载中…' : '加载更多素材'}</button>
+            </div>
           )}
           <p className="notice">{notice} · 披肩、外套与披风保持独立分类。皮肤 PNG 不包含 Minecraft 官方披风。</p>
         </section>
