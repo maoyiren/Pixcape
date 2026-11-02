@@ -18,7 +18,7 @@ async function resolveActor() {
 
 export async function PUT(_request: Request, context: Context) {
   const resolved = await resolveActor()
-  if (resolved.response) return resolved.response
+  if ('response' in resolved) return resolved.response
   const { assetId } = await context.params
   if (!assetId || assetId.length > 128) return NextResponse.json({ error: '素材 ID 无效。' }, { status: 400 })
 
@@ -38,7 +38,7 @@ export async function PUT(_request: Request, context: Context) {
 
 export async function DELETE(_request: Request, context: Context) {
   const resolved = await resolveActor()
-  if (resolved.response) return resolved.response
+  if ('response' in resolved) return resolved.response
   const { assetId } = await context.params
   if (!assetId || assetId.length > 128) return NextResponse.json({ error: '素材 ID 无效。' }, { status: 400 })
 
