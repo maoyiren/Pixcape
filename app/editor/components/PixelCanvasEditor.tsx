@@ -281,7 +281,29 @@ export default function PixelCanvasEditor() {
       const response = await fetch('/api/assets', { method: 'POST', body: form, credentials: 'same-origin' })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || '保存失败')
-      setStatus('已保存到个人衣橱素材')
+      const workspaceResponse = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
+      if (!workspaceResponse.ok) {
+        setStatus('素材已保存到衣橱，但读取工作区失败；请重新进入编辑器同步')
+        return
+      }
+      const workspace = await workspaceResponse.json()
+      const pointerResponse = await fetch('/api/workspace', {
+        method: 'PUT',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: workspace.item?.projectId ?? null,
+          activeTool: 'PIXEL_EDITOR',
+          activeAssetId: payload.item.id,
+          activeOutfitId: workspace.item?.activeOutfitId ?? null,
+        }),
+      })
+      if (!pointerResponse.ok) {
+        setStatus('素材已保存到衣橱，但跨模块状态同步失败；请稍后重试')
+        return
+      }
+      setStatus('皮肤已保存到衣橱，并已同步为当前工作区素材')
     } catch (error) { setStatus(error instanceof Error ? error.message : '保存失败') }
     finally { setSaving(false) }
   }
