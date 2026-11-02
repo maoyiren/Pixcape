@@ -81,3 +81,6 @@
  .ai-studio__result-info a{justify-self:start}
  .ai-studio__segmented [role="tab"]{font-size:11px;padding:8px 6px}
 }
+
+.ai-studio__save{align-self:center;justify-self:start;padding:8px 12px;border:1px solid #779b5e;border-radius:7px;color:#e7f5dc;background:#263923;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.ai-studio__save:disabled{opacity:.55;cursor:not-allowed}
