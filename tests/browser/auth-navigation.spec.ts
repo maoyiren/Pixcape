@@ -157,3 +157,33 @@ test('opening the pixel editor persists the current workspace handoff', async ({
     activeOutfitId: 'outfit-demo',
   })
 })
+
+
+test('pixel canvas supports drawing, layers, undo and redo', async ({ page }) => {
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {} }) })
+  })
+  await page.goto('/editor')
+  await expect(page.getByRole('heading', { name: '64 × 64 像素编辑器' })).toBeVisible()
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect(canvas).toHaveAttribute('width', '64')
+  await expect(canvas).toHaveAttribute('height', '64')
+  await page.getByLabel('画笔颜色').fill('#ff0000')
+  await canvas.click({ position: { x: 4, y: 4 } })
+  await expect.poll(() => canvas.evaluate(element => {
+    const pixel = (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data
+    return Array.from(pixel)
+  })).toEqual([255, 0, 0, 255])
+  await page.getByRole('button', { name: '撤销' }).click()
+  await expect.poll(() => canvas.evaluate(element => (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data[3])).toBe(0)
+  await page.getByRole('button', { name: '重做' }).click()
+  await expect.poll(() => canvas.evaluate(element => (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data[0])).toBe(255)
+  await page.getByRole('button', { name: /新建/ }).click()
+  await expect(page.getByRole('button', { name: '图层 2' })).toBeVisible()
+})
