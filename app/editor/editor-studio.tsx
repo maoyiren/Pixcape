@@ -25,6 +25,7 @@ const PresetStudio = dynamic(
 )
 
 export default function EditorStudio() {
+  usePersistEditorHandoff()
   const router = useRouter()
   const [editorOpen, setEditorOpen] = useState(false)
   const [pendingPayload, setPendingPayload] = useState<PresetEditorPayload | null>(null)
