@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SkinViewer } from 'skinview3d'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
@@ -76,7 +76,7 @@ export default function DressUpStudio() {
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
   const [savingCloud, setSavingCloud] = useState(false)
 
-  async function refreshCloudOutfits() {
+  const refreshCloudOutfits = useCallback(async () => {
     const response = await fetch('/api/outfits', { cache: 'no-store', credentials: 'same-origin' })
     if (response.status === 401) return
     if (!response.ok) throw new Error('无法读取账号云端穿搭')
@@ -128,7 +128,7 @@ export default function DressUpStudio() {
       }
     })
     setSavedOutfits(current => [...current.filter(item => !item.cloud), ...cloud])
-  }
+  }, [])
 
   useEffect(() => {
     try {
@@ -145,7 +145,7 @@ export default function DressUpStudio() {
     void refreshCloudOutfits().catch(error => {
       setSaveNotice(error instanceof Error ? error.message : '云端穿搭读取失败')
     })
-  }, [])
+  }, [refreshCloudOutfits])
 
   useEffect(() => {
     try {
