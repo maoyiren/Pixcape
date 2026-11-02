@@ -73,6 +73,7 @@ export default function DressUpStudio() {
   const [outfitName, setOutfitName] = useState('我的穿搭')
   const [savedOutfits, setSavedOutfits] = useState<LocalOutfit[]>([])
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
+  const [savingCloud, setSavingCloud] = useState(false)
 
   async function refreshCloudOutfits() {
     const response = await fetch('/api/outfits', { cache: 'no-store', credentials: 'same-origin' })
@@ -270,6 +271,121 @@ export default function DressUpStudio() {
       else next[item.category] = item
       return next
     })
+  }
+
+
+  async function uploadAssetFromUrl(url: string, category: 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE', attribution: string) {
+    const imageResponse = await fetch(url, { cache: 'no-store', credentials: 'same-origin' })
+    if (!imageResponse.ok) throw new Error(`无法读取素材：${attribution}`)
+    const blob = await imageResponse.blob()
+    if (blob.type !== 'image/png') throw new Error(`素材“${attribution}”不是 PNG 格式`)
+    const file = new File([blob], `${category.toLowerCase()}-${Date.now()}.png`, { type: 'image/png' })
+    const form = new FormData()
+    form.set('file', file)
+    form.set('category', category)
+    form.set('visibility', 'PRIVATE')
+    form.set('attribution', attribution)
+    const response = await fetch('/api/assets', {
+      method: 'POST', body: form, cache: 'no-store', credentials: 'same-origin',
+    })
+    const payload = await response.json()
+    if (!response.ok || !payload.item?.id) throw new Error(payload.error || `保存素材“${attribution}”失败`)
+    return payload.item as { id: string; fileUrl: string }
+  }
+
+  async function saveOutfitToCloud() {
+    const name = outfitName.trim().slice(0, 80)
+    if (!name) {
+      setSaveNotice('请先填写穿搭名称')
+      return
+    }
+    if (savingCloud) return
+    setSavingCloud(true)
+    setSaveNotice('正在同步素材并保存账号云端穿搭…')
+    try {
+      const persistedItems: CatalogItem[] = []
+      for (const item of selectedItems) {
+        if (item.assetId && item.fileUrl) {
+          persistedItems.push(item)
+          continue
+        }
+        const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
+        const sourceUrl = item.fileUrl || ASSET_ROOT + textureName
+        const asset = await uploadAssetFromUrl(sourceUrl, toAssetCategory(item.category), item.name)
+        const persisted = { ...item, assetId: asset.id, fileUrl: asset.fileUrl }
+        persistedItems.push(persisted)
+        setSelected(current => ({ ...current, [item.category]: persisted }))
+      }
+
+      let skinAssetId: string | null = null
+      const existingSkin = skinUrl.match(/\/api\/assets\/([^/]+)\/file(?:\?|$)/)
+      if (existingSkin) skinAssetId = existingSkin[1]
+      else if (skinUrl.startsWith('data:image/png')) {
+        const skin = await uploadAssetFromUrl(skinUrl, 'SKIN', skinName || '换装基础皮肤')
+        skinAssetId = skin.id
+      }
+
+      const input = {
+        name,
+        skinAssetId,
+        skinModel: model === 'alex' ? 'SLIM' : 'CLASSIC',
+        background,
+        pose: null,
+        items: persistedItems.map((item, index) => ({
+          assetId: item.assetId!,
+          category: toAssetCategory(item.category),
+          sortOrder: index,
+          equipped: true,
+        })),
+      }
+      const existingCloud = savedOutfits.find(item => item.id === selectedSavedOutfitId && item.cloud)
+      const endpoint = existingCloud ? `/api/outfits/${encodeURIComponent(existingCloud.id)}` : '/api/outfits'
+      const response = await fetch(endpoint, {
+        method: existingCloud ? 'PUT' : 'POST',
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      })
+      const payload = await response.json()
+      if (!response.ok || !payload.item?.id) throw new Error(payload.error || '账号云端穿搭保存失败')
+      const savedId = payload.item.id
+
+      const workspaceResponse = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
+      if (workspaceResponse.ok) {
+        const workspace = await workspaceResponse.json()
+        await fetch('/api/workspace', {
+          method: 'PUT',
+          cache: 'no-store',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: workspace.item?.projectId ?? null,
+            activeTool: 'WARDROBE',
+            activeAssetId: skinAssetId ?? workspace.item?.activeAssetId ?? null,
+            activeOutfitId: savedId,
+          }),
+        })
+      }
+
+      setSelectedSavedOutfitId(savedId)
+      setOutfitName(name)
+      setSelected(current => persistedItems.reduce((next, item) => ({ ...next, [item.category]: item }), current))
+      const localCache: LocalOutfit = {
+        id: savedId, name, itemIds: persistedItems.map(item => item.id), model, background,
+        skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
+        skinAssetId, skinName, savedAt: new Date().toISOString(), cloud: true,
+        assetItems: persistedItems,
+      }
+      setSavedOutfits(current => [...current.filter(item => item.id !== savedId), localCache])
+      try { window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify(localCache)) } catch { /* Cloud save remains authoritative. */ }
+      setSaveNotice(`“${name}”已保存到账号云端，衣橱可在其他设备读取`)
+      void refreshCloudOutfits().catch(() => undefined)
+    } catch (error) {
+      setSaveNotice(error instanceof Error ? error.message : '云端保存失败，请登录后重试')
+    } finally {
+      setSavingCloud(false)
+    }
   }
 
   function saveLocalOutfit() {
