@@ -223,6 +223,35 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     const { item } = await create.json()
     assert.ok(item.id)
 
+    const saveWorkspace = await fetch(new URL('/api/workspace', base), {
+      method: 'PUT',
+      headers: { cookie: ownerSession, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        projectId: null, activeTool: 'WARDROBE',
+        activeAssetId: asset.id, activeOutfitId: item.id,
+      }),
+    })
+    assert.equal(saveWorkspace.status, 200, 'owner can persist cross-tool workspace pointers')
+    const savedWorkspace = await saveWorkspace.json()
+    assert.equal(savedWorkspace.item.activeAssetId, asset.id)
+    assert.equal(savedWorkspace.item.activeOutfitId, item.id)
+
+    const otherWorkspace = await fetch(new URL('/api/workspace', base), { headers: { cookie: otherSession } })
+    assert.equal(otherWorkspace.status, 200)
+    const otherWorkspaceData = await otherWorkspace.json()
+    assert.equal(otherWorkspaceData.item.activeAssetId, null, 'workspace pointers are isolated per user')
+    assert.equal(otherWorkspaceData.item.activeOutfitId, null)
+
+    const crossUserWorkspace = await fetch(new URL('/api/workspace', base), {
+      method: 'PUT',
+      headers: { cookie: otherSession, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        projectId: null, activeTool: 'WARDROBE',
+        activeAssetId: null, activeOutfitId: item.id,
+      }),
+    })
+    assert.equal(crossUserWorkspace.status, 404, 'another user cannot persist a private outfit pointer')
+
     const ownerList = await fetch(new URL('/api/outfits', base), { headers: { cookie: ownerSession } })
     assert.equal(ownerList.status, 200)
     assert.ok((await ownerList.json()).items.some((outfit) => outfit.id === item.id))
