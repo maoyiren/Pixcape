@@ -106,3 +106,13 @@ test('account entry points to the actual personal center route', async ({ page }
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣服选装' })).toHaveAttribute('href', '/wardrobe')
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 创作' })).toHaveAttribute('href', '/ai')
 })
+
+
+test('legacy dress-up URL redirects to the canonical wardrobe', async ({ page }) => {
+  await page.goto('/dress-up')
+  await expect(page).toHaveURL(/\\/wardrobe$/)
+  await expect(page.locator('[data-studio-mode="wardrobe"]')).toBeVisible()
+  await expect(page.getByRole('tab', { name: /披肩/ })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /外套/ })).toBeVisible()
+  await expect(page.getByRole('tab', { name: /披风/ })).toBeVisible()
+})
