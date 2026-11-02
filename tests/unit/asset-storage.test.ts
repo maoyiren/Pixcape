@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, readFile, rm, writeFile, unlink } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { deleteStoredAsset } from '../../lib/asset-storage.ts'
+import { cleanupUploadedAssetAfterCreateFailure, deleteStoredAsset } from '../../lib/asset-storage.ts'
 
 async function withAssetFile(run) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'cdpc-asset-storage-'))
@@ -50,3 +50,25 @@ test('surfaces both database and file restoration failures', async () => withAss
     return true
   })
 }))
+
+test('surfaces failed cleanup after an asset database insert error', async () => {
+  const databaseError = new Error('database insert failed')
+  const cleanupError = new Error('disk is unavailable')
+  await assert.rejects(
+    cleanupUploadedAssetAfterCreateFailure('/tmp/asset.png', databaseError, async () => { throw cleanupError }),
+    (error) => {
+      assert.ok(error instanceof AggregateError)
+      assert.equal(error.errors[0], databaseError)
+      assert.equal(error.errors[1], cleanupError)
+      return true
+    },
+  )
+})
+
+test('preserves the original database error when upload cleanup succeeds', async () => {
+  const databaseError = new Error('database insert failed')
+  await assert.rejects(
+    cleanupUploadedAssetAfterCreateFailure('/tmp/asset.png', databaseError, async () => {}),
+    (error) => error === databaseError,
+  )
+})
