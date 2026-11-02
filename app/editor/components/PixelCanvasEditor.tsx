@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { bresenhamLine } from '@/src/domain/skin-paint'
 
 type Layer = { id: string; name: string; visible: boolean; opacity: number; pixels: string[] }
-type Tool = 'pencil' | 'eraser' | 'fill'
+type Tool = 'pencil' | 'eraser' | 'fill' | 'eyedropper'
 const SIZE = 64
 const blank = () => Array<string>(SIZE * SIZE).fill('')
 const newLayer = (name: string): Layer => ({ id: crypto.randomUUID(), name, visible: true, opacity: 100, pixels: blank() })
@@ -115,6 +116,22 @@ export default function PixelCanvasEditor() {
   const paint = (index: number) => {
     if (index < 0 || index >= SIZE * SIZE || index === lastIndex.current) return
     lastIndex.current = index
+    if (tool === 'eyedropper') {
+      const pixel = composite[index]
+      const rgba = /^rgba\\((\\d+), (\\d+), (\\d+), ([0-9.]+)\\)$/.exec(pixel)
+      const hex = /^#([0-9a-f]{6})$/i.exec(pixel)
+      if (rgba && Number(rgba[4]) > 0) {
+        setColor('#' + [rgba[1], rgba[2], rgba[3]].map(value => Number(value).toString(16).padStart(2, '0')).join(''))
+        setTool('pencil')
+        setStatus('已吸取画布颜色')
+      } else if (hex) {
+        setColor('#' + hex[1])
+        setTool('pencil')
+        setStatus('已吸取画布颜色')
+      }
+      drawing.current = false
+      return
+    }
     const target = layers.find(layer => layer.id === activeId)
     if (!target) return
     setLayers(current => current.map(layer => {
@@ -135,13 +152,24 @@ export default function PixelCanvasEditor() {
   }
   const start = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return
-    checkpoint()
+    if (tool !== 'eyedropper') checkpoint()
     drawing.current = true
     lastIndex.current = -1
     event.currentTarget.setPointerCapture(event.pointerId)
     paint(getIndex(event))
   }
-  const move = (event: React.PointerEvent<HTMLCanvasElement>) => { if (drawing.current) paint(getIndex(event)) }
+  const move = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!drawing.current || tool === 'eyedropper') return
+    const next = getIndex(event)
+    if (lastIndex.current < 0) {
+      paint(next)
+      return
+    }
+    const from = lastIndex.current
+    for (const point of bresenhamLine(from % SIZE, Math.floor(from / SIZE), next % SIZE, Math.floor(next / SIZE))) {
+      paint(point.y * SIZE + point.x)
+    }
+  }
   const stop = () => { drawing.current = false; lastIndex.current = -1 }
 
   const undo = () => {
@@ -275,6 +303,7 @@ export default function PixelCanvasEditor() {
           <button type="button" aria-pressed={tool === 'pencil'} onClick={() => setTool('pencil')}>画笔</button>
           <button type="button" aria-pressed={tool === 'eraser'} onClick={() => setTool('eraser')}>橡皮</button>
           <button type="button" aria-pressed={tool === 'fill'} onClick={() => setTool('fill')}>油漆桶</button>
+          <button type="button" aria-pressed={tool === 'eyedropper'} onClick={() => setTool('eyedropper')}>吸管</button>
           <label>颜色<input aria-label="画笔颜色" type="color" value={color} onChange={event => setColor(event.target.value)} /></label>
           <label>缩放<input aria-label="画布缩放" type="range" min="4" max="12" value={zoom} onChange={event => setZoom(Number(event.target.value))} /></label>
           <button type="button" onClick={undo} disabled={!history.length}>撤销</button>
