@@ -27,6 +27,9 @@ test('primary creation routes render their intended mode entry points', async ({
     } else if (route.mode === 'wardrobe') {
       await expect(page.getByRole('tab', { name: /外套/ })).toHaveAttribute('aria-selected', 'true')
     } else {
+      await expect(page.getByRole('heading', { name: '64 × 64 像素编辑器' })).toBeVisible()
+      await expect(page.getByLabel('64 乘 64 像素画布')).toBeVisible()
+      await page.getByRole('button', { name: '服装预览与搭配' }).click()
       await expect(page.getByText('角色预览')).toBeVisible()
     }
   }
@@ -185,5 +188,5 @@ test('pixel canvas supports drawing, layers, undo and redo', async ({ page }) =>
   await page.getByRole('button', { name: '重做' }).click()
   await expect.poll(() => canvas.evaluate(element => (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data[0])).toBe(255)
   await page.getByRole('button', { name: /新建/ }).click()
-  await expect(page.getByRole('button', { name: '图层 2' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '图层 2', exact: true })).toBeVisible()
 })
