@@ -72,7 +72,7 @@ The upstream repository's root `LICENSE` is MIT (copyright Spencer Frost); retai
 
 ### CDPC findings confirmed in the PR branch
 
-- `PixelCanvasEditor.tsx` currently stores a custom array-based 64×64 document, supports pencil/eraser/fill, layers, undo/redo and PNG import/export. It does not yet implement an eyedropper, UV-part boundaries, or Bresenham interpolation for continuous pointer strokes.
+- `PixelCanvasEditor.tsx` stores a custom array-based 64×64 document and supports pencil/eraser/fill, layers, undo/redo, PNG import/export, continuous strokes via the newly added Bresenham helper, and eyedropper sampling. UV-to-texel conversion is now covered by a pure helper, but UV-part boundaries and inner/outer skin-layer masks are not yet integrated into the canvas.
 - The editor draft is stored in browser `localStorage`. “Save to wardrobe” uploads only a flattened PNG; it does not save the editable layer document or update the persisted workspace pointer to the new asset.
 - `WorkspaceState` currently stores project/tool/asset/outfit pointers. It is not yet a versioned canvas-document store.
 - The wardrobe's 3D preview composes non-cape garment PNGs by drawing each full 64×64 image over the base skin. This is not yet a UV-aware garment-layer compositor and needs real texture/format validation before claiming all clothing categories render correctly.
@@ -80,7 +80,7 @@ The upstream repository's root `LICENSE` is MIT (copyright Spencer Frost); retai
 
 ### Immediate reuse sequence
 
-1. Extract/adapt Skin Anvil's pure pixel math and UV-region/layer constants into a typed CDPC domain module, with unit tests and MIT attribution.
+1. (Partially complete) Adapt Skin Anvil's Bresenham stroke interpolation and UV-to-texel conversion into `src/domain/skin-paint.ts`, with unit tests. Next, adapt UV-region/layer constants and part-bounded painting with MIT attribution.
 2. Define one versioned editable-document JSON shape and persist it through the existing authenticated `WorkspaceState`/project boundary; retain localStorage only as an offline recovery cache.
 3. Add wardrobe-to-editor import and restore selected skin/outfit assets into the same editable document; save both document and flattened PNG.
 4. Only after dependency-tree verification, integrate UV raycasting using the exact Three.js instance owned by the active `skinview3d` runtime.
