@@ -22,12 +22,12 @@ Vite 旧页面将逐步下线。Vite 可以在迁移期间作为开发/构建工
 
 ## 当前仓库已核对的事实
 
-- `app/ai/page.tsx`、`app/editor/page.tsx` 和 `app/wardrobe/page.tsx` 当前都复用 `app/components/editor-entry.tsx`。
-- 该入口组件默认将用户引导到同一部署中的 `/studio/?mode=...`；如果配置 `NEXT_PUBLIC_EDITOR_URL`，则可能跳转到另一个地址。
-- `app/studio/page.tsx` 仍然是带有外部/内置编辑器跳转的中转页。
+- `/ai` 与 `/editor` 通过 `app/components/next-studio.tsx` 动态加载现有 `src/App.tsx`，属于 Next.js 托管的客户端工具壳，内部仍复用旧创作 UI。
+- `/wardrobe` 与 `/workbench/dress` 共享 `app/wardrobe/wardrobe-workspace.tsx`，当前已接入素材/穿搭 API、PNG 上传、选装、保存/加载/删除和 skinview3d 预览。
+- `/studio` 按 mode 在 Next.js 内部重定向；旧 `/dress-up` 兼容 URL 也已重定向到 `/wardrobe`，不再加载重复的旧选装页。
 - 根 `package.json` 同时保留 Vite `dev/build` 脚本和 Next.js `next:dev/next:build/next:start` 脚本。
 - Vite 源码包含 AI Studio、Preset Studio、3D 披风预览等实际业务实现，不能在没有迁移和回归的情况下整目录删除。
-- 因此目前的 Next.js AI/编辑器/衣橱路由还不是完全原生的 Next.js 功能页；本文件记录的是需要实施的迁移目标，不宣称迁移已经完成。
+- 因此目前 AI/编辑器仍复用 `src/App.tsx`、`src/PresetStudio.tsx`、`src/AiSkinStudio.tsx` 等旧 UI；衣橱已有独立 Next.js 工作区，但仍需补齐认证状态下的素材操作、真实披风渲染、跨工具状态交接和移动端完整回归。本文件记录的整体迁移仍未完成。
 
 ## 实施阶段与验收清单
 
@@ -37,7 +37,8 @@ Vite 旧页面将逐步下线。Vite 可以在迁移期间作为开发/构建工
 - [ ] 绘制 AI、编辑器、衣橱三条功能链的实际依赖图，标注可复用业务逻辑、React UI、静态资源和第三方引擎。
 - [x] 将 `/ai`、`/editor`、`/wardrobe` 以及 `/workbench/ai`、`/workbench/edit`、`/workbench/dress` 接入 Next.js App Router，并将旧 `/studio/?mode=...` 改为 Next.js 内部重定向（实现已提交，待 CI 验证）。
 - [x] 上述三条路由不再使用 `NEXT_PUBLIC_EDITOR_URL` 作为入口；旧 `/studio/` 中转页改为内部重定向（实现已提交，待 CI 验证）。
-- [ ] 增加路由回归测试，断言用户操作不会导航到 `/studio/`、Vite `index.html` 或独立编辑器域名。
+- [x] 增加核心路由/工作台入口回归测试，并覆盖旧 `/dress-up` 重定向至 `/wardrobe`。
+- [ ] 扩展路由回归测试，断言所有用户操作不会导航到 Vite `index.html` 或独立编辑器域名。
 
 ### 阶段 B：迁移 AI 创作
 
@@ -74,3 +75,11 @@ Vite 旧页面将逐步下线。Vite 可以在迁移期间作为开发/构建工
 - 将默认 `dev`、`build`、`start` 脚本切换为 Next.js；Dockerfile 不再构建或复制独立 Vite `/studio/` SPA，Nginx 不再把 `/studio/` 当作静态 Vite 应用处理，旧 `/studio` URL 交给 Next.js 兼容重定向。该生产入口清理已提交，仍待 CI 和容器冒烟测试。\n- AI API 地址切换为 `NEXT_PUBLIC_AI_API_BASE_URL`，默认同源 `/api/ai`，不再读取 Vite 专用 `import.meta.env` 配置。\n- `/studio/` 兼容路由按 `mode` 重定向到 `/ai`、`/wardrobe` 或 `/editor`；工具路由隐藏重复的 Next.js 全站导航与页脚。\n- **未完成/未验证**：没有在此环境运行 Next.js build、TypeScript、浏览器回归或 Docker build；Vite 旧 UI 源码与 package scripts 仍存在，不能宣称已全部删除或生产验证通过。若 CI 出现 CSS/TypeScript/SSR 兼容问题，应在本 PR 继续修复。\n\n## 完成定义
 
 只有当正式页面入口不再跳转到 Vite、AI/编辑器/衣橱功能在 Next.js 页面内真实可用、旧 UI 已移除、生产 Docker 和全套回归通过，才可将迁移标记为完成。在此之前，阶段状态必须保持未完成。
+
+
+## 2026-11-02 状态校正
+
+- 衣橱主路由与创作工坊衣橱子路由已统一复用 Next.js 原生 `WardrobeWorkspace`；旧 `/dress-up` 只保留兼容重定向。
+- 衣橱 API 已实现素材列表/上传/文件读取/删除，以及穿搭列表/创建/读取/替换/删除。工作区已调用素材与穿搭接口；但当前浏览器回归主要覆盖入口和分类，不等同于已完成登录态下的真实上传、保存、恢复与披风渲染 E2E。
+- PR #39 的最新 CI 正在验证浏览器回归与 Docker；通过后仍需补充真实账户流程、跨设备恢复、衣橱与 AI/编辑器交接测试。
+- Vite 依赖、源码和 Blockbench 构建仍存在；尚未达到旧 UI 清理完成定义。
