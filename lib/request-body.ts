@@ -1,7 +1,10 @@
 export class RequestBodyTooLargeError extends Error {
-  constructor(readonly maxBytes: number) {
+  readonly maxBytes: number
+
+  constructor(maxBytes: number) {
     super(`Request body exceeds the ${maxBytes} byte limit.`)
     this.name = 'RequestBodyTooLargeError'
+    this.maxBytes = maxBytes
   }
 }
 
