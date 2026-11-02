@@ -211,6 +211,7 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
     skinModel: 'CLASSIC',
     items: [{ assetId: 'asset-shawl-cloud', category: 'SHAWL', sortOrder: 0, equipped: true }],
   })
+  await expect(page.locator('#dressup-saved-outfit')).toContainText('云端披肩测试')
 })
 
 test('login page exposes email credentials and account registration', async ({ page }) => {
