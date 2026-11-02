@@ -336,7 +336,7 @@ export default function WardrobeWorkspace() {
     if (!outfit) return
     restoredWorkspace.current = true
     void loadOutfit(outfit)
-  }, [workspaceLoaded, workspaceOutfitId, outfits, assets])
+  }, [workspaceLoaded, workspaceOutfitId, outfits, loadOutfit])
 
   const deleteOutfit = async () => {
     if (!activeOutfit) return
