@@ -394,7 +394,8 @@ export default function DressUpStudio() {
       setSaveNotice('请先填写穿搭名称')
       return
     }
-    const id = selectedSavedOutfitId || `outfit-${Date.now()}`
+    const selectedOutfit = savedOutfits.find(item => item.id === selectedSavedOutfitId && !item.cloud)
+    const id = selectedOutfit?.id || `local-${Date.now()}`
     const outfit: LocalOutfit = {
       id,
       name,
@@ -406,10 +407,10 @@ export default function DressUpStudio() {
       savedAt: new Date().toISOString(),
     }
     try {
-      const next = selectedSavedOutfitId
-        ? savedOutfits.map(item => item.id === selectedSavedOutfitId ? outfit : item)
+      const next = selectedOutfit
+        ? savedOutfits.map(item => item.id === selectedOutfit.id ? outfit : item)
         : [...savedOutfits, outfit]
-      if (!selectedSavedOutfitId) setSelectedSavedOutfitId(id)
+      setSelectedSavedOutfitId(id)
       window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next.filter(item => !item.cloud)))
       window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify(outfit))
       setSavedOutfits(next)
@@ -483,6 +484,21 @@ export default function DressUpStudio() {
       setSavedOutfits(current => current.filter(item => item.id !== outfit.id))
       setSelectedSavedOutfitId('')
       setOutfitName('我的穿搭')
+      void fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' }).then(async current => {
+        if (!current.ok) return
+        const workspace = await current.json()
+        if (workspace.item?.activeOutfitId !== outfit.id) return
+        await fetch('/api/workspace', {
+          method: 'PUT', cache: 'no-store', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: workspace.item?.projectId ?? null,
+            activeTool: 'WARDROBE',
+            activeAssetId: workspace.item?.activeAssetId ?? null,
+            activeOutfitId: null,
+          }),
+        })
+      }).catch(() => undefined)
       setSaveNotice(`已从账号云端删除“${outfit.name}”`)
       return
     }
@@ -544,7 +560,7 @@ export default function DressUpStudio() {
 
   function exportOutfitAndOpenStudio() {
     exportOutfitBackup()
-    window.open('/studio', '_blank', 'noopener,noreferrer')
+    window.open('/workbench', '_blank', 'noopener,noreferrer')
     setSaveNotice('已导出穿搭 JSON，并打开创作工坊入口。若编辑器已连接，请在编辑器中选择“导入穿搭备份 JSON”并选择刚下载的文件。')
   }
 
@@ -785,7 +801,7 @@ export default function DressUpStudio() {
             <button type="button" onClick={restoreLastSavedOutfit}>恢复最近保存</button>
             <button type="button" onClick={() => setSelected({})} disabled={!selectedItems.length}>全部脱下</button>
             <button type="button" onClick={() => skinFileRef.current?.click()}>更换基础皮肤</button>
-            <Link className="primary" href="/studio">继续到创作工坊 ↗</Link>
+            <Link className="primary" href="/workbench">继续到创作工坊 ↗</Link>
           </div>
           <div className="dressup-outfit-manager">
             <label htmlFor="dressup-outfit-name">穿搭名称</label>
