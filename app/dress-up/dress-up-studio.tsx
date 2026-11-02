@@ -74,6 +74,60 @@ export default function DressUpStudio() {
   const [savedOutfits, setSavedOutfits] = useState<LocalOutfit[]>([])
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
 
+  async function refreshCloudOutfits() {
+    const response = await fetch('/api/outfits', { cache: 'no-store', credentials: 'same-origin' })
+    if (response.status === 401) return
+    if (!response.ok) throw new Error('无法读取账号云端穿搭')
+    const payload = await response.json()
+    const outfits = Array.isArray(payload.items) ? payload.items : []
+    const ids = [...new Set(outfits.flatMap((outfit: any) => [
+      ...(outfit.skinAssetId ? [outfit.skinAssetId] : []),
+      ...(Array.isArray(outfit.items) ? outfit.items.map((item: any) => item.assetId) : []),
+    ]).filter((id: unknown): id is string => typeof id === 'string'))]
+    const assets = new Map<string, any>()
+    for (let index = 0; index < ids.length; index += 65) {
+      const batch = ids.slice(index, index + 65)
+      const assetResponse = await fetch('/api/assets?ids=' + encodeURIComponent(batch.join(',')), {
+        cache: 'no-store', credentials: 'same-origin',
+      })
+      if (!assetResponse.ok) throw new Error('无法读取穿搭关联素材')
+      const assetPayload = await assetResponse.json()
+      for (const asset of assetPayload.items ?? []) assets.set(asset.id, asset)
+    }
+    const cloud: LocalOutfit[] = outfits.map((outfit: any) => {
+      const assetItems: CatalogItem[] = (outfit.items ?? []).flatMap((entry: any) => {
+        const asset = assets.get(entry.assetId)
+        const category = fromAssetCategory(asset?.category || entry.category)
+        if (!asset?.fileUrl || !category) return []
+        return [{
+          id: asset.id,
+          assetId: asset.id,
+          fileUrl: asset.fileUrl,
+          texture: asset.fileUrl,
+          name: asset.attribution || `云端${category}`,
+          category,
+          note: '账号云端素材',
+        }]
+      })
+      const skin = outfit.skinAssetId ? assets.get(outfit.skinAssetId) : null
+      return {
+        id: outfit.id,
+        name: outfit.name,
+        itemIds: assetItems.map(item => item.id),
+        model: outfit.skinModel === 'SLIM' ? 'alex' : 'steve',
+        background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
+        skinUrl: skin?.fileUrl,
+        skinAssetId: outfit.skinAssetId ?? null,
+        skinAssetUrl: skin?.fileUrl,
+        skinName: skin?.attribution || (skin ? '云端皮肤' : 'Steve 默认皮肤'),
+        savedAt: outfit.updatedAt || outfit.createdAt || new Date().toISOString(),
+        cloud: true,
+        assetItems,
+      }
+    })
+    setSavedOutfits(current => [...current.filter(item => !item.cloud), ...cloud])
+  }
+
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem('cdpc:dress-up:outfits-v1')
@@ -83,6 +137,12 @@ export default function DressUpStudio() {
     } catch {
       setSaveNotice('已保存穿搭列表无法读取；你仍可重新保存穿搭')
     }
+  }, [])
+
+  useEffect(() => {
+    void refreshCloudOutfits().catch(error => {
+      setSaveNotice(error instanceof Error ? error.message : '云端穿搭读取失败')
+    })
   }, [])
 
   useEffect(() => {
