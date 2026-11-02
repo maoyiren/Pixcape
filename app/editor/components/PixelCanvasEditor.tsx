@@ -118,7 +118,7 @@ export default function PixelCanvasEditor() {
     lastIndex.current = index
     if (tool === 'eyedropper') {
       const pixel = composite[index]
-      const rgba = /^rgba\\((\\d+), (\\d+), (\\d+), ([0-9.]+)\\)$/.exec(pixel)
+      const rgba = /^rgba\((\d+), (\d+), (\d+), ([0-9.]+)\)$/.exec(pixel)
       const hex = /^#([0-9a-f]{6})$/i.exec(pixel)
       if (rgba && Number(rgba[4]) > 0) {
         setColor('#' + [rgba[1], rgba[2], rgba[3]].map(value => Number(value).toString(16).padStart(2, '0')).join(''))
