@@ -39,3 +39,20 @@ export async function deleteStoredAsset(
   }
   return true
 }
+
+/** Preserve both failures when a failed DB insert cannot clean up its uploaded file. */
+export async function cleanupUploadedAssetAfterCreateFailure(
+  filePath: string,
+  databaseError: unknown,
+  removeFile: (path: string) => Promise<void> = unlink,
+): Promise<never> {
+  try {
+    await removeFile(filePath)
+  } catch (cleanupError) {
+    throw new AggregateError(
+      [databaseError, cleanupError],
+      'Asset record creation failed and uploaded file cleanup also failed.',
+    )
+  }
+  throw databaseError
+}
