@@ -410,7 +410,7 @@ export default function DressUpStudio() {
         ? savedOutfits.map(item => item.id === selectedSavedOutfitId ? outfit : item)
         : [...savedOutfits, outfit]
       if (!selectedSavedOutfitId) setSelectedSavedOutfitId(id)
-      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next))
+      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next.filter(item => !item.cloud)))
       window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify(outfit))
       setSavedOutfits(next)
       setOutfitName(name)
@@ -426,32 +426,73 @@ export default function DressUpStudio() {
       setSaveNotice('请选择一套已保存的穿搭')
       return
     }
-    setSelected((outfit.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
-      const item = catalog.find(entry => entry.id === id)
-      if (item) items[item.category] = item
-      return items
-    }, {}))
+    if (outfit.cloud && outfit.assetItems) {
+      setSelected(outfit.assetItems.reduce<Record<string, CatalogItem>>((items, item) => {
+        items[item.category] = item
+        return items
+      }, {}))
+      setSkinUrl(outfit.skinAssetUrl || BASE_SKIN)
+      setSkinName(outfit.skinName || 'Steve 默认皮肤')
+    } else {
+      setSelected((outfit.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
+        const item = catalog.find(entry => entry.id === id)
+        if (item) items[item.category] = item
+        return items
+      }, {}))
+      if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png')) setSkinUrl(outfit.skinUrl)
+      else setSkinUrl(BASE_SKIN)
+      if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
+    }
     if (outfit.model === 'steve' || outfit.model === 'alex') setModel(outfit.model)
     if (/^#[0-9a-f]{6}$/i.test(outfit.background)) setBackground(outfit.background)
-    if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png')) setSkinUrl(outfit.skinUrl)
-    if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
     setOutfitName(outfit.name)
-    setSaveNotice(`已载入“${outfit.name}”`)
+    setSaveNotice(outfit.cloud ? `已从账号云端载入“${outfit.name}”` : `已载入本地草稿“${outfit.name}”`)
+    if (outfit.cloud) {
+      void fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' }).then(async response => {
+        if (!response.ok) return
+        const workspace = await response.json()
+        await fetch('/api/workspace', {
+          method: 'PUT', cache: 'no-store', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: workspace.item?.projectId ?? null,
+            activeTool: 'WARDROBE',
+            activeAssetId: outfit.skinAssetId ?? workspace.item?.activeAssetId ?? null,
+            activeOutfitId: outfit.id,
+          }),
+        })
+      }).catch(() => undefined)
+    }
   }
 
-  function deleteSavedOutfit() {
+  async function deleteSavedOutfit() {
     const outfit = savedOutfits.find(item => item.id === selectedSavedOutfitId)
     if (!outfit) {
-      setSaveNotice('请选择要删除的本地穿搭')
+      setSaveNotice('请选择要删除的穿搭')
+      return
+    }
+    if (outfit.cloud) {
+      const response = await fetch(`/api/outfits/${encodeURIComponent(outfit.id)}`, {
+        method: 'DELETE', cache: 'no-store', credentials: 'same-origin',
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        setSaveNotice(payload.error || '云端穿搭删除失败')
+        return
+      }
+      setSavedOutfits(current => current.filter(item => item.id !== outfit.id))
+      setSelectedSavedOutfitId('')
+      setOutfitName('我的穿搭')
+      setSaveNotice(`已从账号云端删除“${outfit.name}”`)
       return
     }
     const next = savedOutfits.filter(item => item.id !== selectedSavedOutfitId)
     try {
-      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next))
+      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next.filter(item => !item.cloud)))
       setSavedOutfits(next)
       setSelectedSavedOutfitId('')
       setOutfitName('我的穿搭')
-      setSaveNotice(`已删除本地穿搭“${outfit.name}”`)
+      setSaveNotice(`已删除本地草稿“${outfit.name}”`)
     } catch {
       setSaveNotice('删除失败，请刷新页面后重试')
     }
@@ -734,7 +775,8 @@ export default function DressUpStudio() {
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
           <div className="dressup-actions">
             <button type="button" onClick={randomOutfit}>随机搭配</button>
-            <button type="button" onClick={saveLocalOutfit}>保存到此设备</button>
+            <button type="button" onClick={saveLocalOutfit}>保存本地草稿</button>
+            <button type="button" onClick={() => void saveOutfitToCloud()} disabled={savingCloud}>{savingCloud ? '云端保存中…' : '保存到账号云端'}</button>
             <button type="button" onClick={exportOutfitBackup}>导出穿搭备份 JSON</button>\n            <button type="button" onClick={exportOutfitAndOpenStudio}>导出并前往创作工坊</button>
             <button type="button" onClick={() => outfitFileRef.current?.click()}>导入穿搭备份 JSON</button>
             <input ref={outfitFileRef} hidden type="file" accept="application/json,.json" onChange={event => { void importOutfitBackup(event.target.files?.[0]); event.currentTarget.value = '' }} />
@@ -748,7 +790,7 @@ export default function DressUpStudio() {
           <div className="dressup-outfit-manager">
             <label htmlFor="dressup-outfit-name">穿搭名称</label>
             <input id="dressup-outfit-name" value={outfitName} maxLength={48} onChange={event => setOutfitName(event.target.value)} placeholder="例如：夜行披风套装" />
-            <label htmlFor="dressup-saved-outfit">本地已保存穿搭（{savedOutfits.length}）</label>
+            <label htmlFor="dressup-saved-outfit">已保存穿搭（{savedOutfits.length}）</label>
             <select id="dressup-saved-outfit" value={selectedSavedOutfitId} onChange={event => {
               setSelectedSavedOutfitId(event.target.value)
               const found = savedOutfits.find(item => item.id === event.target.value)
@@ -763,7 +805,7 @@ export default function DressUpStudio() {
             </div>
           </div>
           {saveNotice && <p className="dressup-save-notice" role="status">{saveNotice}</p>}
-          <p className="dressup-preview-note">穿搭可保存在此设备，也可导出为 JSON 备份后转移到另一台设备。账号云同步尚未接入；标准皮肤 PNG 导出不包含独立披风。</p>
+          <p className="dressup-preview-note">账号云端穿搭会同步保存素材引用、皮肤模型与背景；本地草稿仅用于离线恢复。标准皮肤 PNG 导出不包含独立披风。</p>
         </aside>
       </div>
     </main>
