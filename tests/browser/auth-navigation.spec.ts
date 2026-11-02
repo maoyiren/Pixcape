@@ -7,6 +7,7 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 创作' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '单品编辑器' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣橱' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '3D 换装' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
@@ -51,6 +52,48 @@ test('native AI studio exposes text and image generation controls', async ({ pag
   await expect(page.getByRole('button', { name: /生成皮肤 PNG/ })).toBeVisible()
   await page.getByRole('button', { name: '返回皮肤工作台' }).click()
   await expect(page).toHaveURL(/\/workbench$/)
+})
+
+
+test('AI-generated skin can be saved into the shared wardrobe and workspace', async ({ page }) => {
+  const pngDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/XioAAAAASUVORK5CYII='
+  let savedAsset: Record<string, unknown> | null = null
+  let savedWorkspace: Record<string, unknown> | null = null
+  await page.route('**/api/ai/models', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ models: [{ id: 'test:model', provider: 'test', model: 'test-model', label: 'Test', textToImage: true, imageToImage: true }], providers: [] }),
+  }))
+  await page.route('**/api/ai/generate', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ imageDataUrl: pngDataUrl, provider: 'test', model: 'test-model', elapsedMs: 100, notice: 'test', outputKind: 'minecraft-skin' }),
+  }))
+  await page.route('**/api/assets', async route => {
+    if (route.request().method() !== 'POST') return route.continue()
+    const form = route.request().postDataBuffer()
+    savedAsset = { received: Boolean(form), category: 'SKIN', visibility: 'PRIVATE' }
+    await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: { id: 'asset-ai-demo' } }) })
+  })
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: 'project-demo', activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-demo',
+      } }) })
+      return
+    }
+    savedWorkspace = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedWorkspace }) })
+  })
+  await page.goto('/ai')
+  await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
+  await page.getByRole('button', { name: '生成皮肤 PNG' }).click()
+  await expect(page.getByRole('button', { name: '保存到我的衣橱' })).toBeVisible()
+  await page.getByRole('button', { name: '保存到我的衣橱' }).click()
+  await expect(page.getByRole('button', { name: '已保存到衣橱' })).toBeVisible()
+  expect(savedAsset).toEqual({ received: true, category: 'SKIN', visibility: 'PRIVATE' })
+  expect(savedWorkspace).toEqual({
+    projectId: 'project-demo', activeTool: 'AI_GENERATOR', activeAssetId: 'asset-ai-demo', activeOutfitId: 'outfit-demo',
+  })
+  await expect(page.getByRole('link', { name: '打开衣橱' })).toHaveAttribute('href', '/wardrobe')
 })
 
 test('workbench nested routes map to their intended workflows', async ({ page }) => {
@@ -124,7 +167,8 @@ test('workbench remains usable at a narrow mobile viewport', async ({ page }) =>
 test('account entry points to the actual personal center route', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作工坊' })).toHaveAttribute('href', '/workbench')
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣服选装' })).toHaveAttribute('href', '/wardrobe')
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣橱' })).toHaveAttribute('href', '/wardrobe')
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '3D 换装' })).toHaveAttribute('href', '/dress-up')
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 创作' })).toHaveAttribute('href', '/ai')
 })
 
