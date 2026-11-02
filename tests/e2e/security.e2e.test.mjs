@@ -60,3 +60,26 @@ test('internal AI configuration endpoint is private and non-cacheable without a 
   const body = await response.text()
   assert.doesNotMatch(body, /GEMINI_API_KEY|OPENAI_API_KEY|ARK_API_KEY|AI_SECRET_/)
 })
+
+for (const [method, path, body, headers] of [
+  ['GET', '/api/assets'],
+  ['POST', '/api/assets', new FormData()],
+  ['GET', '/api/assets/test-asset/file'],
+  ['DELETE', '/api/assets/test-asset'],
+  ['GET', '/api/outfits'],
+  ['POST', '/api/outfits', JSON.stringify({ name: 'unauthenticated' }), { 'content-type': 'application/json' }],
+  ['GET', '/api/outfits/test-outfit'],
+  ['PUT', '/api/outfits/test-outfit', JSON.stringify({ name: 'unauthenticated' }), { 'content-type': 'application/json' }],
+  ['DELETE', '/api/outfits/test-outfit'],
+]) {
+  test(`anonymous ${method} ${path} is denied before resource access`, async () => {
+    const response = await fetch(new URL(path, base), {
+      method,
+      body,
+      headers,
+      redirect: 'manual',
+    })
+    assert.equal(response.status, 401, `${method} ${path} must require an authenticated session (got ${response.status})`)
+    assert.equal(response.headers.get('cache-control'), 'no-store')
+  })
+}
