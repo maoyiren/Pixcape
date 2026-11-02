@@ -32,6 +32,19 @@ test('primary creation routes render their intended mode entry points', async ({
   }
 })
 
+test('native AI studio exposes text and image generation controls', async ({ page }) => {
+  await page.goto('/ai')
+  await expect(page.locator('[data-studio-mode="ai"]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
+  await expect(page.getByLabel('角色描述')).toBeVisible()
+  await expect(page.getByRole('tab', { name: /文字生成/ })).toBeVisible()
+  await page.getByRole('tab', { name: /参考图转换/ }).click()
+  await expect(page.getByRole('button', { name: /选择 PNG \/ JPG \/ WebP/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /生成皮肤 PNG/ })).toBeVisible()
+  await page.getByRole('button', { name: '返回皮肤工作台' }).click()
+  await expect(page).toHaveURL(/\\/workbench$/)
+})
+
 test('workbench nested routes map to their intended workflows', async ({ page }) => {
   const routes = [
     { path: '/workbench/ai', heading: 'AI 生成' },
@@ -110,7 +123,7 @@ test('account entry points to the actual personal center route', async ({ page }
 
 test('legacy dress-up URL redirects to the canonical wardrobe', async ({ page }) => {
   await page.goto('/dress-up')
-  await expect(page).toHaveURL(/\/wardrobe$/)
+  await expect(page).toHaveURL(/\\/wardrobe$/)
   await expect(page.locator('[data-studio-mode="wardrobe"]')).toBeVisible()
   await expect(page.getByRole('tab', { name: /披肩/ })).toBeVisible()
   await expect(page.getByRole('tab', { name: /外套/ })).toBeVisible()
