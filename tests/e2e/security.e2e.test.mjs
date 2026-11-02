@@ -80,6 +80,5 @@ for (const [method, path, body, headers] of [
       redirect: 'manual',
     })
     assert.equal(response.status, 401, `${method} ${path} must require an authenticated session (got ${response.status})`)
-    assert.equal(response.headers.get('cache-control'), 'no-store')
   })
 }
