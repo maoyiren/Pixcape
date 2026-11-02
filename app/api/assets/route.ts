@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await readRequestBodyWithLimit(request.body, MAX_MULTIPART_BYTES)
-    const boundedRequest = new Request(request.url, { method: 'POST', headers: request.headers, body })
+    const boundedRequest = new Request(request.url, { method: 'POST', headers: request.headers, body: new Uint8Array(body) })
     const form = await boundedRequest.formData()
     const file = form.get('file')
     const category = AssetCategorySchema.safeParse(form.get('category'))
