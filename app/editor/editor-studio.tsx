@@ -9,6 +9,8 @@ import '../../src/styles.css'
 import './components/preset-studio.css'
 import './components/preview-options.css'
 import './components/navigation-refresh.css'
+import './components/pixel-canvas-editor.css'
+import PixelCanvasEditor from './components/PixelCanvasEditor'
 import type { PresetEditorPayload } from './components/PresetStudio'
 
 const BLOCKBENCH_PATH = '/blockbench/'
@@ -68,6 +70,7 @@ export default function EditorStudio() {
   usePersistEditorHandoff()
   const router = useRouter()
   const [editorOpen, setEditorOpen] = useState(false)
+  const [view, setView] = useState<'pixel' | 'presets'>('pixel')
   const [pendingPayload, setPendingPayload] = useState<PresetEditorPayload | null>(null)
   const [importFeedback, setImportFeedback] = useState('')
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -114,11 +117,19 @@ export default function EditorStudio() {
   return (
     <div data-studio-mode="editor">
       {!editorOpen ? (
-        <PresetStudio initialMode="editor" onOpenAI={() => router.push('/ai')} onOpenEditor={payload => {
-          setPendingPayload(payload)
-          setImportFeedback('')
-          setEditorOpen(true)
-        }} />
+        <>
+          <nav className="cdpc-editor-mode-switch" aria-label="编辑模式">
+            <button type="button" aria-pressed={view === 'pixel'} onClick={() => setView('pixel')}>像素画布</button>
+            <button type="button" aria-pressed={view === 'presets'} onClick={() => setView('presets')}>服装预览与搭配</button>
+          </nav>
+          {view === 'pixel' ? <PixelCanvasEditor /> : (
+            <PresetStudio initialMode="editor" onOpenAI={() => router.push('/ai')} onOpenEditor={payload => {
+              setPendingPayload(payload)
+              setImportFeedback('')
+              setEditorOpen(true)
+            }} />
+          )}
+        </>
       ) : (
         <div className="cdpc-editor-overlay">
           <div className="cdpc-editor-toolbar">
