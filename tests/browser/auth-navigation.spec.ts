@@ -27,7 +27,7 @@ test('primary creation routes render their intended mode entry points', async ({
       await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible({ timeout: 15_000 })
     } else if (route.mode === 'wardrobe') {
       await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
-      await expect(page.getByText('皮肤与服装素材')).toBeVisible()
+      await expect(page.getByRole('button', { name: /全部素材/ })).toBeVisible()
     } else if (route.mode === 'dress-up') {
       await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
       await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
