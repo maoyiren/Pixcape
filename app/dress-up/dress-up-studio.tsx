@@ -763,7 +763,7 @@ export default function DressUpStudio() {
           {category !== '全部' && !availableCategories.has(category) && <div className="dressup-unavailable"><strong>{category}素材尚未接入</strong><p>目前正式素材目录尚未提供该分类的可用贴图，因此不会展示虚构素材。素材接入后会在这里出现。</p></div>}
           <div className="dressup-items">
             {filtered.map(item => <button type="button" key={item.id} className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => toggleItem(item)}>
-              <span className="dressup-item-mark" aria-hidden="true">▦</span>
+              <img className="dressup-item-thumbnail" src={item.fileUrl || ASSET_ROOT + (model === 'alex' && item.modelTexture ? item.modelTexture : item.texture)} alt="" aria-hidden="true" loading="lazy" draggable={false} />
               <strong>{item.name}</strong>
               <small>{item.category} · {item.note}</small>
               <span className="dressup-item-state">{selected[item.category]?.id === item.id ? '已选择' : '点击试穿'}</span>
