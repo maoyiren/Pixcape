@@ -154,5 +154,10 @@ export const cdpcApi = {
   deleteOutfit: (outfitId: string) =>
     request<{ ok: true }>(`/api/outfits/${encodeURIComponent(outfitId)}`, { method: 'DELETE' }),
 
+  setAssetFavorite: (assetId: string, favorite: boolean) =>
+    request<{ favorited: boolean }>(`/api/assets/${encodeURIComponent(assetId)}/favorite`, {
+      method: favorite ? 'PUT' : 'DELETE',
+    }),
+
   assetFileUrl: (assetId: string) => `/api/assets/${encodeURIComponent(assetId)}/file`,
 }
