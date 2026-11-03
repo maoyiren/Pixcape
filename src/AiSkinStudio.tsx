@@ -129,14 +129,18 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
       })
       setSavedAssetId(uploaded.id)
 
-      const workspace = await cdpcApi.getWorkspace()
-      await cdpcApi.updateWorkspace({
-        projectId: workspace.projectId ?? null,
-        activeTool: 'AI_GENERATOR',
-        activeAssetId: uploaded.id,
-        activeOutfitId: null,
-      })
-      setSaveFeedback('已保存到我的衣橱，并同步为当前工作区素材')
+      try {
+        const workspace = await cdpcApi.getWorkspace()
+        await cdpcApi.updateWorkspace({
+          projectId: workspace.projectId ?? null,
+          activeTool: 'AI_GENERATOR',
+          activeAssetId: uploaded.id,
+          activeOutfitId: null,
+        })
+        setSaveFeedback('已保存到我的衣橱，并同步为当前工作区素材')
+      } catch (cause) {
+        setSaveFeedback(`皮肤已保存到衣橱，但工作区同步失败：${cause instanceof Error ? cause.message : '请稍后重试'}`)
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '保存生成结果失败')
     } finally {
