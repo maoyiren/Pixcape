@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { bresenhamLine } from '@/src/domain/skin-paint'
-import { cdpcApi } from '@/src/client/cdpc-api'
+import { CdpcApiError, cdpcApi } from '@/src/client/cdpc-api'
 
 type Layer = { id: string; name: string; visible: boolean; opacity: number; pixels: string[] }
 type Tool = 'pencil' | 'eraser' | 'fill' | 'eyedropper'
 const SIZE = 64
 const blank = () => Array<string>(SIZE * SIZE).fill('')
 const newLayer = (name: string): Layer => ({ id: crypto.randomUUID(), name, visible: true, opacity: 100, pixels: blank() })
+const cloudSnapshot = (name: string, activeId: string, layers: Layer[]) => JSON.stringify({ name, document: { version: 1, width: 64, height: 64, activeId, layers } })
 
 function floodFill(source: string[], start: number, replacement: string) {
   const target = source[start]
@@ -47,6 +48,8 @@ export default function PixelCanvasEditor() {
   const [cloudDocumentId, setCloudDocumentId] = useState('')
   const [cloudRevision, setCloudRevision] = useState(0)
   const [cloudDocumentLoaded, setCloudDocumentLoaded] = useState(false)
+  const [cloudBaseline, setCloudBaseline] = useState<string | null>(null)
+  const [cloudConflict, setCloudConflict] = useState(false)
   const [cloudName, setCloudName] = useState('我的像素作品')
   const [cloudBusy, setCloudBusy] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -148,6 +151,8 @@ export default function PixelCanvasEditor() {
     }
   }, [layers, activeId, loaded])
 
+  const currentCloudSnapshot = useMemo(() => cloudSnapshot(cloudName, activeId, layers), [cloudName, activeId, layers])
+  const cloudDirty = cloudDocumentLoaded && cloudBaseline !== null && currentCloudSnapshot !== cloudBaseline
   const composite = useMemo(() => {
     const result = blank()
     layers.forEach(layer => {
@@ -335,20 +340,54 @@ export default function PixelCanvasEditor() {
   }
 
   const saveCloudDocument = async () => {
+    if (cloudConflict) {
+      setStatus('检测到云端版本冲突，请先重新载入云端，或另存为新副本')
+      return
+    }
+    if (cloudDocumentLoaded && !cloudDirty) {
+      setStatus('云端文档已是最新版本')
+      return
+    }
     setCloudBusy(true)
+    const document = { version: 1 as const, width: 64 as const, height: 64 as const, activeId, layers }
+    const savedSnapshot = cloudSnapshot(cloudName, activeId, layers)
     try {
-      const document = { version: 1 as const, width: 64 as const, height: 64 as const, activeId, layers }
       const saved = cloudDocumentId && cloudDocumentLoaded
         ? await cdpcApi.updateEditorDocument(cloudDocumentId, cloudName, document, cloudRevision)
         : await cdpcApi.createEditorDocument(cloudName, document)
       setCloudDocumentId(saved.id)
       setCloudRevision(saved.revision)
       setCloudDocumentLoaded(true)
+      setCloudBaseline(savedSnapshot)
+      setCloudConflict(false)
       const items = await cdpcApi.listEditorDocuments()
       setCloudDocuments(items)
       setStatus('云端文档已保存，可在其他设备登录后打开')
     } catch (error) {
+      if (error instanceof CdpcApiError && error.status === 409) setCloudConflict(true)
       setStatus(error instanceof Error ? `云端保存失败：${error.message}` : '云端保存失败')
+    } finally {
+      setCloudBusy(false)
+    }
+  }
+
+  const saveCloudCopy = async () => {
+    setCloudBusy(true)
+    const copyName = `${cloudName.trim() || '未命名作品'}（副本）`.slice(0, 80)
+    const document = { version: 1 as const, width: 64 as const, height: 64 as const, activeId, layers }
+    const savedSnapshot = cloudSnapshot(copyName, activeId, layers)
+    try {
+      const saved = await cdpcApi.createEditorDocument(copyName, document)
+      setCloudName(copyName)
+      setCloudDocumentId(saved.id)
+      setCloudRevision(saved.revision)
+      setCloudDocumentLoaded(true)
+      setCloudBaseline(savedSnapshot)
+      setCloudConflict(false)
+      setCloudDocuments(await cdpcApi.listEditorDocuments())
+      setStatus('本地内容已另存为新的云端副本，原云端版本未被覆盖')
+    } catch (error) {
+      setStatus(error instanceof Error ? `另存副本失败：${error.message}` : '另存副本失败')
     } finally {
       setCloudBusy(false)
     }
@@ -366,6 +405,8 @@ export default function PixelCanvasEditor() {
       setCloudDocuments(current => current.filter(item => item.id !== cloudDocumentId))
       setCloudDocumentId('')
       setCloudDocumentLoaded(false)
+      setCloudBaseline(null)
+      setCloudConflict(false)
       setCloudRevision(0)
       setStatus('云端文档已删除；本地草稿仍保留')
     } catch (error) {
@@ -377,14 +418,18 @@ export default function PixelCanvasEditor() {
 
   const openCloudDocument = async () => {
     if (!cloudDocumentId) { setStatus('请先选择一份云端文档'); return }
+    if (cloudDirty && !window.confirm('当前有未保存的本地修改。重新载入将放弃这些修改；如需保留，请先另存为云端副本。继续吗？')) return
     setCloudBusy(true)
     try {
       const item = await cdpcApi.getEditorDocument(cloudDocumentId)
+      const nextActiveId = item.document.activeId || item.document.layers[0]?.id || ''
       setLayers(item.document.layers)
-      setActiveId(item.document.activeId || item.document.layers[0]?.id || '')
+      setActiveId(nextActiveId)
       setCloudName(item.name)
       setCloudRevision(item.revision)
       setCloudDocumentLoaded(true)
+      setCloudBaseline(cloudSnapshot(item.name, nextActiveId, item.document.layers))
+      setCloudConflict(false)
       setHistory([])
       setFuture([])
       setStatus('已从云端恢复编辑文档')
@@ -393,6 +438,15 @@ export default function PixelCanvasEditor() {
     } finally {
       setCloudBusy(false)
     }
+  }
+
+  const selectCloudDocument = (nextId: string) => {
+    if (cloudDirty && !window.confirm('当前有未保存的本地修改。切换文档将放弃这些修改；如需保留，请先另存为云端副本。继续吗？')) return
+    setCloudDocumentId(nextId)
+    setCloudDocumentLoaded(false)
+    setCloudBaseline(null)
+    setCloudConflict(false)
+    setCloudRevision(0)
   }
 
   const saveToWardrobe = async () => {
@@ -447,15 +501,19 @@ export default function PixelCanvasEditor() {
           <input aria-label="云端文档名称" value={cloudName} maxLength={80} onChange={event => setCloudName(event.target.value)} />
         </label>
         <label>已保存文档
-          <select aria-label="选择云端文档" value={cloudDocumentId} onChange={event => { setCloudDocumentId(event.target.value); setCloudDocumentLoaded(false); setCloudRevision(0) }}>
+          <select aria-label="选择云端文档" value={cloudDocumentId} onChange={event => selectCloudDocument(event.target.value)}>
             <option value="">新建云端文档</option>
             {cloudDocuments.map(item => <option key={item.id} value={item.id}>{item.name} · {new Date(item.updatedAt).toLocaleString()}</option>)}
           </select>
         </label>
         <button type="button" disabled={cloudBusy} onClick={() => void openCloudDocument()}>打开云端</button>
-        <button type="button" disabled={cloudBusy} onClick={() => void saveCloudDocument()}>{cloudBusy ? '同步中…' : '保存云端'}</button>
+        <button type="button" disabled={cloudBusy || cloudConflict} onClick={() => void saveCloudDocument()}>{cloudBusy ? '同步中…' : '保存云端'}</button>
+        {cloudConflict && <button type="button" disabled={cloudBusy} onClick={() => void saveCloudCopy()}>另存为云端副本</button>}
         <button type="button" disabled={cloudBusy || !cloudDocumentLoaded} onClick={() => void deleteCloudDocument()}>删除云端</button>
       </div>
+      <p className="cdpc-cloud-state" role="status" aria-live="polite">
+        {cloudConflict ? '云端版本冲突：本地修改已保留，原文档未被覆盖。请重新载入云端或另存为副本。' : cloudDocumentLoaded ? cloudDirty ? '有未保存的云端修改' : '云端文档已同步' : '当前为本地草稿；可新建或打开云端文档'}
+      </p>
       <div className="cdpc-pixel-layout">
         <aside className="cdpc-pixel-tools" aria-label="绘图工具">
           <button type="button" aria-pressed={tool === 'pencil'} onClick={() => setTool('pencil')}>画笔</button>
