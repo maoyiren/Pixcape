@@ -21,9 +21,9 @@ export class CdpcApiError extends Error {
 
 export type ApiAsset = {
   id: string
-  ownerId: string
+  ownerId: string | null
   kind: string
-  category: AssetCategory
+  category: AssetCategory | null
   mimeType: string
   byteSize: number
   width: number | null
