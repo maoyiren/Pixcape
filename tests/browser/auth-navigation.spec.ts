@@ -344,6 +344,34 @@ test('pixel canvas supports drawing, layers, undo and redo', async ({ page }) =>
   await expect(page.getByRole('button', { name: '图层 2', exact: true })).toBeVisible()
 })
 
+test('saving a new pixel skin clears the previous outfit workspace pointer', async ({ page }) => {
+  let savedWorkspace: Record<string, unknown> | null = null
+  await page.route('**/api/assets', async route => {
+    if (route.request().method() !== 'POST') return route.continue()
+    await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: { id: 'pixel-skin-new' } }) })
+  })
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: 'project-demo', activeTool: 'WARDROBE', activeAssetId: 'old-skin', activeOutfitId: 'old-outfit',
+      } }) })
+      return
+    }
+    savedWorkspace = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedWorkspace }) })
+  })
+
+  await page.goto('/editor')
+  await page.getByRole('button', { name: '保存到衣橱' }).click()
+  await expect.poll(() => savedWorkspace).toEqual({
+    projectId: 'project-demo',
+    activeTool: 'PIXEL_EDITOR',
+    activeAssetId: 'pixel-skin-new',
+    activeOutfitId: null,
+  })
+  await expect(page.getByText('皮肤已保存到衣橱，并已同步为当前工作区素材')).toBeVisible()
+})
+
 test('wardrobe asset handoff clears a previously active cloud outfit', async ({ page }) => {
   let savedPointer: Record<string, unknown> | null = null
   await page.route('**/api/assets?limit=60', route => route.fulfill({
