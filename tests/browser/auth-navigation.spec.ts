@@ -598,7 +598,7 @@ test('pixel editor detects cloud edits and saves a conflict as a separate copy',
   await expect(page.getByRole('status')).toContainText('云端版本冲突')
   await expect(page.getByRole('button', { name: '保存云端' })).toBeDisabled()
   await page.getByRole('button', { name: '另存为云端副本' }).click()
-  await expect(page.getByRole('status')).toContainText('本地内容已另存为新的云端副本')
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('本地内容已另存为新的云端副本')
   expect(updateAttempts).toBe(1)
   expect(createdCopies).toHaveLength(1)
   expect(createdCopies[0].name).toBe('本地修改作品（副本）')
