@@ -263,6 +263,20 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     const { item: editorDocument } = await createEditorDocument.json()
     assert.equal(editorDocument.revision, 1)
 
+    const invalidEditorDocument = await fetch(new URL('/api/editor-documents', base), {
+      method: 'POST',
+      headers: { cookie: ownerSession, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Invalid pixel project', document: { version: 1, width: 32, height: 32, layers: [] } }),
+    })
+    assert.equal(invalidEditorDocument.status, 400, 'invalid editor document dimensions are rejected')
+
+    const oversizedEditorDocument = await fetch(new URL('/api/editor-documents', base), {
+      method: 'POST',
+      headers: { cookie: ownerSession, 'content-type': 'application/json' },
+      body: 'x'.repeat(2 * 1024 * 1024 + 8192),
+    })
+    assert.equal(oversizedEditorDocument.status, 413, 'oversized streamed editor requests are rejected before JSON parsing')
+
     const ownerEditorDocuments = await fetch(new URL('/api/editor-documents', base), { headers: { cookie: ownerSession } })
     assert.equal(ownerEditorDocuments.status, 200)
     assert.ok((await ownerEditorDocuments.json()).items.some((entry) => entry.id === editorDocument.id))
