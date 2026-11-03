@@ -43,6 +43,11 @@ export default function PixelCanvasEditor() {
   const [future, setFuture] = useState<Array<{ layers: Layer[]; activeId: string }>>([])
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [cloudDocuments, setCloudDocuments] = useState<Array<{ id: string; name: string; revision: number; updatedAt: string }>>([])
+  const [cloudDocumentId, setCloudDocumentId] = useState('')
+  const [cloudRevision, setCloudRevision] = useState(0)
+  const [cloudName, setCloudName] = useState('我的像素作品')
+  const [cloudBusy, setCloudBusy] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const drawing = useRef(false)
@@ -66,6 +71,17 @@ export default function PixelCanvasEditor() {
   useEffect(() => {
     if (!activeId && layers[0]) setActiveId(layers[0].id)
   }, [activeId, layers])
+
+  useEffect(() => {
+    if (!loaded) return
+    let cancelled = false
+    void cdpcApi.listEditorDocuments().then(items => {
+      if (!cancelled) setCloudDocuments(items)
+    }).catch(() => {
+      // Anonymous visitors can still use local drafts and PNG export.
+    })
+    return () => { cancelled = true }
+  }, [loaded])
 
   // Restore the server-selected wardrobe asset when entering the editor.
   // LocalStorage remains an offline draft cache, not the cross-tool source of truth.
@@ -315,6 +331,44 @@ export default function PixelCanvasEditor() {
     setStatus('已导出 64 × 64 PNG')
   }
 
+  const saveCloudDocument = async () => {
+    setCloudBusy(true)
+    try {
+      const document = { version: 1 as const, width: 64 as const, height: 64 as const, activeId, layers }
+      const saved = cloudDocumentId
+        ? await cdpcApi.updateEditorDocument(cloudDocumentId, cloudName, document, cloudRevision)
+        : await cdpcApi.createEditorDocument(cloudName, document)
+      setCloudDocumentId(saved.id)
+      setCloudRevision(saved.revision)
+      const items = await cdpcApi.listEditorDocuments()
+      setCloudDocuments(items)
+      setStatus('云端文档已保存，可在其他设备登录后打开')
+    } catch (error) {
+      setStatus(error instanceof Error ? `云端保存失败：${error.message}` : '云端保存失败')
+    } finally {
+      setCloudBusy(false)
+    }
+  }
+
+  const openCloudDocument = async () => {
+    if (!cloudDocumentId) { setStatus('请先选择一份云端文档'); return }
+    setCloudBusy(true)
+    try {
+      const item = await cdpcApi.getEditorDocument(cloudDocumentId)
+      setLayers(item.document.layers)
+      setActiveId(item.document.activeId || item.document.layers[0]?.id || '')
+      setCloudName(item.name)
+      setCloudRevision(item.revision)
+      setHistory([])
+      setFuture([])
+      setStatus('已从云端恢复编辑文档')
+    } catch (error) {
+      setStatus(error instanceof Error ? `云端打开失败：${error.message}` : '云端打开失败')
+    } finally {
+      setCloudBusy(false)
+    }
+  }
+
   const saveToWardrobe = async () => {
     setSaving(true)
     try {
@@ -362,6 +416,19 @@ export default function PixelCanvasEditor() {
           <button type="button" disabled={saving} onClick={() => void saveToWardrobe()}>{saving ? '保存中…' : '保存到衣橱'}</button>
         </div>
       </header>
+      <div className="cdpc-pixel-cloudbar">
+        <label>云端文档名称
+          <input aria-label="云端文档名称" value={cloudName} maxLength={80} onChange={event => setCloudName(event.target.value)} />
+        </label>
+        <label>已保存文档
+          <select aria-label="选择云端文档" value={cloudDocumentId} onChange={event => setCloudDocumentId(event.target.value)}>
+            <option value="">新建云端文档</option>
+            {cloudDocuments.map(item => <option key={item.id} value={item.id}>{item.name} · {new Date(item.updatedAt).toLocaleString()}</option>)}
+          </select>
+        </label>
+        <button type="button" disabled={cloudBusy} onClick={() => void openCloudDocument()}>打开云端</button>
+        <button type="button" disabled={cloudBusy} onClick={() => void saveCloudDocument()}>{cloudBusy ? '同步中…' : '保存云端'}</button>
+      </div>
       <div className="cdpc-pixel-layout">
         <aside className="cdpc-pixel-tools" aria-label="绘图工具">
           <button type="button" aria-pressed={tool === 'pencil'} onClick={() => setTool('pencil')}>画笔</button>
