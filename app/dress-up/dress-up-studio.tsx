@@ -427,7 +427,7 @@ export default function DressUpStudio() {
           body: JSON.stringify({
             projectId: workspace.item?.projectId ?? null,
             activeTool: 'WARDROBE',
-            activeAssetId: skinAssetId ?? workspace.item?.activeAssetId ?? null,
+            activeAssetId: skinAssetId,
             activeOutfitId: savedId,
           }),
         })
@@ -523,7 +523,7 @@ export default function DressUpStudio() {
           body: JSON.stringify({
             projectId: workspace.item?.projectId ?? null,
             activeTool: 'WARDROBE',
-            activeAssetId: outfit.skinAssetId ?? workspace.item?.activeAssetId ?? null,
+            activeAssetId: outfit.skinAssetId ?? null,
             activeOutfitId: outfit.id,
           }),
         })
