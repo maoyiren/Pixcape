@@ -506,7 +506,7 @@ export default function PixelCanvasEditor() {
             {cloudDocuments.map(item => <option key={item.id} value={item.id}>{item.name} · {new Date(item.updatedAt).toLocaleString()}</option>)}
           </select>
         </label>
-        <button type="button" disabled={cloudBusy} onClick={() => void openCloudDocument()}>打开云端</button>
+        <button type="button" disabled={cloudBusy} onClick={() => void openCloudDocument()}>{cloudDocumentLoaded ? "重新载入云端" : "打开云端"}</button>
         <button type="button" disabled={cloudBusy || cloudConflict} onClick={() => void saveCloudDocument()}>{cloudBusy ? '同步中…' : '保存云端'}</button>
         {cloudConflict && <button type="button" disabled={cloudBusy} onClick={() => void saveCloudCopy()}>另存为云端副本</button>}
         <button type="button" disabled={cloudBusy || !cloudDocumentLoaded} onClick={() => void deleteCloudDocument()}>删除云端</button>
