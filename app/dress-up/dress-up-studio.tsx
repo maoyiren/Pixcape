@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { cdpcApi } from '@/src/client/cdpc-api'
 import { SkinViewer } from 'skinview3d'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
@@ -77,11 +78,11 @@ export default function DressUpStudio() {
   const [savingCloud, setSavingCloud] = useState(false)
 
   const refreshCloudOutfits = useCallback(async () => {
-    const response = await fetch('/api/outfits', { cache: 'no-store', credentials: 'same-origin' })
-    if (response.status === 401) return
-    if (!response.ok) throw new Error('无法读取账号云端穿搭')
-    const payload = await response.json()
-    const outfits = Array.isArray(payload.items) ? payload.items : []
+    let outfits
+    try { outfits = await cdpcApi.listOutfits() } catch (error) {
+      if (error instanceof Error && 'status' in error && error.status === 401) return
+      throw new Error('无法读取账号云端穿搭')
+    }
     const ids = [...new Set(outfits.flatMap((outfit: any) => [
       ...(outfit.skinAssetId ? [outfit.skinAssetId] : []),
       ...(Array.isArray(outfit.items) ? outfit.items.map((item: any) => item.assetId) : []),
@@ -89,11 +90,7 @@ export default function DressUpStudio() {
     const assets = new Map<string, any>()
     for (let index = 0; index < ids.length; index += 65) {
       const batch = ids.slice(index, index + 65)
-      const assetResponse = await fetch('/api/assets?ids=' + encodeURIComponent(batch.join(',')), {
-        cache: 'no-store', credentials: 'same-origin',
-      })
-      if (!assetResponse.ok) throw new Error('无法读取穿搭关联素材')
-      const assetPayload = await assetResponse.json()
+      const assetPayload = await cdpcApi.listAssets({ ids: batch })
       for (const asset of assetPayload.items ?? []) assets.set(asset.id, asset)
     }
     const cloud: LocalOutfit[] = outfits.map((outfit: any) => {
@@ -128,10 +125,9 @@ export default function DressUpStudio() {
       }
     })
     setSavedOutfits(current => [...current.filter(item => !item.cloud), ...cloud])
-    const workspaceResponse = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
-    if (workspaceResponse.ok) {
-      const workspace = await workspaceResponse.json()
-      const activeOutfit = cloud.find(item => item.id === workspace.item?.activeOutfitId)
+    const workspace = await cdpcApi.getWorkspace().catch(() => null)
+    if (workspace) {
+      const activeOutfit = cloud.find(item => item.id === workspace.activeOutfitId)
       if (activeOutfit?.assetItems) {
         setSelected(activeOutfit.assetItems.reduce<Record<string, CatalogItem>>((items, item) => {
           items[item.category] = item
@@ -345,17 +341,11 @@ export default function DressUpStudio() {
     const blob = await imageResponse.blob()
     if (blob.type !== 'image/png') throw new Error(`素材“${attribution}”不是 PNG 格式`)
     const file = new File([blob], `${category.toLowerCase()}-${Date.now()}.png`, { type: 'image/png' })
-    const form = new FormData()
-    form.set('file', file)
-    form.set('category', category)
-    form.set('visibility', 'PRIVATE')
-    form.set('attribution', attribution)
-    const response = await fetch('/api/assets', {
-      method: 'POST', body: form, cache: 'no-store', credentials: 'same-origin',
+    const asset = await cdpcApi.uploadAsset(file, category, {
+      visibility: 'PRIVATE',
+      attribution,
     })
-    const payload = await response.json()
-    if (!response.ok || !payload.item?.id) throw new Error(payload.error || `保存素材“${attribution}”失败`)
-    return payload.item as { id: string; fileUrl: string }
+    return { id: asset.id, fileUrl: asset.fileUrl }
   }
 
   async function saveOutfitToCloud() {
@@ -404,32 +394,18 @@ export default function DressUpStudio() {
         })),
       }
       const existingCloud = savedOutfits.find(item => item.id === selectedSavedOutfitId && item.cloud)
-      const endpoint = existingCloud ? `/api/outfits/${encodeURIComponent(existingCloud.id)}` : '/api/outfits'
-      const response = await fetch(endpoint, {
-        method: existingCloud ? 'PUT' : 'POST',
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      })
-      const payload = await response.json()
-      if (!response.ok || !payload.item?.id) throw new Error(payload.error || '账号云端穿搭保存失败')
-      const savedId = payload.item.id
+      const saved = existingCloud
+        ? await cdpcApi.updateOutfit(existingCloud.id, input)
+        : await cdpcApi.createOutfit(input)
+      const savedId = saved.id
 
-      const workspaceResponse = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
-      if (workspaceResponse.ok) {
-        const workspace = await workspaceResponse.json()
-        await fetch('/api/workspace', {
-          method: 'PUT',
-          cache: 'no-store',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: workspace.item?.projectId ?? null,
-            activeTool: 'WARDROBE',
-            activeAssetId: skinAssetId,
-            activeOutfitId: savedId,
-          }),
+      const workspace = await cdpcApi.getWorkspace().catch(() => null)
+      if (workspace) {
+        await cdpcApi.updateWorkspace({
+          projectId: workspace.projectId ?? null,
+          activeTool: 'WARDROBE',
+          activeAssetId: skinAssetId,
+          activeOutfitId: savedId,
         })
       }
 
@@ -514,20 +490,12 @@ export default function DressUpStudio() {
     setOutfitName(outfit.name)
     setSaveNotice(outfit.cloud ? `已从账号云端载入“${outfit.name}”` : `已载入本地草稿“${outfit.name}”`)
     if (outfit.cloud) {
-      void fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' }).then(async response => {
-        if (!response.ok) return
-        const workspace = await response.json()
-        await fetch('/api/workspace', {
-          method: 'PUT', cache: 'no-store', credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: workspace.item?.projectId ?? null,
-            activeTool: 'WARDROBE',
-            activeAssetId: outfit.skinAssetId ?? null,
-            activeOutfitId: outfit.id,
-          }),
-        })
-      }).catch(() => undefined)
+      void cdpcApi.getWorkspace().then(workspace => cdpcApi.updateWorkspace({
+        projectId: workspace.projectId ?? null,
+        activeTool: 'WARDROBE',
+        activeAssetId: outfit.skinAssetId ?? null,
+        activeOutfitId: outfit.id,
+      })).catch(() => undefined)
     }
   }
 
@@ -538,30 +506,22 @@ export default function DressUpStudio() {
       return
     }
     if (outfit.cloud) {
-      const response = await fetch(`/api/outfits/${encodeURIComponent(outfit.id)}`, {
-        method: 'DELETE', cache: 'no-store', credentials: 'same-origin',
-      })
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        setSaveNotice(payload.error || '云端穿搭删除失败')
+      try {
+        await cdpcApi.deleteOutfit(outfit.id)
+      } catch (error) {
+        setSaveNotice(error instanceof Error ? error.message : '云端穿搭删除失败')
         return
       }
       setSavedOutfits(current => current.filter(item => item.id !== outfit.id))
       setSelectedSavedOutfitId('')
       setOutfitName('我的穿搭')
-      void fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' }).then(async current => {
-        if (!current.ok) return
-        const workspace = await current.json()
-        if (workspace.item?.activeOutfitId !== outfit.id) return
-        await fetch('/api/workspace', {
-          method: 'PUT', cache: 'no-store', credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId: workspace.item?.projectId ?? null,
-            activeTool: 'WARDROBE',
-            activeAssetId: workspace.item?.activeAssetId ?? null,
-            activeOutfitId: null,
-          }),
+      void cdpcApi.getWorkspace().then(async workspace => {
+        if (workspace.activeOutfitId !== outfit.id) return
+        await cdpcApi.updateWorkspace({
+          projectId: workspace.projectId ?? null,
+          activeTool: 'WARDROBE',
+          activeAssetId: workspace.activeAssetId ?? null,
+          activeOutfitId: null,
         })
       }).catch(() => undefined)
       setSaveNotice(`已从账号云端删除“${outfit.name}”`)
