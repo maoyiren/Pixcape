@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { cdpcApi } from '@/src/client/cdpc-api'
 
 type Category = 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE' | 'HAT' | 'PANTS' | 'SHOES' | 'OTHER_ACCESSORY'
 type Asset = {
@@ -48,19 +49,13 @@ export default function WardrobeLibrary() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const reload = useCallback(async () => {
-    const [assetResponse, outfitResponse] = await Promise.all([
-      fetch('/api/assets?limit=60', { cache: 'no-store' }),
-      fetch('/api/outfits', { cache: 'no-store' }),
+    const [assetData, outfitData] = await Promise.all([
+      cdpcApi.listAssets({ limit: 60 }),
+      cdpcApi.listOutfits(),
     ])
-    if (assetResponse.status === 401 || outfitResponse.status === 401) {
-      setNotice('登录后即可管理你的私人素材与穿搭')
-      return
-    }
-    if (!assetResponse.ok || !outfitResponse.ok) throw new Error('读取衣橱失败，请稍后重试')
-    const [assetData, outfitData] = await Promise.all([assetResponse.json(), outfitResponse.json()])
-    setAssets(Array.isArray(assetData.items) ? assetData.items : [])
-    setNextCursor(typeof assetData.nextCursor === 'string' ? assetData.nextCursor : null)
-    setOutfits(Array.isArray(outfitData.items) ? outfitData.items : [])
+    setAssets(assetData.items as Asset[])
+    setNextCursor(assetData.nextCursor)
+    setOutfits(outfitData as Outfit[])
     setNotice('你的素材已同步到云端')
   }, [])
 
@@ -96,10 +91,14 @@ export default function WardrobeLibrary() {
     setLoadingMore(true)
     setError('')
     try {
-      const response = await fetch('/api/assets?limit=60&cursor=' + encodeURIComponent(nextCursor), { cache: 'no-store' })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || '加载更多素材失败')
-      const page = Array.isArray(data.items) ? data.items as Asset[] : []
+      const data = await cdpcApi.listAssets({ limit: 60, cursor: nextCursor })
+      const page = data.items as Asset[]
+      setAssets((current) => {
+        const merged = new Map(current.map((asset) => [asset.id, asset]))
+        for (const asset of page) merged.set(asset.id, asset)
+        return [...merged.values()]
+      })
+      setNextCursor(data.nextCursor)
       setAssets((current) => {
         const merged = new Map(current.map((asset) => [asset.id, asset]))
         for (const asset of page) merged.set(asset.id, asset)
@@ -115,10 +114,8 @@ export default function WardrobeLibrary() {
   const toggleFavorite = async (asset: Asset) => {
     setError('')
     try {
-      const response = await fetch(`/api/assets/${asset.id}/favorite`, { method: asset.isFavorite ? 'DELETE' : 'PUT' })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || '更新收藏失败')
-      setAssets((current) => current.map((item) => item.id === asset.id ? { ...item, isFavorite: Boolean(data.favorited) } : item))
+      const data = await cdpcApi.setAssetFavorite(asset.id, !asset.isFavorite)
+      setAssets((current) => current.map((item) => item.id === asset.id ? { ...item, isFavorite: data.favorited } : item))
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '更新收藏失败')
     }
@@ -131,23 +128,14 @@ export default function WardrobeLibrary() {
       return
     }
     try {
-      const current = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
-      if (!current.ok) throw new Error(current.status === 401 ? '请先登录后再使用云端素材' : '无法读取当前工作区')
-      const workspace = await current.json()
-      const response = await fetch('/api/workspace', {
-        method: 'PUT',
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: workspace.item?.projectId ?? null,
-          activeTool: 'WARDROBE',
-          activeAssetId: asset.id,
-          activeOutfitId: null,
-        }),
+      const workspace = await cdpcApi.getWorkspace()
+      await cdpcApi.updateWorkspace({
+        projectId: workspace.projectId ?? null,
+        activeTool: 'WARDROBE',
+        activeAssetId: asset.id,
+        activeOutfitId: null,
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || '素材交接失败')
+      router.push('/dress-up')
       router.push('/dress-up')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法将素材交给 3D 换装工作台')
@@ -157,23 +145,14 @@ export default function WardrobeLibrary() {
 
   const openOutfit = async (outfit: Outfit) => {
     try {
-      const current = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
-      if (!current.ok) throw new Error(current.status === 401 ? '请先登录后再载入云端穿搭' : '无法读取当前工作区')
-      const workspace = await current.json()
-      const response = await fetch('/api/workspace', {
-        method: 'PUT',
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: workspace.item?.projectId ?? null,
-          activeTool: 'WARDROBE',
-          activeAssetId: null,
-          activeOutfitId: outfit.id,
-        }),
+      const workspace = await cdpcApi.getWorkspace()
+      await cdpcApi.updateWorkspace({
+        projectId: workspace.projectId ?? null,
+        activeTool: 'WARDROBE',
+        activeAssetId: null,
+        activeOutfitId: outfit.id,
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || '穿搭交接失败')
+      router.push('/dress-up')
       router.push('/dress-up')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法载入云端穿搭')
@@ -185,13 +164,8 @@ export default function WardrobeLibrary() {
     setBusy(true)
     setError('')
     try {
-      const form = new FormData()
-      form.set('file', file)
-      form.set('category', uploadCategory)
-      form.set('visibility', 'PRIVATE')
-      const response = await fetch('/api/assets', { method: 'POST', body: form })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || '上传失败')
+      await cdpcApi.uploadAsset(file, uploadCategory, { visibility: 'PRIVATE' })
+      await reload()
       await reload()
       setFilter(uploadCategory)
       setNotice('素材已上传并保存到私人衣橱')
