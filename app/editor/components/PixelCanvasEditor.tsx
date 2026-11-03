@@ -46,6 +46,7 @@ export default function PixelCanvasEditor() {
   const [cloudDocuments, setCloudDocuments] = useState<Array<{ id: string; name: string; revision: number; updatedAt: string }>>([])
   const [cloudDocumentId, setCloudDocumentId] = useState('')
   const [cloudRevision, setCloudRevision] = useState(0)
+  const [cloudDocumentLoaded, setCloudDocumentLoaded] = useState(false)
   const [cloudName, setCloudName] = useState('我的像素作品')
   const [cloudBusy, setCloudBusy] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -335,11 +336,12 @@ export default function PixelCanvasEditor() {
     setCloudBusy(true)
     try {
       const document = { version: 1 as const, width: 64 as const, height: 64 as const, activeId, layers }
-      const saved = cloudDocumentId
+      const saved = cloudDocumentId && cloudDocumentLoaded
         ? await cdpcApi.updateEditorDocument(cloudDocumentId, cloudName, document, cloudRevision)
         : await cdpcApi.createEditorDocument(cloudName, document)
       setCloudDocumentId(saved.id)
       setCloudRevision(saved.revision)
+      setCloudDocumentLoaded(true)
       const items = await cdpcApi.listEditorDocuments()
       setCloudDocuments(items)
       setStatus('云端文档已保存，可在其他设备登录后打开')
@@ -359,6 +361,7 @@ export default function PixelCanvasEditor() {
       setActiveId(item.document.activeId || item.document.layers[0]?.id || '')
       setCloudName(item.name)
       setCloudRevision(item.revision)
+      setCloudDocumentLoaded(true)
       setHistory([])
       setFuture([])
       setStatus('已从云端恢复编辑文档')
@@ -421,7 +424,7 @@ export default function PixelCanvasEditor() {
           <input aria-label="云端文档名称" value={cloudName} maxLength={80} onChange={event => setCloudName(event.target.value)} />
         </label>
         <label>已保存文档
-          <select aria-label="选择云端文档" value={cloudDocumentId} onChange={event => setCloudDocumentId(event.target.value)}>
+          <select aria-label="选择云端文档" value={cloudDocumentId} onChange={event => { setCloudDocumentId(event.target.value); setCloudDocumentLoaded(false); setCloudRevision(0) }}>
             <option value="">新建云端文档</option>
             {cloudDocuments.map(item => <option key={item.id} value={item.id}>{item.name} · {new Date(item.updatedAt).toLocaleString()}</option>)}
           </select>
