@@ -23,6 +23,7 @@ model User {
   favorites     AssetFavorite[]
   publications  Publication[]
   workspaceState WorkspaceState?
+  editorDocuments EditorDocument[]
   auditAsActor  AuditLog[]       @relation("AuditActor")
   accounts      Account[]
   sessions      Session[]
@@ -160,6 +161,18 @@ model WorkspaceState {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([projectId])
+}
+
+model EditorDocument {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String   @default("未命名作品")
+  document  String
+  revision  Int      @default(1)
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([ownerId, updatedAt])
 }
 
 model AuditLog {
