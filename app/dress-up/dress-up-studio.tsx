@@ -574,11 +574,6 @@ export default function DressUpStudio() {
     setSaveNotice('穿搭备份 JSON 已导出。若包含导入的皮肤图片，文件可能较大；备份保存在你的设备中。')
   }
 
-  function exportOutfitAndOpenStudio() {
-    exportOutfitBackup()
-    window.open('/workbench', '_blank', 'noopener,noreferrer')
-    setSaveNotice('已导出穿搭 JSON，并打开创作工坊入口。若编辑器已连接，请在编辑器中选择“导入穿搭备份 JSON”并选择刚下载的文件。')
-  }
 
   async function importOutfitBackup(file?: File) {
     if (!file) return
