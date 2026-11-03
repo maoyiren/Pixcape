@@ -343,3 +343,65 @@ test('pixel canvas supports drawing, layers, undo and redo', async ({ page }) =>
   await page.getByRole('button', { name: /新建/ }).click()
   await expect(page.getByRole('button', { name: '图层 2', exact: true })).toBeVisible()
 })
+
+test('wardrobe asset handoff clears a previously active cloud outfit', async ({ page }) => {
+  let savedPointer: Record<string, unknown> | null = null
+  await page.route('**/api/assets?limit=60', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ items: [{
+      id: 'skin-next', category: 'SKIN', kind: 'SKIN_TEXTURE', width: 64, height: 64,
+      attribution: '新皮肤', fileUrl: '/api/assets/skin-next/file', createdAt: '2026-11-03T00:00:00.000Z', isFavorite: false,
+    }], nextCursor: null }),
+  }))
+  await page.route('**/api/outfits', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }),
+  }))
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'old-outfit',
+      } }) })
+      return
+    }
+    savedPointer = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedPointer }) })
+  })
+
+  await page.goto('/wardrobe')
+  await page.getByRole('button', { name: '在 3D 换装中使用' }).click()
+  await expect.poll(() => savedPointer).toMatchObject({
+    activeTool: 'WARDROBE', activeAssetId: 'skin-next', activeOutfitId: null,
+  })
+  await expect(page).toHaveURL(/\\/dress-up$/)
+})
+
+test('wardrobe outfit handoff clears a previously active single asset', async ({ page }) => {
+  let savedPointer: Record<string, unknown> | null = null
+  await page.route('**/api/assets?limit=60', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], nextCursor: null }),
+  }))
+  await page.route('**/api/outfits', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+      id: 'outfit-next', name: '春日搭配', items: [{ assetId: 'shawl-1' }],
+    }] }),
+  }))
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: 'old-asset', activeOutfitId: null,
+      } }) })
+      return
+    }
+    savedPointer = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedPointer }) })
+  })
+
+  await page.goto('/wardrobe')
+  await page.getByRole('button', { name: '我的穿搭' }).click()
+  await page.getByRole('button', { name: '载入这套穿搭' }).click()
+  await expect.poll(() => savedPointer).toMatchObject({
+    activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-next',
+  })
+  await expect(page).toHaveURL(/\\/dress-up$/)
+})
+
