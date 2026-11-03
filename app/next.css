@@ -479,3 +479,46 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
   .dressup-model-switch button{flex:1 1 auto}
   .dressup-error{align-items:flex-start}
 }
+
+/* CDPC dress-up experience refresh: approachable, character-first, less tool-heavy. */
+.dressup-page{width:min(100% - 40px,1440px);margin:0 auto;padding:28px 0 48px}
+.dressup-heading{align-items:center;margin-bottom:22px}
+.dressup-eyebrow{letter-spacing:.12em;font-size:10px;font-weight:750;color:var(--cdpc-muted,#9aa4b2)}
+.dressup-heading h1{font-size:clamp(26px,3vw,34px);letter-spacing:-.035em;margin:7px 0 5px}
+.dressup-heading p{max-width:620px;font-size:13px;line-height:1.65;color:var(--cdpc-muted,#9aa4b2)}
+.dressup-layout{grid-template-columns:minmax(230px,270px) minmax(360px,1fr) minmax(250px,290px);gap:14px;align-items:start}
+.dressup-panel{border:1px solid var(--cdpc-border,#303946);border-radius:12px;padding:16px;background:var(--cdpc-surface,#171d26);box-shadow:0 8px 28px #00000012}
+.dressup-panel-heading{margin-bottom:14px}
+.dressup-panel-heading h2{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.dressup-panel-heading>span{font-size:11px}
+.dressup-categories{gap:6px}
+.dressup-category{border-radius:7px;min-height:34px;font-size:11px}
+.dressup-items{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dressup-item{min-width:0;min-height:104px;padding:10px;border-radius:9px;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.dressup-item-mark{width:30px;height:30px;display:grid;place-items:center;border-radius:7px;background:var(--cdpc-elevated,#252e3a);font-size:17px}
+.dressup-item strong{font-size:11px;line-height:1.35}
+.dressup-item small{font-size:10px;line-height:1.35}
+.dressup-item-state{font-size:10px}
+.dressup-preview{min-width:0}
+.dressup-real-preview,.dressup-real-preview canvas{min-height:440px}
+.dressup-real-preview{border-radius:10px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#35445a 0%,#202b3a 55%,#18212d 100%)}
+.dressup-preview-tools{gap:8px}
+.dressup-bottom-tools{justify-content:flex-start}
+.dressup-selected-row{padding:10px 0}
+.dressup-actions.dressup-primary-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.dressup-primary-actions button,.dressup-primary-actions a{min-height:40px;border-radius:8px;font-size:11px}
+.dressup-primary-actions .primary{font-weight:750}
+.dressup-more-actions{margin-top:10px;border-top:1px solid var(--cdpc-border,#303946);padding-top:10px}
+.dressup-more-actions summary{cursor:pointer;list-style:none;color:var(--cdpc-muted,#a4adba);font-size:11px;padding:7px 0}
+.dressup-more-actions summary::-webkit-details-marker{display:none}
+.dressup-more-actions summary:after{content:"＋";float:right}
+.dressup-more-actions[open] summary:after{content:"－"}
+.dressup-more-actions-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:8px}
+.dressup-more-actions-grid button{min-width:0;min-height:36px;padding:7px 8px;border:1px solid var(--cdpc-border,#303946);border-radius:7px;background:var(--cdpc-elevated,#202833);color:inherit;font-size:10px;cursor:pointer}
+.dressup-more-actions-grid button:disabled{opacity:.45;cursor:not-allowed}
+.dressup-outfit-manager{margin-top:16px;padding-top:14px;border-top:1px solid var(--cdpc-border,#303946)}
+.dressup-outfit-manager label{font-size:11px}
+.dressup-outfit-manager input,.dressup-outfit-manager select{min-height:38px;border-radius:7px}
+.dressup-save-notice{font-size:11px;line-height:1.55;padding:9px 10px;border-radius:8px;background:var(--cdpc-elevated,#202833)}
+@media(max-width:1100px){.dressup-layout{grid-template-columns:minmax(210px,.8fr) minmax(0,1.5fr)}.dressup-layout>.dressup-panel:last-child{grid-column:1/-1}.dressup-real-preview,.dressup-real-preview canvas{min-height:400px}}
+@media(max-width:700px){.dressup-page{width:calc(100% - 24px);padding:18px 0 32px}.dressup-layout{grid-template-columns:minmax(0,1fr);gap:10px}.dressup-layout>.dressup-panel:last-child{grid-column:auto}.dressup-preview{grid-row:1;min-height:0}.dressup-real-preview,.dressup-real-preview canvas{min-height:340px}.dressup-heading{gap:12px}.dressup-heading h1{font-size:27px}.dressup-items{grid-template-columns:repeat(2,minmax(0,1fr))}.dressup-primary-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.dressup-panel{padding:13px}.dressup-bottom-tools{align-items:center}.dressup-skin-name{width:100%;max-width:100%}}
