@@ -588,6 +588,7 @@ test('pixel editor detects cloud edits and saves a conflict as a separate copy',
   })
 
   await page.goto('/editor')
+  await expect(page.getByLabel('选择云端文档').locator('option[value="cloud-doc-conflict"]')).toHaveCount(1)
   await page.getByLabel('选择云端文档').selectOption('cloud-doc-conflict')
   await page.getByRole('button', { name: '打开云端' }).click()
   await expect(page.getByRole('status')).toContainText('云端文档已同步')
