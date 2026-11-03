@@ -540,6 +540,70 @@ test('pixel editor saves a private cloud document and restores it on demand', as
 })
 
 
+test('pixel editor detects cloud edits and saves a conflict as a separate copy', async ({ page }) => {
+  let updateAttempts = 0
+  const createdCopies: Array<Record<string, unknown>> = []
+  const remoteDocument = {
+    version: 1, width: 64, height: 64, activeId: 'remote-layer',
+    layers: [{ id: 'remote-layer', name: '远端图层', visible: true, opacity: 100, pixels: Array(4096).fill('') }],
+  }
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
+  }))
+  await page.route('**/api/editor-documents**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'GET' && url.pathname === '/api/editor-documents') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+        id: 'cloud-doc-conflict', name: '原始云端作品', revision: 2,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      }] }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname.endsWith('/cloud-doc-conflict')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-conflict', name: '原始云端作品', revision: 2,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+        document: remoteDocument,
+      } }) })
+      return
+    }
+    if (request.method() === 'PUT' && url.pathname.endsWith('/cloud-doc-conflict')) {
+      updateAttempts += 1
+      await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({
+        error: '文档已在其他位置更新，请先重新载入，避免覆盖新版本。', revision: 3,
+      }) })
+      return
+    }
+    if (request.method() === 'POST') {
+      createdCopies.push(request.postDataJSON() as Record<string, unknown>)
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-copy', name: '本地修改作品（副本）', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) })
+  })
+
+  await page.goto('/editor')
+  await page.getByLabel('选择云端文档').selectOption('cloud-doc-conflict')
+  await page.getByRole('button', { name: '打开云端' }).click()
+  await expect(page.getByRole('status')).toContainText('云端文档已同步')
+  await page.getByLabel('云端文档名称').fill('本地修改作品')
+  await expect(page.getByRole('status')).toContainText('有未保存的云端修改')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect(page.getByRole('status')).toContainText('云端版本冲突')
+  await expect(page.getByRole('button', { name: '保存云端' })).toBeDisabled()
+  await page.getByRole('button', { name: '另存为云端副本' }).click()
+  await expect(page.getByRole('status')).toContainText('本地内容已另存为新的云端副本')
+  expect(updateAttempts).toBe(1)
+  expect(createdCopies).toHaveLength(1)
+  expect(createdCopies[0].name).toBe('本地修改作品（副本）')
+})
+
+
 test('a valid local pixel draft takes precedence over automatic wardrobe asset restore', async ({ page }) => {
   let wardrobeFileRequested = false
   await page.addInitScript(() => {
