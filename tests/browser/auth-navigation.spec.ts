@@ -407,7 +407,7 @@ test('saving a new pixel skin clears the previous outfit workspace pointer', asy
     activeAssetId: 'pixel-skin-new',
     activeOutfitId: null,
   })
-  await expect(page.getByText('皮肤已保存到衣橱，并已同步为当前工作区素材')).toBeVisible()
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('皮肤已保存到衣橱，并已同步为当前工作区素材')
 })
 
 test('wardrobe asset handoff clears a previously active cloud outfit', async ({ page }) => {
@@ -534,7 +534,7 @@ test('pixel editor saves a private cloud document and restores it on demand', as
   ))).toEqual([0, 255, 0, 255])
   await expect(page.getByText('已从云端恢复编辑文档')).toBeVisible()
   page.once('dialog', dialog => dialog.accept())
-  await page.getByRole('button', { name: '删除云端' }).click()
+  await page.getByRole('button', { name: '删除云端', exact: true }).click()
   await expect.poll(() => deletedDocument).toBe(true)
   await expect(page.getByText('云端文档已删除；本地草稿仍保留')).toBeVisible()
 })
