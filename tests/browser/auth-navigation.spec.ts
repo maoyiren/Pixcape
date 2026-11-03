@@ -633,3 +633,29 @@ test('a valid local pixel draft takes precedence over automatic wardrobe asset r
   await expect(page.getByText('已恢复上次本地编辑草稿')).toBeVisible()
   expect(wardrobeFileRequested).toBe(false)
 })
+
+
+test('cloud document save remains successful when the follow-up list refresh fails', async ({ page }) => {
+  let createRequests = 0
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
+  }))
+  await page.route('**/api/editor-documents**', async route => {
+    if (route.request().method() === 'POST') {
+      createRequests += 1
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-refresh-failure', name: '我的像素作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: '暂时无法刷新列表' }) })
+  })
+
+  await page.goto('/editor')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect.poll(() => createRequests).toBe(1)
+  await expect(page.getByRole('status')).toContainText('云端文档已保存，但列表刷新失败')
+  await expect(page.getByRole('status')).not.toContainText('云端保存失败')
+})
