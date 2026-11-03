@@ -102,7 +102,7 @@ test('AI-generated skin can be saved into the shared wardrobe and workspace', as
   await expect(page.getByRole('button', { name: '已保存到衣橱' })).toBeVisible()
   expect(savedAsset).toEqual({ received: true, category: 'SKIN', visibility: 'PRIVATE' })
   expect(savedWorkspace).toEqual({
-    projectId: 'project-demo', activeTool: 'AI_GENERATOR', activeAssetId: 'asset-ai-demo', activeOutfitId: 'outfit-demo',
+    projectId: 'project-demo', activeTool: 'AI_GENERATOR', activeAssetId: 'asset-ai-demo', activeOutfitId: null,
   })
   await expect(page.getByRole('link', { name: '打开衣橱' })).toHaveAttribute('href', '/wardrobe')
 
