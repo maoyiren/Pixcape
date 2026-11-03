@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { SkinViewer } from 'skinview3d'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
@@ -9,7 +10,7 @@ const BASE_SKIN = ASSET_ROOT + 'stevea.png'
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
-type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; modelTexture?: string; note: string }
+type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; modelTexture?: string; note: string; assetId?: string; fileUrl?: string }
 const catalog: CatalogItem[] = [
   { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', modelTexture: 'office_shawl_slim_64.png', note: '正式披肩贴图' },
   { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', modelTexture: 'MCC_shawl_slim_64.png', note: '正式披肩贴图' },
@@ -27,7 +28,22 @@ const catalog: CatalogItem[] = [
 ]
 const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风'])
 type ModelType = 'steve' | 'alex'
-type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; skinUrl?: string; skinName: string; savedAt: string }
+type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
+
+
+function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' {
+  if (category === '披肩') return 'SHAWL'
+  if (category === '外套') return 'COAT'
+  if (category === '披风') return 'CAPE'
+  throw new Error('该服装分类尚未接入云端素材类型')
+}
+
+function fromAssetCategory(category: string | null): GarmentCategory | null {
+  if (category === 'SHAWL') return '披肩'
+  if (category === 'COAT') return '外套'
+  if (category === 'CAPE') return '披风'
+  return null
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -59,6 +75,74 @@ export default function DressUpStudio() {
   const [outfitName, setOutfitName] = useState('我的穿搭')
   const [savedOutfits, setSavedOutfits] = useState<LocalOutfit[]>([])
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
+  const [savingCloud, setSavingCloud] = useState(false)
+
+  const refreshCloudOutfits = useCallback(async () => {
+    let outfits
+    try { outfits = await cdpcApi.listOutfits() } catch (error) {
+      if (error instanceof Error && 'status' in error && error.status === 401) return
+      throw new Error('无法读取账号云端穿搭')
+    }
+    const ids = [...new Set(outfits.flatMap((outfit: any) => [
+      ...(outfit.skinAssetId ? [outfit.skinAssetId] : []),
+      ...(Array.isArray(outfit.items) ? outfit.items.map((item: any) => item.assetId) : []),
+    ]).filter((id: unknown): id is string => typeof id === 'string'))]
+    const assets = new Map<string, any>()
+    for (let index = 0; index < ids.length; index += 65) {
+      const batch = ids.slice(index, index + 65)
+      const assetPayload = await cdpcApi.listAssets({ ids: batch })
+      for (const asset of assetPayload.items ?? []) assets.set(asset.id, asset)
+    }
+    const cloud: LocalOutfit[] = outfits.map((outfit: any) => {
+      const assetItems: CatalogItem[] = (outfit.items ?? []).flatMap((entry: any) => {
+        const asset = assets.get(entry.assetId)
+        const category = fromAssetCategory(asset?.category || entry.category)
+        if (!asset?.fileUrl || !category) return []
+        return [{
+          id: asset.id,
+          assetId: asset.id,
+          fileUrl: asset.fileUrl,
+          texture: asset.fileUrl,
+          name: asset.attribution || `云端${category}`,
+          category,
+          note: '账号云端素材',
+        }]
+      })
+      const skin = outfit.skinAssetId ? assets.get(outfit.skinAssetId) : null
+      return {
+        id: outfit.id,
+        name: outfit.name,
+        itemIds: assetItems.map(item => item.id),
+        model: outfit.skinModel === 'SLIM' ? 'alex' : 'steve',
+        background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
+        skinUrl: skin?.fileUrl,
+        skinAssetId: outfit.skinAssetId ?? null,
+        skinAssetUrl: skin?.fileUrl,
+        skinName: skin?.attribution || (skin ? '云端皮肤' : 'Steve 默认皮肤'),
+        savedAt: outfit.updatedAt || outfit.createdAt || new Date().toISOString(),
+        cloud: true,
+        assetItems,
+      }
+    })
+    setSavedOutfits(current => [...current.filter(item => !item.cloud), ...cloud])
+    const workspace = await cdpcApi.getWorkspace().catch(() => null)
+    if (workspace) {
+      const activeOutfit = cloud.find(item => item.id === workspace.activeOutfitId)
+      if (activeOutfit?.assetItems) {
+        setSelected(activeOutfit.assetItems.reduce<Record<string, CatalogItem>>((items, item) => {
+          items[item.category] = item
+          return items
+        }, {}))
+        setSkinUrl(activeOutfit.skinAssetUrl || BASE_SKIN)
+        setSkinName(activeOutfit.skinName || 'Steve 默认皮肤')
+        setModel(activeOutfit.model)
+        setBackground(activeOutfit.background)
+        setOutfitName(activeOutfit.name)
+        setSelectedSavedOutfitId(activeOutfit.id)
+        setSaveNotice(`已从衣橱恢复云端穿搭“${activeOutfit.name}”`)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     try {
@@ -70,6 +154,12 @@ export default function DressUpStudio() {
       setSaveNotice('已保存穿搭列表无法读取；你仍可重新保存穿搭')
     }
   }, [])
+
+  useEffect(() => {
+    void refreshCloudOutfits().catch(error => {
+      setSaveNotice(error instanceof Error ? error.message : '云端穿搭读取失败')
+    })
+  }, [refreshCloudOutfits])
 
   useEffect(() => {
     try {
@@ -98,6 +188,43 @@ export default function DressUpStudio() {
   ), [category, query])
   const selectedItems = Object.values(selected)
   const cape = selected['披风']
+
+  useEffect(() => {
+    let cancelled = false
+    const restoreWorkspaceAsset = async () => {
+      try {
+        const workspace = await cdpcApi.getWorkspace()
+        const assetId = workspace.activeAssetId
+        if (!assetId) return
+        const asset = (await cdpcApi.listAssets({ ids: [assetId], limit: 1 })).items[0]
+        if (cancelled || !asset?.fileUrl) return
+        if (asset.category === 'SKIN') {
+          setSkinUrl(asset.fileUrl)
+          setSkinName(asset.attribution || '衣橱皮肤')
+          setSaveNotice('已从衣橱载入当前基础皮肤')
+          return
+        }
+        const garmentCategory = fromAssetCategory(asset.category)
+        if (!garmentCategory) return
+        const item: CatalogItem = {
+          id: asset.id,
+          assetId: asset.id,
+          fileUrl: asset.fileUrl,
+          texture: asset.fileUrl,
+          name: asset.attribution || `云端${garmentCategory}`,
+          category: garmentCategory,
+          note: '从衣橱载入的云端素材',
+        }
+        setSelected(current => ({ ...current, [garmentCategory]: item }))
+        setSaveNotice(`已从衣橱载入${garmentCategory}素材`)
+      } catch (error) {
+        if (cancelled) return
+        setSaveNotice(error instanceof Error ? error.message : '衣橱素材恢复失败')
+      }
+    }
+    void restoreWorkspaceAsset()
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     const host = previewHost.current
@@ -154,7 +281,7 @@ export default function DressUpStudio() {
         context.drawImage(base, 0, 0, 64, 64)
         for (const item of selectedItems.filter(item => item.category !== '披风')) {
           const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
-          const overlay = await loadImage(ASSET_ROOT + textureName)
+          const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
           if (cancelled) return
           context.save()
           context.beginPath()
@@ -167,7 +294,7 @@ export default function DressUpStudio() {
         await viewer.loadSkin(canvas, { model: model === 'alex' ? 'slim' : 'default' })
         if (cancelled) return
         if (cape) {
-          await viewer.loadCape(ASSET_ROOT + cape.texture, { makeVisible: false })
+          await viewer.loadCape(cape.fileUrl || ASSET_ROOT + cape.texture, { makeVisible: false })
           if (cancelled) return
           viewer.playerObject.backEquipment = 'cape'
         } else {
@@ -198,13 +325,109 @@ export default function DressUpStudio() {
     })
   }
 
+
+  async function uploadAssetFromUrl(url: string, category: 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE', attribution: string) {
+    const imageResponse = await fetch(url, { cache: 'no-store', credentials: 'same-origin' })
+    if (!imageResponse.ok) throw new Error(`无法读取素材：${attribution}`)
+    const blob = await imageResponse.blob()
+    if (blob.type !== 'image/png') throw new Error(`素材“${attribution}”不是 PNG 格式`)
+    const file = new File([blob], `${category.toLowerCase()}-${Date.now()}.png`, { type: 'image/png' })
+    const asset = await cdpcApi.uploadAsset(file, category, {
+      visibility: 'PRIVATE',
+      attribution,
+    })
+    return { id: asset.id, fileUrl: asset.fileUrl }
+  }
+
+  async function saveOutfitToCloud() {
+    const name = outfitName.trim().slice(0, 80)
+    if (!name) {
+      setSaveNotice('请先填写穿搭名称')
+      return
+    }
+    if (savingCloud) return
+    setSavingCloud(true)
+    setSaveNotice('正在同步素材并保存账号云端穿搭…')
+    try {
+      const persistedItems: CatalogItem[] = []
+      for (const item of selectedItems) {
+        if (item.assetId && item.fileUrl) {
+          persistedItems.push(item)
+          continue
+        }
+        const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
+        const sourceUrl = item.fileUrl || ASSET_ROOT + textureName
+        const asset = await uploadAssetFromUrl(sourceUrl, toAssetCategory(item.category), item.name)
+        const persisted = { ...item, assetId: asset.id, fileUrl: asset.fileUrl }
+        persistedItems.push(persisted)
+        setSelected(current => ({ ...current, [item.category]: persisted }))
+      }
+
+      let skinAssetId: string | null = null
+      const existingSkin = skinUrl.match(/\/api\/assets\/([^/]+)\/file(?:\?|$)/)
+      if (existingSkin) skinAssetId = existingSkin[1]
+      else if (skinUrl.startsWith('data:image/png')) {
+        const skin = await uploadAssetFromUrl(skinUrl, 'SKIN', skinName || '换装基础皮肤')
+        skinAssetId = skin.id
+      }
+
+      const input: OutfitInput = {
+        name,
+        skinAssetId,
+        skinModel: model === 'alex' ? 'SLIM' : 'CLASSIC',
+        background,
+        pose: null,
+        items: persistedItems.map((item, index) => ({
+          assetId: item.assetId!,
+          category: toAssetCategory(item.category),
+          sortOrder: index,
+          equipped: true,
+        })),
+      }
+      const existingCloud = savedOutfits.find(item => item.id === selectedSavedOutfitId && item.cloud)
+      const saved = existingCloud
+        ? await cdpcApi.updateOutfit(existingCloud.id, input)
+        : await cdpcApi.createOutfit(input)
+      const savedId = saved.id
+
+      const workspace = await cdpcApi.getWorkspace().catch(() => null)
+      if (workspace) {
+        await cdpcApi.updateWorkspace({
+          projectId: workspace.projectId ?? null,
+          activeTool: 'WARDROBE',
+          activeAssetId: skinAssetId,
+          activeOutfitId: savedId,
+        })
+      }
+
+      setSelectedSavedOutfitId(savedId)
+      setOutfitName(name)
+      setSelected(current => persistedItems.reduce((next, item) => ({ ...next, [item.category]: item }), current))
+      const localCache: LocalOutfit = {
+        id: savedId, name, itemIds: persistedItems.map(item => item.id), model, background,
+        skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
+        skinAssetId, skinName, savedAt: new Date().toISOString(), cloud: true,
+        assetItems: persistedItems,
+      }
+      setSavedOutfits(current => [...current.filter(item => item.id !== savedId), localCache])
+      try { window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify(localCache)) } catch { /* Cloud save remains authoritative. */ }
+      setSaveNotice(`“${name}”已保存到账号云端，衣橱可在其他设备读取`)
+      void refreshCloudOutfits().catch(() => undefined)
+    } catch (error) {
+      setSaveNotice(error instanceof Error ? error.message : '云端保存失败，请登录后重试')
+    } finally {
+      setSavingCloud(false)
+    }
+  }
+
   function saveLocalOutfit() {
     const name = outfitName.trim().slice(0, 48)
     if (!name) {
       setSaveNotice('请先填写穿搭名称')
       return
     }
-    const id = selectedSavedOutfitId || `outfit-${Date.now()}`
+    const selectedOutfit = savedOutfits.find(item => item.id === selectedSavedOutfitId && !item.cloud)
+    const id = selectedOutfit?.id || `local-${Date.now()}`
     const outfit: LocalOutfit = {
       id,
       name,
@@ -216,11 +439,11 @@ export default function DressUpStudio() {
       savedAt: new Date().toISOString(),
     }
     try {
-      const next = selectedSavedOutfitId
-        ? savedOutfits.map(item => item.id === selectedSavedOutfitId ? outfit : item)
+      const next = selectedOutfit
+        ? savedOutfits.map(item => item.id === selectedOutfit.id ? outfit : item)
         : [...savedOutfits, outfit]
-      if (!selectedSavedOutfitId) setSelectedSavedOutfitId(id)
-      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next))
+      setSelectedSavedOutfitId(id)
+      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next.filter(item => !item.cloud)))
       window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify(outfit))
       setSavedOutfits(next)
       setOutfitName(name)
@@ -236,32 +459,72 @@ export default function DressUpStudio() {
       setSaveNotice('请选择一套已保存的穿搭')
       return
     }
-    setSelected((outfit.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
-      const item = catalog.find(entry => entry.id === id)
-      if (item) items[item.category] = item
-      return items
-    }, {}))
+    if (outfit.cloud && outfit.assetItems) {
+      setSelected(outfit.assetItems.reduce<Record<string, CatalogItem>>((items, item) => {
+        items[item.category] = item
+        return items
+      }, {}))
+      setSkinUrl(outfit.skinAssetUrl || BASE_SKIN)
+      setSkinName(outfit.skinName || 'Steve 默认皮肤')
+    } else {
+      setSelected((outfit.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
+        const item = catalog.find(entry => entry.id === id)
+        if (item) items[item.category] = item
+        return items
+      }, {}))
+      if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png')) setSkinUrl(outfit.skinUrl)
+      else setSkinUrl(BASE_SKIN)
+      if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
+    }
     if (outfit.model === 'steve' || outfit.model === 'alex') setModel(outfit.model)
     if (/^#[0-9a-f]{6}$/i.test(outfit.background)) setBackground(outfit.background)
-    if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png')) setSkinUrl(outfit.skinUrl)
-    if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
     setOutfitName(outfit.name)
-    setSaveNotice(`已载入“${outfit.name}”`)
+    setSaveNotice(outfit.cloud ? `已从账号云端载入“${outfit.name}”` : `已载入本地草稿“${outfit.name}”`)
+    if (outfit.cloud) {
+      void cdpcApi.getWorkspace().then(workspace => cdpcApi.updateWorkspace({
+        projectId: workspace.projectId ?? null,
+        activeTool: 'WARDROBE',
+        activeAssetId: outfit.skinAssetId ?? null,
+        activeOutfitId: outfit.id,
+      })).catch(() => undefined)
+    }
   }
 
-  function deleteSavedOutfit() {
+  async function deleteSavedOutfit() {
     const outfit = savedOutfits.find(item => item.id === selectedSavedOutfitId)
     if (!outfit) {
-      setSaveNotice('请选择要删除的本地穿搭')
+      setSaveNotice('请选择要删除的穿搭')
+      return
+    }
+    if (outfit.cloud) {
+      try {
+        await cdpcApi.deleteOutfit(outfit.id)
+      } catch (error) {
+        setSaveNotice(error instanceof Error ? error.message : '云端穿搭删除失败')
+        return
+      }
+      setSavedOutfits(current => current.filter(item => item.id !== outfit.id))
+      setSelectedSavedOutfitId('')
+      setOutfitName('我的穿搭')
+      void cdpcApi.getWorkspace().then(async workspace => {
+        if (workspace.activeOutfitId !== outfit.id) return
+        await cdpcApi.updateWorkspace({
+          projectId: workspace.projectId ?? null,
+          activeTool: 'WARDROBE',
+          activeAssetId: workspace.activeAssetId ?? null,
+          activeOutfitId: null,
+        })
+      }).catch(() => undefined)
+      setSaveNotice(`已从账号云端删除“${outfit.name}”`)
       return
     }
     const next = savedOutfits.filter(item => item.id !== selectedSavedOutfitId)
     try {
-      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next))
+      window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next.filter(item => !item.cloud)))
       setSavedOutfits(next)
       setSelectedSavedOutfitId('')
       setOutfitName('我的穿搭')
-      setSaveNotice(`已删除本地穿搭“${outfit.name}”`)
+      setSaveNotice(`已删除本地草稿“${outfit.name}”`)
     } catch {
       setSaveNotice('删除失败，请刷新页面后重试')
     }
@@ -313,7 +576,7 @@ export default function DressUpStudio() {
 
   function exportOutfitAndOpenStudio() {
     exportOutfitBackup()
-    window.open('/studio', '_blank', 'noopener,noreferrer')
+    window.open('/workbench', '_blank', 'noopener,noreferrer')
     setSaveNotice('已导出穿搭 JSON，并打开创作工坊入口。若编辑器已连接，请在编辑器中选择“导入穿搭备份 JSON”并选择刚下载的文件。')
   }
 
@@ -485,14 +748,14 @@ export default function DressUpStudio() {
   }
 
   return (
-    <main className="dressup-page">
+    <main className="dressup-page" data-studio-mode="dress-up">
       <header className="dressup-heading">
         <div>
           <div className="dressup-eyebrow">CDPC / OUTFIT BUILDER</div>
           <h1>衣服选装</h1>
           <p>用真实 Minecraft 角色预览搭配。披肩、外套与披风分开管理；选装完成后可继续进入工作台编辑。</p>
         </div>
-        <Link className="cdpc-button cdpc-button-quiet" href="/studio">进入创作工坊 ↗</Link>
+        <Link className="cdpc-button cdpc-button-quiet" href="/workbench">进入创作工坊 ↗</Link>
       </header>
 
       <div className="dressup-layout">
@@ -544,7 +807,8 @@ export default function DressUpStudio() {
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
           <div className="dressup-actions">
             <button type="button" onClick={randomOutfit}>随机搭配</button>
-            <button type="button" onClick={saveLocalOutfit}>保存到此设备</button>
+            <button type="button" onClick={saveLocalOutfit}>保存本地草稿</button>
+            <button type="button" onClick={() => void saveOutfitToCloud()} disabled={savingCloud}>{savingCloud ? '云端保存中…' : '保存到账号云端'}</button>
             <button type="button" onClick={exportOutfitBackup}>导出穿搭备份 JSON</button>\n            <button type="button" onClick={exportOutfitAndOpenStudio}>导出并前往创作工坊</button>
             <button type="button" onClick={() => outfitFileRef.current?.click()}>导入穿搭备份 JSON</button>
             <input ref={outfitFileRef} hidden type="file" accept="application/json,.json" onChange={event => { void importOutfitBackup(event.target.files?.[0]); event.currentTarget.value = '' }} />
@@ -553,12 +817,12 @@ export default function DressUpStudio() {
             <button type="button" onClick={restoreLastSavedOutfit}>恢复最近保存</button>
             <button type="button" onClick={() => setSelected({})} disabled={!selectedItems.length}>全部脱下</button>
             <button type="button" onClick={() => skinFileRef.current?.click()}>更换基础皮肤</button>
-            <Link className="primary" href="/studio">继续到创作工坊 ↗</Link>
+            <Link className="primary" href="/workbench">继续到创作工坊 ↗</Link>
           </div>
           <div className="dressup-outfit-manager">
             <label htmlFor="dressup-outfit-name">穿搭名称</label>
             <input id="dressup-outfit-name" value={outfitName} maxLength={48} onChange={event => setOutfitName(event.target.value)} placeholder="例如：夜行披风套装" />
-            <label htmlFor="dressup-saved-outfit">本地已保存穿搭（{savedOutfits.length}）</label>
+            <label htmlFor="dressup-saved-outfit">已保存穿搭（{savedOutfits.length}）</label>
             <select id="dressup-saved-outfit" value={selectedSavedOutfitId} onChange={event => {
               setSelectedSavedOutfitId(event.target.value)
               const found = savedOutfits.find(item => item.id === event.target.value)
@@ -573,7 +837,7 @@ export default function DressUpStudio() {
             </div>
           </div>
           {saveNotice && <p className="dressup-save-notice" role="status">{saveNotice}</p>}
-          <p className="dressup-preview-note">穿搭可保存在此设备，也可导出为 JSON 备份后转移到另一台设备。账号云同步尚未接入；标准皮肤 PNG 导出不包含独立披风。</p>
+          <p className="dressup-preview-note">账号云端穿搭会同步保存素材引用、皮肤模型与背景；本地草稿仅用于离线恢复。标准皮肤 PNG 导出不包含独立披风。</p>
         </aside>
       </div>
     </main>

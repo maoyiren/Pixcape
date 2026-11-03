@@ -1,0 +1,12 @@
+CREATE TABLE "EditorDocument" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "ownerId" TEXT NOT NULL,
+    "name" TEXT NOT NULL DEFAULT '未命名作品',
+    "document" TEXT NOT NULL,
+    "revision" INTEGER NOT NULL DEFAULT 1,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "EditorDocument_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX "EditorDocument_ownerId_updatedAt_idx" ON "EditorDocument"("ownerId", "updatedAt");

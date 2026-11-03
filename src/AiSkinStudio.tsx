@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { cdpcApi } from '@/src/client/cdpc-api'
 import { ArrowLeft, ChevronDown, ImagePlus, LoaderCircle, Sparkles, WandSparkles } from 'lucide-react'
 import * as Select from '@radix-ui/react-select'
 import * as Tabs from '@radix-ui/react-tabs'
@@ -24,6 +25,9 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
   const [referenceUrl, setReferenceUrl] = useState('')
   const [result, setResult] = useState<GenerationResponse | null>(null)
   const [busy, setBusy] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedAssetId, setSavedAssetId] = useState<string | null>(null)
+  const [saveFeedback, setSaveFeedback] = useState('')
   const [error, setError] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -74,6 +78,8 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
   async function generate() {
     setError('')
     setResult(null)
+    setSavedAssetId(null)
+    setSaveFeedback('')
     if (prompt.trim().length < 3) {
       setError('请至少输入 3 个字符的描述。')
       return
@@ -102,6 +108,43 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
       setError(cause instanceof Error ? cause.message : '生成失败，请检查网络或模型配置')
     } finally {
       setBusy(false)
+    }
+  }
+
+
+  async function saveGeneratedSkin() {
+    if (!result || result.outputKind !== 'minecraft-skin' || saving || savedAssetId) return
+    setSaving(true)
+    setSaveFeedback('')
+    setError('')
+    try {
+      const imageResponse = await fetch(result.imageDataUrl)
+      if (!imageResponse.ok) throw new Error('无法读取生成的皮肤图片')
+      const blob = await imageResponse.blob()
+      if (blob.type !== 'image/png') throw new Error('AI 结果不是 PNG 格式，请先下载并检查')
+      const file = new File([blob], 'cdpc-ai-skin.png', { type: 'image/png' })
+      const uploaded = await cdpcApi.uploadAsset(file, 'SKIN', {
+        visibility: 'PRIVATE',
+        attribution: `AI 生成 · ${result.provider} / ${result.model}`,
+      })
+      setSavedAssetId(uploaded.id)
+
+      try {
+        const workspace = await cdpcApi.getWorkspace()
+        await cdpcApi.updateWorkspace({
+          projectId: workspace.projectId ?? null,
+          activeTool: 'AI_GENERATOR',
+          activeAssetId: uploaded.id,
+          activeOutfitId: null,
+        })
+        setSaveFeedback('已保存到我的衣橱，并同步为当前工作区素材')
+      } catch (cause) {
+        setSaveFeedback(`皮肤已保存到衣橱，但工作区同步失败：${cause instanceof Error ? cause.message : '请稍后重试'}`)
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '保存生成结果失败')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -193,7 +236,7 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
               <div className="ai-studio__empty"><div className="ai-studio__empty-art"><Sparkles size={34} /></div><strong>你的角色会出现在这里</strong><span>选择模型、写下想法，然后开始生成。</span></div>}
           </div>
           {result?.outputKind === 'minecraft-skin' && <div className="ai-studio__3d-preview"><div><strong>可交互 3D 预览</strong><small>拖动旋转 · 滚轮缩放 · 右键平移</small></div><canvas ref={previewCanvasRef} aria-label="Minecraft 皮肤 3D 预览" /></div>}
-          {result && <div className="ai-studio__result-info"><div><strong>{result.provider} / {result.model}</strong><small>{result.outputKind === 'minecraft-skin' ? `Minecraft 64×64 UV 纹理 · ${variant === 'slim' ? 'Slim' : 'Classic'}` : '概念图'}</small></div><a href={result.imageDataUrl} download="cdpc-ai-skin.png">下载皮肤 PNG</a><p>{result.notice}</p></div>}
+          {result && <div className="ai-studio__result-info"><div><strong>{result.provider} / {result.model}</strong><small>{result.outputKind === 'minecraft-skin' ? `Minecraft 64×64 UV 纹理 · ${variant === 'slim' ? 'Slim' : 'Classic'}` : '概念图'}</small></div><a href={result.imageDataUrl} download="cdpc-ai-skin.png">下载皮肤 PNG</a>{result.outputKind === 'minecraft-skin' && <button type="button" className="ai-studio__save" onClick={() => void saveGeneratedSkin()} disabled={saving || Boolean(savedAssetId)}>{saving ? '正在保存…' : savedAssetId ? '已保存到衣橱' : '保存到我的衣橱'}</button>}<p>{result.notice}</p>{saveFeedback && <p role="status">{saveFeedback}</p>}{savedAssetId && <p><a href="/wardrobe">打开衣橱</a> · <a href="/editor">进入编辑器</a> · <a href="/dress-up">3D 换装</a></p>}</div>}
           <div className="ai-studio__disclaimer"><strong>生成后请检查 3D 预览</strong><p>服务端会将左右双视图投影到标准 64×64 UV 纹理，并强制基础层不透明、未使用区域透明。图像模型的正背面一致性仍可能有误差；导入游戏前请先检查脸部、服装和 Classic / Slim 手臂效果。</p></div>
         </section>
       </div>
