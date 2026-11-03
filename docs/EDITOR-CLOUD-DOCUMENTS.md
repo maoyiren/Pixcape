@@ -60,7 +60,7 @@ Updates use optimistic concurrency. The client sends the revision it last read; 
 - A valid local draft takes precedence over automatic workspace asset restoration.
 - Cloud documents are explicitly saved and opened; selecting a document does not implicitly overwrite it.
 - A loaded cloud document keeps a baseline snapshot; edits to its layers, active layer, or name are shown as unsaved changes.
-- A stale revision returns HTTP 409, marks the document as conflicted, and blocks another in-place save until the user reloads the remote version or saves the local work as a separate cloud copy.
+- A stale revision returns HTTP 409, marks the document as conflicted, and blocks another in-place save until the user reloads the remote version or saves the local work as a separate cloud copy. Once a cloud document is loaded, the reload action is labeled explicitly as “重新载入云端” to distinguish it from the initial “打开云端” action.
 - Reloading or switching away from a dirty cloud document requires explicit confirmation; saving a copy creates a new document and leaves the remote version untouched.
 - Cloud deletion requires confirmation and does not delete the local recovery draft.
 - Automatic cloud save remains deferred. The editor must first gain debounced writes, cancellation/race protection, offline retry, and navigation flush behavior.
