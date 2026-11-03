@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { cdpcApi } from '@/src/client/cdpc-api'
+import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { SkinViewer } from 'skinview3d'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
@@ -380,7 +380,7 @@ export default function DressUpStudio() {
         skinAssetId = skin.id
       }
 
-      const input = {
+      const input: OutfitInput = {
         name,
         skinAssetId,
         skinModel: model === 'alex' ? 'SLIM' : 'CLASSIC',
