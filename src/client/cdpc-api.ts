@@ -5,6 +5,8 @@
  * AI, wardrobe, editor and dress-up share the same contracts.
  */
 
+import type { AssetCategory, SkinModel } from '@/src/domain/asset'
+
 export class CdpcApiError extends Error {
   readonly status: number
   readonly payload: unknown
@@ -21,7 +23,7 @@ export type ApiAsset = {
   id: string
   ownerId: string
   kind: string
-  category: string
+  category: AssetCategory
   mimeType: string
   byteSize: number
   width: number | null
@@ -48,12 +50,12 @@ export type WorkspacePointer = {
 export type OutfitInput = {
   name: string
   skinAssetId?: string | null
-  skinModel: 'CLASSIC' | 'SLIM'
+  skinModel: SkinModel
   background?: string | null
   pose?: string | null
   items: Array<{
     assetId: string
-    category: Exclude<string, 'SKIN'>
+    category: Exclude<AssetCategory, 'SKIN'>
     sortOrder: number
     equipped: boolean
   }>
@@ -70,7 +72,7 @@ export type ApiOutfit = {
   updatedAt: string
   items: Array<{
     assetId: string
-    category: string
+    category: Exclude<AssetCategory, 'SKIN'>
     sortOrder: number
     equipped: boolean
     asset?: Pick<ApiAsset, 'id' | 'category' | 'kind' | 'width' | 'height'>
@@ -113,7 +115,7 @@ export const cdpcApi = {
       body: JSON.stringify(pointer),
     })).item,
 
-  listAssets: (options: { category?: string; limit?: number; cursor?: string; ids?: string[] } = {}) => {
+  listAssets: (options: { category?: AssetCategory; limit?: number; cursor?: string; ids?: string[] } = {}) => {
     const params = new URLSearchParams()
     if (options.category) params.set('category', options.category)
     if (options.limit) params.set('limit', String(options.limit))
@@ -123,7 +125,7 @@ export const cdpcApi = {
     return request<AssetList>(`/api/assets${query ? `?${query}` : ''}`)
   },
 
-  uploadAsset: async (file: File, category: string, options: { visibility?: string; attribution?: string } = {}) => {
+  uploadAsset: async (file: File, category: AssetCategory, options: { visibility?: string; attribution?: string } = {}) => {
     const form = new FormData()
     form.set('file', file)
     form.set('category', category)
