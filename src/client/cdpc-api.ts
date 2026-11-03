@@ -80,6 +80,24 @@ export type ApiOutfit = {
   skinAsset?: Pick<ApiAsset, 'id' | 'category' | 'kind' | 'width' | 'height'> | null
 }
 
+export type EditorDocumentPayload = {
+  version: 1
+  width: 64
+  height: 64
+  activeId: string | null
+  layers: Array<{ id: string; name: string; visible: boolean; opacity: number; pixels: string[] }>
+}
+
+export type ApiEditorDocumentSummary = {
+  id: string
+  name: string
+  revision: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type ApiEditorDocument = ApiEditorDocumentSummary & { document: EditorDocumentPayload }
+
 type ErrorEnvelope = { error?: string; message?: string }
 
 async function request<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
@@ -161,4 +179,25 @@ export const cdpcApi = {
     }),
 
   assetFileUrl: (assetId: string) => `/api/assets/${encodeURIComponent(assetId)}/file`,
+
+  listEditorDocuments: async () =>
+    (await request<{ items: ApiEditorDocumentSummary[] }>('/api/editor-documents')).items,
+
+  getEditorDocument: async (documentId: string) =>
+    (await request<{ item: ApiEditorDocument }>(`/api/editor-documents/${encodeURIComponent(documentId)}`)).item,
+
+  createEditorDocument: async (name: string, document: EditorDocumentPayload) =>
+    (await request<{ item: ApiEditorDocumentSummary }>('/api/editor-documents', {
+      method: 'POST',
+      body: JSON.stringify({ name, document }),
+    })).item,
+
+  updateEditorDocument: async (documentId: string, name: string, document: EditorDocumentPayload, revision: number) =>
+    (await request<{ item: ApiEditorDocumentSummary }>(`/api/editor-documents/${encodeURIComponent(documentId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name, document, revision }),
+    })).item,
+
+  deleteEditorDocument: (documentId: string) =>
+    request<void>(`/api/editor-documents/${encodeURIComponent(documentId)}`, { method: 'DELETE' }),
 }
