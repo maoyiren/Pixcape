@@ -111,6 +111,44 @@ test('AI-generated skin can be saved into the shared wardrobe and workspace', as
   await expect.poll(() => canvas.evaluate(element => (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data[2])).toBe(86)
 })
 
+test('AI skin remains saved when workspace synchronization fails', async ({ page }) => {
+  const pngDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#654321'
+    context.fillRect(0, 0, 64, 64)
+    return canvas.toDataURL('image/png')
+  })
+  await page.route('**/api/ai/models', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ models: [{ id: 'test:model', provider: 'test', model: 'test-model', label: 'Test', textToImage: true, imageToImage: true }], providers: [] }),
+  }))
+  await page.route('**/api/ai/generate', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ imageDataUrl: pngDataUrl, provider: 'test', model: 'test-model', elapsedMs: 100, notice: 'test', outputKind: 'minecraft-skin' }),
+  }))
+  await page.route('**/api/assets', route => route.fulfill({
+    status: 201, contentType: 'application/json', body: JSON.stringify({ item: { id: 'asset-ai-partial' } }),
+  }))
+  await page.route('**/api/workspace', route => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+      } }) })
+    }
+    return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'workspace unavailable' }) })
+  })
+
+  await page.goto('/ai')
+  await page.getByRole('button', { name: '生成皮肤 PNG' }).click()
+  await page.getByRole('button', { name: '保存到我的衣橱' }).click()
+  await expect(page.getByRole('button', { name: '已保存到衣橱' })).toBeVisible()
+  await expect(page.getByRole('status')).toContainText('皮肤已保存到衣橱，但工作区同步失败')
+  await expect(page.getByRole('link', { name: '打开衣橱' })).toHaveAttribute('href', '/wardrobe')
+})
+
 test('workbench nested routes map to their intended workflows', async ({ page }) => {
   const routes = [
     { path: '/workbench/ai', heading: 'AI 生成' },
