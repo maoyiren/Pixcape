@@ -72,16 +72,13 @@ export default function PixelCanvasEditor() {
   useEffect(() => {
     if (!loaded) return
     const controller = new AbortController()
+    let cancelled = false
     const restore = async () => {
       try {
-        const workspaceResponse = await fetch('/api/workspace', {
-          cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
-        })
-        if (!workspaceResponse.ok) return
-        const workspace = await workspaceResponse.json() as { item?: { activeAssetId?: string | null } }
-        const assetId = workspace.item?.activeAssetId
-        if (!assetId) return
-        const assetResponse = await fetch(`/api/assets/${encodeURIComponent(assetId)}/file`, {
+        const workspace = await cdpcApi.getWorkspace()
+        const assetId = workspace.activeAssetId
+        if (!assetId || cancelled) return
+        const assetResponse = await fetch(cdpcApi.assetFileUrl(assetId), {
           cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
         })
         if (!assetResponse.ok) {
@@ -122,7 +119,7 @@ export default function PixelCanvasEditor() {
       }
     }
     void restore()
-    return () => controller.abort()
+    return () => { cancelled = true; controller.abort() }
   }, [loaded])
 
   useEffect(() => {
