@@ -152,7 +152,6 @@ export default function WardrobeLibrary() {
         activeOutfitId: outfit.id,
       })
       router.push('/dress-up')
-      router.push('/dress-up')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法载入云端穿搭')
     }
