@@ -18,7 +18,7 @@ test('primary creation routes render their intended mode entry points', async ({
     { path: '/ai', heading: 'AI 生成', mode: 'ai' },
     { path: '/editor', heading: '单品编辑器', mode: 'editor' },
     { path: '/wardrobe', heading: '我的衣橱', mode: 'wardrobe' },
-    { path: '/dress-up', heading: '衣服选装', mode: 'dress-up' },
+    { path: '/dress-up', heading: '角色穿搭', mode: 'dress-up' },
   ]
 
   for (const route of routes) {
@@ -153,14 +153,14 @@ test('workbench nested routes map to their intended workflows', async ({ page })
   const routes = [
     { path: '/workbench/ai', heading: 'AI 生成' },
     { path: '/workbench/edit', heading: '单品编辑器' },
-    { path: '/workbench/dress', heading: '衣服选装', canonical: '/dress-up' },
+    { path: '/workbench/dress', heading: '角色穿搭', canonical: '/dress-up' },
   ]
 
   for (const route of routes) {
     await page.goto(route.path)
     if ('canonical' in route && route.canonical) {
       await expect(page).toHaveURL(new RegExp(route.canonical.replace('/', '\\/')))
-      await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
     }
     await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.path.endsWith('/ai') ? 'ai' : route.path.endsWith('/dress') ? 'dress-up' : 'editor')
   }
@@ -237,11 +237,11 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   })
 
   await page.goto('/dress-up')
-  await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await page.getByRole('button', { name: '披肩', exact: true }).click()
   await page.getByRole('button', { name: /眼眸花披肩/ }).click()
   await page.getByLabel('穿搭名称').fill('云端披肩测试')
-  await page.getByRole('button', { name: '保存到账号云端' }).click()
+  await page.getByRole('button', { name: '保存搭配' }).click()
   await expect(page.getByText(/已保存到账号云端/)).toBeVisible()
   expect(assetUploadCount).toBe(1)
   expect(outfitInput).toMatchObject({
@@ -320,7 +320,7 @@ test('dedicated dress-up route opens the 3D outfit studio, not the asset library
   await page.goto('/dress-up')
   await expect(page).toHaveURL(/\/dress-up$/)
   await expect(page.locator('[data-studio-mode="dress-up"]')).toBeVisible()
-  await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
 })
 
