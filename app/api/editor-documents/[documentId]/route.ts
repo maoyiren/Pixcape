@@ -3,9 +3,11 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { loadAssetActor } from '@/lib/asset-api'
+import { readRequestBodyWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
+const MAX_REQUEST_BYTES = MAX_DOCUMENT_BYTES + 4096
 
 type RouteContext = { params: Promise<{ documentId: string }> }
 
@@ -63,7 +65,11 @@ export async function PUT(request: Request, context: RouteContext) {
   if ('response' in resolved) return resolved.response
   const { documentId } = await context.params
   let body: unknown
-  try { body = await request.json() } catch {
+  try {
+    const raw = await readRequestBodyWithLimit(request.body, MAX_REQUEST_BYTES)
+    body = JSON.parse(raw.toString('utf8'))
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) return NextResponse.json({ error: '编辑文档请求不能超过 2 MB。' }, { status: 413 })
     return NextResponse.json({ error: '请求 JSON 格式无效。' }, { status: 400 })
   }
   if (!body || typeof body !== 'object') return NextResponse.json({ error: '编辑文档内容无效。' }, { status: 400 })
