@@ -372,7 +372,7 @@ test('wardrobe asset handoff clears a previously active cloud outfit', async ({ 
   await expect.poll(() => savedPointer).toMatchObject({
     activeTool: 'WARDROBE', activeAssetId: 'skin-next', activeOutfitId: null,
   })
-  await expect(page).toHaveURL(/\\/dress-up$/)
+  await expect(page).toHaveURL(new RegExp('/dress-up$'))
 })
 
 test('wardrobe outfit handoff clears a previously active single asset', async ({ page }) => {
@@ -402,6 +402,6 @@ test('wardrobe outfit handoff clears a previously active single asset', async ({
   await expect.poll(() => savedPointer).toMatchObject({
     activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-next',
   })
-  await expect(page).toHaveURL(/\\/dress-up$/)
+  await expect(page).toHaveURL(new RegExp('/dress-up$'))
 })
 
