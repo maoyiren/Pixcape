@@ -360,9 +360,12 @@ export default function PixelCanvasEditor() {
       setCloudDocumentLoaded(true)
       setCloudBaseline(savedSnapshot)
       setCloudConflict(false)
-      const items = await cdpcApi.listEditorDocuments()
-      setCloudDocuments(items)
-      setStatus('云端文档已保存，可在其他设备登录后打开')
+      try {
+        setCloudDocuments(await cdpcApi.listEditorDocuments())
+        setStatus('云端文档已保存，可在其他设备登录后打开')
+      } catch {
+        setStatus('云端文档已保存，但列表刷新失败；稍后重新打开文档列表即可')
+      }
     } catch (error) {
       if (error instanceof CdpcApiError && error.status === 409) setCloudConflict(true)
       setStatus(error instanceof Error ? `云端保存失败：${error.message}` : '云端保存失败')
@@ -384,8 +387,12 @@ export default function PixelCanvasEditor() {
       setCloudDocumentLoaded(true)
       setCloudBaseline(savedSnapshot)
       setCloudConflict(false)
-      setCloudDocuments(await cdpcApi.listEditorDocuments())
-      setStatus('本地内容已另存为新的云端副本，原云端版本未被覆盖')
+      try {
+        setCloudDocuments(await cdpcApi.listEditorDocuments())
+        setStatus('本地内容已另存为新的云端副本，原云端版本未被覆盖')
+      } catch {
+        setStatus('云端副本已保存，但列表刷新失败；稍后重新打开文档列表即可')
+      }
     } catch (error) {
       setStatus(error instanceof Error ? `另存副本失败：${error.message}` : '另存副本失败')
     } finally {
