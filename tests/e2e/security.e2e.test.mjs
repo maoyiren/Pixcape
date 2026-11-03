@@ -105,6 +105,11 @@ for (const [method, path, body, headers] of [
   ['GET', '/api/outfits/test-outfit'],
   ['PUT', '/api/outfits/test-outfit', JSON.stringify({ name: 'unauthenticated' }), { 'content-type': 'application/json' }],
   ['DELETE', '/api/outfits/test-outfit'],
+  ['GET', '/api/editor-documents'],
+  ['POST', '/api/editor-documents', JSON.stringify({ name: 'anonymous', document: {} }), { 'content-type': 'application/json' }],
+  ['GET', '/api/editor-documents/test-document'],
+  ['PUT', '/api/editor-documents/test-document', JSON.stringify({ revision: 1, document: {} }), { 'content-type': 'application/json' }],
+  ['DELETE', '/api/editor-documents/test-document'],
 ]) {
   test(`anonymous ${method} ${path} is denied before resource access`, async () => {
     const response = await fetch(new URL(path, base), {
@@ -235,6 +240,74 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     const savedWorkspace = await saveWorkspace.json()
     assert.equal(savedWorkspace.item.activeAssetId, asset.id)
     assert.equal(savedWorkspace.item.activeOutfitId, item.id)
+
+    const editorDocumentPayload = {
+      version: 1,
+      width: 64,
+      height: 64,
+      activeId: 'layer-one',
+      layers: [{
+        id: 'layer-one',
+        name: '基础图层',
+        visible: true,
+        opacity: 100,
+        pixels: Array(4096).fill(''),
+      }],
+    }
+    const createEditorDocument = await fetch(new URL('/api/editor-documents', base), {
+      method: 'POST',
+      headers: { cookie: ownerSession, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Private pixel project', document: editorDocumentPayload }),
+    })
+    assert.equal(createEditorDocument.status, 201, 'authenticated owner can save a cloud editor document')
+    const { item: editorDocument } = await createEditorDocument.json()
+    assert.equal(editorDocument.revision, 1)
+
+    const ownerEditorDocuments = await fetch(new URL('/api/editor-documents', base), { headers: { cookie: ownerSession } })
+    assert.equal(ownerEditorDocuments.status, 200)
+    assert.ok((await ownerEditorDocuments.json()).items.some((entry) => entry.id === editorDocument.id))
+
+    const otherEditorDocuments = await fetch(new URL('/api/editor-documents', base), { headers: { cookie: otherSession } })
+    assert.equal(otherEditorDocuments.status, 200)
+    assert.ok(!(await otherEditorDocuments.json()).items.some((entry) => entry.id === editorDocument.id))
+
+    const ownerEditorDocument = await fetch(new URL(`/api/editor-documents/${editorDocument.id}`, base), { headers: { cookie: ownerSession } })
+    assert.equal(ownerEditorDocument.status, 200)
+    assert.deepEqual((await ownerEditorDocument.json()).item.document, editorDocumentPayload)
+
+    const otherEditorDocument = await fetch(new URL(`/api/editor-documents/${editorDocument.id}`, base), { headers: { cookie: otherSession } })
+    assert.equal(otherEditorDocument.status, 404, 'another user cannot read a private editor document')
+
+    const updatedEditorDocument = await fetch(new URL(`/api/editor-documents/${editorDocument.id}`, base), {
+      method: 'PUT',
+      headers: { cookie: ownerSession, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Updated pixel project', revision: 1, document: editorDocumentPayload }),
+    })
+    assert.equal(updatedEditorDocument.status, 200)
+    assert.equal((await updatedEditorDocument.json()).item.revision, 2)
+
+    const staleEditorDocument = await fetch(new URL(`/api/editor-documents/${editorDocument.id}`, base), {
+      method: 'PUT',
+      headers: { cookie: ownerSession, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Stale overwrite', revision: 1, document: editorDocumentPayload }),
+    })
+    assert.equal(staleEditorDocument.status, 409, 'stale revisions cannot overwrite a newer editor document')
+
+    const otherEditorUpdate = await fetch(new URL(`/api/editor-documents/${editorDocument.id}`, base), {
+      method: 'PUT',
+      headers: { cookie: otherSession, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Cross-user overwrite', revision: 2, document: editorDocumentPayload }),
+    })
+    assert.equal(otherEditorUpdate.status, 404)
+    const otherEditorDelete = await fetch(new URL(`/api/editor-documents/${editorDocument.id}`, base), {
+      method: 'DELETE', headers: { cookie: otherSession },
+    })
+    assert.equal(otherEditorDelete.status, 404)
+
+    const ownerEditorDelete = await fetch(new URL(`/api/editor-documents/${editorDocument.id}`, base), {
+      method: 'DELETE', headers: { cookie: ownerSession },
+    })
+    assert.equal(ownerEditorDelete.status, 204)
 
     const otherWorkspace = await fetch(new URL('/api/workspace', base), { headers: { cookie: otherSession } })
     assert.equal(otherWorkspace.status, 200)
