@@ -53,6 +53,7 @@ export default function PixelCanvasEditor() {
   const fileRef = useRef<HTMLInputElement>(null)
   const drawing = useRef(false)
   const lastIndex = useRef(-1)
+  const hasLocalDraft = useRef(false)
 
   useEffect(() => {
     try {
@@ -60,6 +61,7 @@ export default function PixelCanvasEditor() {
       if (raw) {
         const value = JSON.parse(raw)
         if (Array.isArray(value.layers) && value.layers.length && value.layers.every((layer: Layer) => Array.isArray(layer.pixels) && layer.pixels.length === SIZE * SIZE)) {
+          hasLocalDraft.current = true
           setLayers(value.layers)
           setActiveId(value.activeId || value.layers[0].id)
           setStatus('已恢复上次本地编辑草稿')
@@ -87,7 +89,7 @@ export default function PixelCanvasEditor() {
   // Restore the server-selected wardrobe asset when entering the editor.
   // LocalStorage remains an offline draft cache, not the cross-tool source of truth.
   useEffect(() => {
-    if (!loaded) return
+    if (!loaded || hasLocalDraft.current) return
     const controller = new AbortController()
     let cancelled = false
     const restore = async () => {
@@ -352,6 +354,27 @@ export default function PixelCanvasEditor() {
     }
   }
 
+  const deleteCloudDocument = async () => {
+    if (!cloudDocumentId || !cloudDocumentLoaded) {
+      setStatus('请先打开要删除的云端文档')
+      return
+    }
+    if (!window.confirm('确定永久删除这份云端编辑文档吗？此操作无法撤销。')) return
+    setCloudBusy(true)
+    try {
+      await cdpcApi.deleteEditorDocument(cloudDocumentId)
+      setCloudDocuments(current => current.filter(item => item.id !== cloudDocumentId))
+      setCloudDocumentId('')
+      setCloudDocumentLoaded(false)
+      setCloudRevision(0)
+      setStatus('云端文档已删除；本地草稿仍保留')
+    } catch (error) {
+      setStatus(error instanceof Error ? `删除失败：${error.message}` : '云端文档删除失败')
+    } finally {
+      setCloudBusy(false)
+    }
+  }
+
   const openCloudDocument = async () => {
     if (!cloudDocumentId) { setStatus('请先选择一份云端文档'); return }
     setCloudBusy(true)
@@ -431,6 +454,7 @@ export default function PixelCanvasEditor() {
         </label>
         <button type="button" disabled={cloudBusy} onClick={() => void openCloudDocument()}>打开云端</button>
         <button type="button" disabled={cloudBusy} onClick={() => void saveCloudDocument()}>{cloudBusy ? '同步中…' : '保存云端'}</button>
+        <button type="button" disabled={cloudBusy || !cloudDocumentLoaded} onClick={() => void deleteCloudDocument()}>删除云端</button>
       </div>
       <div className="cdpc-pixel-layout">
         <aside className="cdpc-pixel-tools" aria-label="绘图工具">
