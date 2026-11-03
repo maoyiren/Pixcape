@@ -38,7 +38,7 @@ function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' {
   throw new Error('该服装分类尚未接入云端素材类型')
 }
 
-function fromAssetCategory(category: string): GarmentCategory | null {
+function fromAssetCategory(category: string | null): GarmentCategory | null {
   if (category === 'SHAWL') return '披肩'
   if (category === 'COAT') return '外套'
   if (category === 'CAPE') return '披风'
