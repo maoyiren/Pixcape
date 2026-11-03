@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { cdpcApi } from '@/src/client/cdpc-api'
 import { ArrowLeft, ChevronDown, ImagePlus, LoaderCircle, Sparkles, WandSparkles } from 'lucide-react'
 import * as Select from '@radix-ui/react-select'
 import * as Tabs from '@radix-ui/react-tabs'
@@ -122,44 +123,19 @@ export default function AiSkinStudio({ onBack }: { onBack: () => void }) {
       const blob = await imageResponse.blob()
       if (blob.type !== 'image/png') throw new Error('AI 结果不是 PNG 格式，请先下载并检查')
       const file = new File([blob], 'cdpc-ai-skin.png', { type: 'image/png' })
-      const form = new FormData()
-      form.set('file', file)
-      form.set('category', 'SKIN')
-      form.set('visibility', 'PRIVATE')
-      form.set('attribution', `AI 生成 · ${result.provider} / ${result.model}`)
-      const upload = await fetch('/api/assets', {
-        method: 'POST',
-        body: form,
-        cache: 'no-store',
-        credentials: 'same-origin',
+      const uploaded = await cdpcApi.uploadAsset(file, 'SKIN', {
+        visibility: 'PRIVATE',
+        attribution: `AI 生成 · ${result.provider} / ${result.model}`,
       })
-      const uploaded = await upload.json()
-      if (!upload.ok || !uploaded.item?.id) throw new Error(uploaded.error || '保存到衣橱失败')
-      setSavedAssetId(uploaded.item.id)
+      setSavedAssetId(uploaded.id)
 
-      const workspaceResponse = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
-      if (!workspaceResponse.ok) {
-        setSaveFeedback('皮肤已保存到衣橱；工作区状态未同步，请重新进入创作工具')
-        return
-      }
-      const workspace = await workspaceResponse.json()
-      const pointer = {
-        projectId: workspace.item?.projectId ?? null,
+      const workspace = await cdpcApi.getWorkspace()
+      await cdpcApi.updateWorkspace({
+        projectId: workspace.projectId ?? null,
         activeTool: 'AI_GENERATOR',
-        activeAssetId: uploaded.item.id,
-        activeOutfitId: workspace.item?.activeOutfitId ?? null,
-      }
-      const synced = await fetch('/api/workspace', {
-        method: 'PUT',
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pointer),
+        activeAssetId: uploaded.id,
+        activeOutfitId: null,
       })
-      if (!synced.ok) {
-        setSaveFeedback('皮肤已保存到衣橱；工作区状态同步失败，可从衣橱继续使用')
-        return
-      }
       setSaveFeedback('已保存到我的衣橱，并同步为当前工作区素材')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '保存生成结果失败')
