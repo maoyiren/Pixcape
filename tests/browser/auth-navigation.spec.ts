@@ -475,6 +475,7 @@ test('wardrobe outfit handoff clears a previously active single asset', async ({
 
 test('pixel editor saves a private cloud document and restores it on demand', async ({ page }) => {
   let createdDocument: Record<string, unknown> | null = null
+  let deletedDocument = false
   const remoteDocument = {
     version: 1, width: 64, height: 64, activeId: 'remote-layer',
     layers: [{
@@ -502,6 +503,11 @@ test('pixel editor saves a private cloud document and restores it on demand', as
       } }) })
       return
     }
+    if (request.method() === 'DELETE' && url.pathname.endsWith('/cloud-doc-1')) {
+      deletedDocument = true
+      await route.fulfill({ status: 204 })
+      return
+    }
     if (request.method() === 'GET' && url.pathname.endsWith('/cloud-doc-1')) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
         id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
@@ -510,7 +516,7 @@ test('pixel editor saves a private cloud document and restores it on demand', as
       } }) })
       return
     }
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: createdDocument ? [{
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: createdDocument && !deletedDocument ? [{
       id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
       createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
     }] : [] }) })
@@ -527,4 +533,8 @@ test('pixel editor saves a private cloud document and restores it on demand', as
     (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data,
   ))).toEqual([0, 255, 0, 255])
   await expect(page.getByText('已从云端恢复编辑文档')).toBeVisible()
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: '删除云端' }).click()
+  await expect.poll(() => deletedDocument).toBe(true)
+  await expect(page.getByText('云端文档已删除；本地草稿仍保留')).toBeVisible()
 })
