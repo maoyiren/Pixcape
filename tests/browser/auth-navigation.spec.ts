@@ -471,3 +471,60 @@ test('wardrobe outfit handoff clears a previously active single asset', async ({
   await expect(page).toHaveURL(new RegExp('/dress-up$'))
 })
 
+
+
+test('pixel editor saves a private cloud document and restores it on demand', async ({ page }) => {
+  let createdDocument: Record<string, unknown> | null = null
+  const remoteDocument = {
+    version: 1, width: 64, height: 64, activeId: 'remote-layer',
+    layers: [{
+      id: 'remote-layer', name: '云端图层', visible: true, opacity: 100,
+      pixels: Array.from({ length: 4096 }, (_, index) => index === 0 ? '#00ff00' : ''),
+    }],
+  }
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {} }) })
+  })
+  await page.route('**/api/editor-documents**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'POST') {
+      createdDocument = request.postDataJSON() as Record<string, unknown>
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname.endsWith('/cloud-doc-1')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+        document: remoteDocument,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: createdDocument ? [{
+      id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+      createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+    }] : [] }) })
+  })
+
+  await page.goto('/editor')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect.poll(() => createdDocument).not.toBeNull()
+  expect((createdDocument?.document as { width: number }).width).toBe(64)
+  await page.getByLabel('选择云端文档').selectOption('cloud-doc-1')
+  await page.getByRole('button', { name: '打开云端' }).click()
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect.poll(() => canvas.evaluate(element => Array.from(
+    (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data,
+  ))).toEqual([0, 255, 0, 255])
+  await expect(page.getByText('已从云端恢复编辑文档')).toBeVisible()
+})
