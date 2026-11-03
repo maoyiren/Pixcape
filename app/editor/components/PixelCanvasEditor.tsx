@@ -343,7 +343,7 @@ export default function PixelCanvasEditor() {
           projectId: workspace.projectId ?? null,
           activeTool: 'PIXEL_EDITOR',
           activeAssetId: asset.id,
-          activeOutfitId: workspace.activeOutfitId ?? null,
+          activeOutfitId: null,
         })
         setStatus('皮肤已保存到衣橱，并已同步为当前工作区素材')
       } catch (error) {
