@@ -143,7 +143,7 @@ export default function WardrobeLibrary() {
           projectId: workspace.item?.projectId ?? null,
           activeTool: 'WARDROBE',
           activeAssetId: asset.id,
-          activeOutfitId: workspace.item?.activeOutfitId ?? null,
+          activeOutfitId: null,
         }),
       })
       const data = await response.json()
@@ -168,7 +168,7 @@ export default function WardrobeLibrary() {
         body: JSON.stringify({
           projectId: workspace.item?.projectId ?? null,
           activeTool: 'WARDROBE',
-          activeAssetId: workspace.item?.activeAssetId ?? null,
+          activeAssetId: null,
           activeOutfitId: outfit.id,
         }),
       })
