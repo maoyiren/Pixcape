@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { bresenhamLine } from '@/src/domain/skin-paint'
+import { cdpcApi } from '@/src/client/cdpc-api'
 
 type Layer = { id: string; name: string; visible: boolean; opacity: number; pixels: string[] }
 type Tool = 'pencil' | 'eraser' | 'fill' | 'eyedropper'
@@ -331,37 +332,23 @@ export default function PixelCanvasEditor() {
         ctx.fillRect(index % SIZE, Math.floor(index / SIZE), 1, 1)
       })
       const blob = await new Promise<Blob>((resolve, reject) => output.toBlob(value => value ? resolve(value) : reject(new Error('PNG 编码失败')), 'image/png'))
-      const form = new FormData()
-      form.append('file', blob, 'cdpc-pixel-skin-64x64.png')
-      form.append('category', 'SKIN')
-      form.append('visibility', 'PRIVATE')
-      form.append('attribution', 'CDPC Pixel Editor')
-      const response = await fetch('/api/assets', { method: 'POST', body: form, credentials: 'same-origin' })
-      const payload = await response.json()
-      if (!response.ok) throw new Error(payload.error || '保存失败')
-      const workspaceResponse = await fetch('/api/workspace', { cache: 'no-store', credentials: 'same-origin' })
-      if (!workspaceResponse.ok) {
-        setStatus('素材已保存到衣橱，但读取工作区失败；请重新进入编辑器同步')
-        return
-      }
-      const workspace = await workspaceResponse.json()
-      const pointerResponse = await fetch('/api/workspace', {
-        method: 'PUT',
-        cache: 'no-store',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: workspace.item?.projectId ?? null,
-          activeTool: 'PIXEL_EDITOR',
-          activeAssetId: payload.item.id,
-          activeOutfitId: workspace.item?.activeOutfitId ?? null,
-        }),
+      const file = new File([blob], 'cdpc-pixel-skin-64x64.png', { type: 'image/png' })
+      const asset = await cdpcApi.uploadAsset(file, 'SKIN', {
+        visibility: 'PRIVATE',
+        attribution: 'CDPC Pixel Editor',
       })
-      if (!pointerResponse.ok) {
-        setStatus('素材已保存到衣橱，但跨模块状态同步失败；请稍后重试')
-        return
+      try {
+        const workspace = await cdpcApi.getWorkspace()
+        await cdpcApi.updateWorkspace({
+          projectId: workspace.projectId ?? null,
+          activeTool: 'PIXEL_EDITOR',
+          activeAssetId: asset.id,
+          activeOutfitId: workspace.activeOutfitId ?? null,
+        })
+        setStatus('皮肤已保存到衣橱，并已同步为当前工作区素材')
+      } catch (error) {
+        setStatus(`皮肤已保存到衣橱，但工作区同步失败：${error instanceof Error ? error.message : '请稍后重试'}`)
       }
-      setStatus('皮肤已保存到衣橱，并已同步为当前工作区素材')
     } catch (error) { setStatus(error instanceof Error ? error.message : '保存失败') }
     finally { setSaving(false) }
   }
