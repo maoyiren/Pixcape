@@ -538,3 +538,33 @@ test('pixel editor saves a private cloud document and restores it on demand', as
   await expect.poll(() => deletedDocument).toBe(true)
   await expect(page.getByText('云端文档已删除；本地草稿仍保留')).toBeVisible()
 })
+
+
+test('a valid local pixel draft takes precedence over automatic wardrobe asset restore', async ({ page }) => {
+  let wardrobeFileRequested = false
+  await page.addInitScript(() => {
+    const pixels = Array(4096).fill('')
+    pixels[0] = '#ff00ff'
+    localStorage.setItem('cdpc-pixel-editor-v1', JSON.stringify({
+      activeId: 'local-draft-layer',
+      layers: [{ id: 'local-draft-layer', name: '本地草稿', visible: true, opacity: 100, pixels }],
+    }))
+  })
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: {
+      projectId: null, activeTool: 'WARDROBE', activeAssetId: 'wardrobe-skin', activeOutfitId: null,
+    } }),
+  }))
+  await page.route('**/api/assets/wardrobe-skin/file', async route => {
+    wardrobeFileRequested = true
+    await route.abort()
+  })
+  await page.goto('/editor')
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect.poll(() => canvas.evaluate(element => Array.from(
+    (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data,
+  ))).toEqual([255, 0, 255, 255])
+  await expect(page.getByText('已恢复上次本地编辑草稿')).toBeVisible()
+  expect(wardrobeFileRequested).toBe(false)
+})
