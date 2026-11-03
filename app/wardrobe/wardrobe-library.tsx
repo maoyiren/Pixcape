@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { cdpcApi } from '@/src/client/cdpc-api'
+import { cdpcApi, CdpcApiError } from '@/src/client/cdpc-api'
 
 type Category = 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE' | 'HAT' | 'PANTS' | 'SHOES' | 'OTHER_ACCESSORY'
 type Asset = {
@@ -60,7 +60,13 @@ export default function WardrobeLibrary() {
   }, [])
 
   useEffect(() => {
-    void reload().catch((cause) => setError(cause instanceof Error ? cause.message : '加载失败'))
+    void reload().catch((cause) => {
+      if (cause instanceof CdpcApiError && cause.status === 401) {
+        setNotice('登录后即可管理你的私人素材与穿搭')
+        return
+      }
+      setError(cause instanceof Error ? cause.message : '加载失败')
+    })
   }, [reload])
 
   const counts = useMemo(() => {
@@ -99,12 +105,6 @@ export default function WardrobeLibrary() {
         return [...merged.values()]
       })
       setNextCursor(data.nextCursor)
-      setAssets((current) => {
-        const merged = new Map(current.map((asset) => [asset.id, asset]))
-        for (const asset of page) merged.set(asset.id, asset)
-        return [...merged.values()]
-      })
-      setNextCursor(typeof data.nextCursor === 'string' ? data.nextCursor : null)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '加载更多素材失败')
     } finally {
@@ -136,7 +136,6 @@ export default function WardrobeLibrary() {
         activeOutfitId: null,
       })
       router.push('/dress-up')
-      router.push('/dress-up')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法将素材交给 3D 换装工作台')
     }
@@ -165,7 +164,6 @@ export default function WardrobeLibrary() {
     setError('')
     try {
       await cdpcApi.uploadAsset(file, uploadCategory, { visibility: 'PRIVATE' })
-      await reload()
       await reload()
       setFilter(uploadCategory)
       setNotice('素材已上传并保存到私人衣橱')
