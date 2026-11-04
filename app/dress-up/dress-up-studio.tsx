@@ -166,7 +166,7 @@ export default function DressUpStudio() {
     try {
       const raw = window.localStorage.getItem('cdpc:dress-up:local-v1')
       if (!raw) return
-      const saved = JSON.parse(raw) as { itemIds?: string[]; model?: ModelType; background?: string; skinUrl?: string; skinName?: string }
+      const saved = JSON.parse(raw) as Partial<LocalOutfit>
       const savedAssets = Array.isArray(saved.assetItems) ? saved.assetItems : []
       const restored = (saved.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
         const item = savedAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
