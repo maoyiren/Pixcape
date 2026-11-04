@@ -76,6 +76,7 @@ export default function DressUpStudio() {
   const [savedOutfits, setSavedOutfits] = useState<LocalOutfit[]>([])
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
   const [savingCloud, setSavingCloud] = useState(false)
+  const [wardrobeItems, setWardrobeItems] = useState<CatalogItem[]>([])
 
   const refreshCloudOutfits = useCallback(async () => {
     let outfits
@@ -182,10 +183,47 @@ export default function DressUpStudio() {
     }
   }, [])
 
-  const filtered = useMemo(() => catalog.filter(item =>
+  useEffect(() => {
+    let cancelled = false
+    const loadWardrobeAssets = async () => {
+      try {
+        const response = await cdpcApi.listAssets({ limit: 60 })
+        if (cancelled) return
+        const items: CatalogItem[] = response.items.flatMap(asset => {
+          const garmentCategory = fromAssetCategory(asset.category)
+          if (!garmentCategory || !asset.fileUrl) return []
+          return [{
+            id: asset.id,
+            assetId: asset.id,
+            fileUrl: asset.fileUrl,
+            texture: asset.fileUrl,
+            name: asset.attribution || `我的${garmentCategory}`,
+            category: garmentCategory,
+            note: '我的衣橱素材',
+          }]
+        })
+        setWardrobeItems(items)
+      } catch (error) {
+        if (cancelled) return
+        if (error instanceof Error && 'status' in error && error.status === 401) return
+        setSaveNotice(error instanceof Error ? `衣橱素材加载失败：${error.message}` : '衣橱素材加载失败')
+      }
+    }
+    void loadWardrobeAssets()
+    return () => { cancelled = true }
+  }, [])
+
+  const availableItems = useMemo(() => {
+    const merged = new Map<string, CatalogItem>()
+    for (const item of catalog) merged.set(item.id, item)
+    for (const item of wardrobeItems) merged.set(item.id, item)
+    return [...merged.values()]
+  }, [wardrobeItems])
+
+  const filtered = useMemo(() => availableItems.filter(item =>
     (category === '全部' || item.category === category) &&
     (item.name.toLowerCase().includes(query.trim().toLowerCase()) || item.category.includes(query.trim())),
-  ), [category, query])
+  ), [availableItems, category, query])
   const selectedItems = Object.values(selected)
   const cape = selected['披风']
 
