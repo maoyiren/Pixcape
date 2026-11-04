@@ -666,6 +666,6 @@ test('cloud document save remains successful when the follow-up list refresh fai
   await page.getByRole('button', { name: '保存云端' }).click()
   await expect.poll(() => createRequests).toBe(1)
   await expect.poll(() => listRequests).toBeGreaterThanOrEqual(2)
-  await expect(page.getByRole('status')).toContainText('云端文档已保存，但列表刷新失败')
-  await expect(page.getByRole('status')).not.toContainText('云端保存失败')
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('云端文档已保存，但列表刷新失败')
+  await expect(page.locator('.cdpc-pixel-stage small')).not.toContainText('云端保存失败')
 })
