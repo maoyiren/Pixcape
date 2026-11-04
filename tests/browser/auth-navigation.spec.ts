@@ -199,10 +199,17 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
       return
     }
     if (request.method() === 'GET' && url.pathname === '/api/assets') {
+      if (url.searchParams.get('cursor') === 'wardrobe-page-2') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+          id: 'asset-coat-cloud', category: 'COAT', attribution: '我的衣橱外套',
+          fileUrl: '/api/assets/asset-coat-cloud/file', isFavorite: false,
+        }], nextCursor: null }) })
+        return
+      }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
         id: 'asset-shawl-cloud', category: 'SHAWL', attribution: '我的衣橱披肩',
         fileUrl: '/api/assets/asset-shawl-cloud/file', isFavorite: false,
-      }], nextCursor: null }) })
+      }], nextCursor: 'wardrobe-page-2' }) })
       return
     }
     await route.continue()
@@ -254,6 +261,14 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
     items: [{ assetId: 'asset-shawl-cloud', category: 'SHAWL', sortOrder: 0, equipped: true }],
   })
   await expect(page.locator('#dressup-saved-outfit')).toContainText('云端披肩测试')
+
+  await page.getByRole('button', { name: '外套', exact: true }).click()
+  await expect(page.getByRole('button', { name: /我的衣橱外套/ })).toBeVisible()
+  await page.getByRole('button', { name: /我的衣橱外套/ }).click()
+  await page.getByRole('button', { name: '保存本地草稿' }).click()
+  await expect(page.getByText(/已保存到此设备/)).toBeVisible()
+  await page.reload()
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱外套')
 })
 
 test('login page exposes email credentials and account registration', async ({ page }) => {
