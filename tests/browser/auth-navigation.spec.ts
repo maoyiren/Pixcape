@@ -18,7 +18,7 @@ test('primary creation routes render their intended mode entry points', async ({
     { path: '/ai', heading: 'AI 生成', mode: 'ai' },
     { path: '/editor', heading: '单品编辑器', mode: 'editor' },
     { path: '/wardrobe', heading: '我的衣橱', mode: 'wardrobe' },
-    { path: '/dress-up', heading: '衣服选装', mode: 'dress-up' },
+    { path: '/dress-up', heading: '角色穿搭', mode: 'dress-up' },
   ]
 
   for (const route of routes) {
@@ -153,14 +153,14 @@ test('workbench nested routes map to their intended workflows', async ({ page })
   const routes = [
     { path: '/workbench/ai', heading: 'AI 生成' },
     { path: '/workbench/edit', heading: '单品编辑器' },
-    { path: '/workbench/dress', heading: '衣服选装', canonical: '/dress-up' },
+    { path: '/workbench/dress', heading: '角色穿搭', canonical: '/dress-up' },
   ]
 
   for (const route of routes) {
     await page.goto(route.path)
     if ('canonical' in route && route.canonical) {
       await expect(page).toHaveURL(new RegExp(route.canonical.replace('/', '\\/')))
-      await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
     }
     await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.path.endsWith('/ai') ? 'ai' : route.path.endsWith('/dress') ? 'dress-up' : 'editor')
   }
@@ -237,11 +237,12 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   })
 
   await page.goto('/dress-up')
-  await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await page.getByRole('button', { name: '披肩', exact: true }).click()
+  await expect(page.locator('.dressup-item-thumbnail').first()).toBeVisible()
   await page.getByRole('button', { name: /眼眸花披肩/ }).click()
   await page.getByLabel('穿搭名称').fill('云端披肩测试')
-  await page.getByRole('button', { name: '保存到账号云端' }).click()
+  await page.getByRole('button', { name: '保存搭配' }).click()
   await expect(page.getByText(/已保存到账号云端/)).toBeVisible()
   expect(assetUploadCount).toBe(1)
   expect(outfitInput).toMatchObject({
@@ -320,7 +321,7 @@ test('dedicated dress-up route opens the 3D outfit studio, not the asset library
   await page.goto('/dress-up')
   await expect(page).toHaveURL(/\/dress-up$/)
   await expect(page.locator('[data-studio-mode="dress-up"]')).toBeVisible()
-  await expect(page.getByRole('heading', { name: '衣服选装' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
 })
 
@@ -637,6 +638,7 @@ test('a valid local pixel draft takes precedence over automatic wardrobe asset r
 
 test('cloud document save remains successful when the follow-up list refresh fails', async ({ page }) => {
   let createRequests = 0
+  let listRequests = 0
   await page.route('**/api/workspace', route => route.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
@@ -650,12 +652,20 @@ test('cloud document save remains successful when the follow-up list refresh fai
       } }) })
       return
     }
+    // The editor loads the document list on entry. Keep that initial read healthy,
+    // then fail only the post-save refresh that this test is exercising.
+    listRequests += 1
+    if (listRequests === 1) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) })
+      return
+    }
     await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: '暂时无法刷新列表' }) })
   })
 
   await page.goto('/editor')
   await page.getByRole('button', { name: '保存云端' }).click()
   await expect.poll(() => createRequests).toBe(1)
-  await expect(page.getByRole('status')).toContainText('云端文档已保存，但列表刷新失败')
-  await expect(page.getByRole('status')).not.toContainText('云端保存失败')
+  await expect.poll(() => listRequests).toBeGreaterThanOrEqual(2)
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('云端文档已保存，但列表刷新失败')
+  await expect(page.locator('.cdpc-pixel-stage small')).not.toContainText('云端保存失败')
 })

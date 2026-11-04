@@ -57,6 +57,7 @@ export default function PixelCanvasEditor() {
   const drawing = useRef(false)
   const lastIndex = useRef(-1)
   const hasLocalDraft = useRef(false)
+  const workspaceActionStarted = useRef(false)
 
   useEffect(() => {
     try {
@@ -104,13 +105,13 @@ export default function PixelCanvasEditor() {
           cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
         })
         if (!assetResponse.ok) {
-          setStatus('当前工作区素材无法读取，请检查衣橱权限或重新选择素材')
+          if (!cancelled && !workspaceActionStarted.current) setStatus('当前工作区素材无法读取，请检查衣橱权限或重新选择素材')
           return
         }
         const bitmap = await createImageBitmap(await assetResponse.blob())
         try {
           if (bitmap.width !== SIZE || bitmap.height !== SIZE) {
-            setStatus('当前素材不是 64×64 皮肤，不能载入皮肤像素画布')
+            if (!cancelled && !workspaceActionStarted.current) setStatus('当前素材不是 64×64 皮肤，不能载入皮肤像素画布')
             return
           }
           const source = document.createElement('canvas')
@@ -126,6 +127,7 @@ export default function PixelCanvasEditor() {
             return '#' + [rgba[offset], rgba[offset + 1], rgba[offset + 2]]
               .map(value => value.toString(16).padStart(2, '0')).join('')
           })
+          if (cancelled || workspaceActionStarted.current) return
           const layer = { id: crypto.randomUUID(), name: '衣橱素材', visible: true, opacity: 100, pixels }
           setLayers([layer])
           setActiveId(layer.id)
@@ -137,7 +139,7 @@ export default function PixelCanvasEditor() {
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') return
-        setStatus(error instanceof Error ? `素材恢复失败：${error.message}` : '素材恢复失败')
+        if (!cancelled && !workspaceActionStarted.current) setStatus(error instanceof Error ? `素材恢复失败：${error.message}` : '素材恢复失败')
       }
     }
     void restore()
@@ -457,6 +459,7 @@ export default function PixelCanvasEditor() {
   }
 
   const saveToWardrobe = async () => {
+    workspaceActionStarted.current = true
     setSaving(true)
     try {
       const output = document.createElement('canvas')

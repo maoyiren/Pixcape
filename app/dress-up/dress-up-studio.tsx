@@ -574,11 +574,6 @@ export default function DressUpStudio() {
     setSaveNotice('穿搭备份 JSON 已导出。若包含导入的皮肤图片，文件可能较大；备份保存在你的设备中。')
   }
 
-  function exportOutfitAndOpenStudio() {
-    exportOutfitBackup()
-    window.open('/workbench', '_blank', 'noopener,noreferrer')
-    setSaveNotice('已导出穿搭 JSON，并打开创作工坊入口。若编辑器已连接，请在编辑器中选择“导入穿搭备份 JSON”并选择刚下载的文件。')
-  }
 
   async function importOutfitBackup(file?: File) {
     if (!file) return
@@ -751,16 +746,16 @@ export default function DressUpStudio() {
     <main className="dressup-page" data-studio-mode="dress-up">
       <header className="dressup-heading">
         <div>
-          <div className="dressup-eyebrow">CDPC / OUTFIT BUILDER</div>
-          <h1>衣服选装</h1>
-          <p>用真实 Minecraft 角色预览搭配。披肩、外套与披风分开管理；选装完成后可继续进入工作台编辑。</p>
+          <div className="dressup-eyebrow">CDPC / CHARACTER STYLE</div>
+          <h1>角色穿搭</h1>
+          <p>挑选喜欢的服装，实时看看角色的新造型。满意后保存搭配，或导出皮肤。</p>
         </div>
-        <Link className="cdpc-button cdpc-button-quiet" href="/workbench">进入创作工坊 ↗</Link>
+        <Link className="cdpc-button cdpc-button-quiet" href="/wardrobe">我的衣橱 ↗</Link>
       </header>
 
       <div className="dressup-layout">
         <section className="dressup-panel" aria-label="服装素材">
-          <div className="dressup-panel-heading"><h2>素材库</h2><span>{filtered.length} 项</span></div>
+          <div className="dressup-panel-heading"><h2>挑选服装</h2><span>{filtered.length} 项</span></div>
           <input className="dressup-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索服装名称…" aria-label="搜索服装" />
           <div className="dressup-categories" aria-label="服装分类">
             {categories.map(item => <button type="button" className="dressup-category" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}
@@ -768,7 +763,7 @@ export default function DressUpStudio() {
           {category !== '全部' && !availableCategories.has(category) && <div className="dressup-unavailable"><strong>{category}素材尚未接入</strong><p>目前正式素材目录尚未提供该分类的可用贴图，因此不会展示虚构素材。素材接入后会在这里出现。</p></div>}
           <div className="dressup-items">
             {filtered.map(item => <button type="button" key={item.id} className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => toggleItem(item)}>
-              <span className="dressup-item-mark" aria-hidden="true">▦</span>
+              <img className="dressup-item-thumbnail" src={item.fileUrl || ASSET_ROOT + (model === 'alex' && item.modelTexture ? item.modelTexture : item.texture)} alt="" aria-hidden="true" loading="lazy" draggable={false} />
               <strong>{item.name}</strong>
               <small>{item.category} · {item.note}</small>
               <span className="dressup-item-state">{selected[item.category]?.id === item.id ? '已选择' : '点击试穿'}</span>
@@ -780,7 +775,7 @@ export default function DressUpStudio() {
         </section>
 
         <section className="dressup-panel dressup-preview" aria-label="角色搭配预览">
-          <div className="dressup-panel-heading"><h2>实时 3D 预览</h2><span className={loadError ? 'dressup-status is-error' : 'dressup-status'}>{isBusy ? '加载中' : status}</span></div>
+          <div className="dressup-panel-heading"><h2>角色预览</h2><span className={loadError ? 'dressup-status is-error' : 'dressup-status'}>{isBusy ? '加载中' : status}</span></div>
           <div className="dressup-preview-tools">
             <div className="dressup-model-switch" role="group" aria-label="角色模型">
               <button type="button" aria-pressed={model === 'steve'} onClick={() => setModel('steve')}>Steve 粗臂</button>
@@ -801,24 +796,28 @@ export default function DressUpStudio() {
         </section>
 
         <aside className="dressup-panel" aria-label="当前穿搭">
-          <div className="dressup-panel-heading"><h2>当前穿搭</h2><span>{selectedItems.length} 件</span></div>
+          <div className="dressup-panel-heading"><h2>搭配清单</h2><span>{selectedItems.length} 件</span></div>
           {selectedItems.length ? <div className="dressup-selected-list">
             {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong></span><button type="button" onClick={() => toggleItem(item)}>移除</button></div>)}
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
-          <div className="dressup-actions">
+          <div className="dressup-actions dressup-primary-actions">
             <button type="button" onClick={randomOutfit}>随机搭配</button>
+            <button type="button" onClick={() => void saveOutfitToCloud()} disabled={savingCloud}>{savingCloud ? '云端保存中…' : '保存搭配'}</button>
             <button type="button" onClick={saveLocalOutfit}>保存本地草稿</button>
-            <button type="button" onClick={() => void saveOutfitToCloud()} disabled={savingCloud}>{savingCloud ? '云端保存中…' : '保存到账号云端'}</button>
-            <button type="button" onClick={exportOutfitBackup}>导出穿搭备份 JSON</button>\n            <button type="button" onClick={exportOutfitAndOpenStudio}>导出并前往创作工坊</button>
-            <button type="button" onClick={() => outfitFileRef.current?.click()}>导入穿搭备份 JSON</button>
-            <input ref={outfitFileRef} hidden type="file" accept="application/json,.json" onChange={event => { void importOutfitBackup(event.target.files?.[0]); event.currentTarget.value = '' }} />
-            <button type="button" onClick={resetToDefault}>恢复默认角色</button>
-            <button type="button" onClick={() => void exportSkinPng()} disabled={isBusy}>导出标准皮肤 PNG</button>
-            <button type="button" onClick={restoreLastSavedOutfit}>恢复最近保存</button>
-            <button type="button" onClick={() => setSelected({})} disabled={!selectedItems.length}>全部脱下</button>
-            <button type="button" onClick={() => skinFileRef.current?.click()}>更换基础皮肤</button>
-            <Link className="primary" href="/workbench">继续到创作工坊 ↗</Link>
+            <button type="button" className="primary" onClick={() => void exportSkinPng()} disabled={isBusy}>导出皮肤 PNG</button>
           </div>
+          <details className="dressup-more-actions">
+            <summary>更多操作与备份</summary>
+            <div className="dressup-more-actions-grid">
+              <button type="button" onClick={exportOutfitBackup}>导出穿搭备份 JSON</button>
+              <button type="button" onClick={() => outfitFileRef.current?.click()}>导入穿搭备份 JSON</button>
+              <input ref={outfitFileRef} hidden type="file" accept="application/json,.json" onChange={event => { void importOutfitBackup(event.target.files?.[0]); event.currentTarget.value = '' }} />
+              <button type="button" onClick={restoreLastSavedOutfit}>恢复最近保存</button>
+              <button type="button" onClick={resetToDefault}>恢复默认角色</button>
+              <button type="button" onClick={() => setSelected({})} disabled={!selectedItems.length}>全部脱下</button>
+              <button type="button" onClick={() => skinFileRef.current?.click()}>更换基础皮肤</button>
+            </div>
+          </details>
           <div className="dressup-outfit-manager">
             <label htmlFor="dressup-outfit-name">穿搭名称</label>
             <input id="dressup-outfit-name" value={outfitName} maxLength={48} onChange={event => setOutfitName(event.target.value)} placeholder="例如：夜行披风套装" />
