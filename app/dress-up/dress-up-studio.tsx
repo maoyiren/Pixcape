@@ -764,7 +764,7 @@ export default function DressUpStudio() {
     setOutfitName('随机搭配 ' + new Date().toLocaleDateString())
     const next: Record<string, CatalogItem> = {}
     for (const itemCategory of ['披肩', '外套', '披风'] as const) {
-      const options = catalog.filter(item => item.category === itemCategory)
+      const options = availableItems.filter(item => item.category === itemCategory)
       if (options.length) next[itemCategory] = options[Math.floor(Math.random() * options.length)]
     }
     setSelected(next)
@@ -825,7 +825,7 @@ export default function DressUpStudio() {
           </div>
           {filtered.length === 0 && category !== '全部' && availableCategories.has(category) && <p className="dressup-empty">该分类暂无匹配素材，请更换关键词。</p>}
           {filtered.length === 0 && category === '全部' && <p className="dressup-empty">没有找到匹配的素材。试试其他关键词。</p>}
-          <div className="dressup-source-note">素材来自项目现有预设目录；如远程素材加载失败，可稍后重试。</div>
+          <div className="dressup-source-note">素材来自项目预设与账号衣橱；账号素材可直接试穿、保存和导出。</div>
         </section>
 
         <section className="dressup-panel dressup-preview" aria-label="角色搭配预览">
