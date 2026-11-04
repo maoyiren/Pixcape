@@ -638,6 +638,7 @@ test('a valid local pixel draft takes precedence over automatic wardrobe asset r
 
 test('cloud document save remains successful when the follow-up list refresh fails', async ({ page }) => {
   let createRequests = 0
+  let listRequests = 0
   await page.route('**/api/workspace', route => route.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
@@ -651,12 +652,20 @@ test('cloud document save remains successful when the follow-up list refresh fai
       } }) })
       return
     }
+    // The editor loads the document list on entry. Keep that initial read healthy,
+    // then fail only the post-save refresh that this test is exercising.
+    listRequests += 1
+    if (listRequests === 1) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) })
+      return
+    }
     await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: '暂时无法刷新列表' }) })
   })
 
   await page.goto('/editor')
   await page.getByRole('button', { name: '保存云端' }).click()
   await expect.poll(() => createRequests).toBe(1)
+  await expect.poll(() => listRequests).toBeGreaterThanOrEqual(2)
   await expect(page.getByRole('status')).toContainText('云端文档已保存，但列表刷新失败')
   await expect(page.getByRole('status')).not.toContainText('云端保存失败')
 })
