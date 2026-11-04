@@ -515,8 +515,9 @@ export default function DressUpStudio() {
       setSkinUrl(outfit.skinAssetUrl || BASE_SKIN)
       setSkinName(outfit.skinName || 'Steve 默认皮肤')
     } else {
+      const savedAssets = Array.isArray(outfit.assetItems) ? outfit.assetItems : []
       setSelected((outfit.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
-        const item = catalog.find(entry => entry.id === id)
+        const item = savedAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
         if (item) items[item.category] = item
         return items
       }, {}))
@@ -612,6 +613,7 @@ export default function DressUpStudio() {
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
+      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
     }
     const blob = new Blob([JSON.stringify({ format: 'cdpc-outfit', version: 1, outfit: payload }, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
