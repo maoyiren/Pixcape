@@ -76,6 +76,7 @@ export default function DressUpStudio() {
   const [savedOutfits, setSavedOutfits] = useState<LocalOutfit[]>([])
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
   const [savingCloud, setSavingCloud] = useState(false)
+  const [wardrobeItems, setWardrobeItems] = useState<CatalogItem[]>([])
 
   const refreshCloudOutfits = useCallback(async () => {
     let outfits
@@ -165,9 +166,10 @@ export default function DressUpStudio() {
     try {
       const raw = window.localStorage.getItem('cdpc:dress-up:local-v1')
       if (!raw) return
-      const saved = JSON.parse(raw) as { itemIds?: string[]; model?: ModelType; background?: string; skinUrl?: string; skinName?: string }
+      const saved = JSON.parse(raw) as Partial<LocalOutfit>
+      const savedAssets = Array.isArray(saved.assetItems) ? saved.assetItems : []
       const restored = (saved.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
-        const item = catalog.find(entry => entry.id === id)
+        const item = savedAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
         if (item) items[item.category] = item
         return items
       }, {})
@@ -182,10 +184,55 @@ export default function DressUpStudio() {
     }
   }, [])
 
-  const filtered = useMemo(() => catalog.filter(item =>
+  useEffect(() => {
+    let cancelled = false
+    const loadWardrobeAssets = async () => {
+      try {
+        const assets: Awaited<ReturnType<typeof cdpcApi.listAssets>>['items'] = []
+        let cursor: string | null = null
+        let page = 0
+        do {
+          const response = await cdpcApi.listAssets({ limit: 60, ...(cursor ? { cursor } : {}) })
+          assets.push(...response.items)
+          cursor = response.nextCursor
+          page += 1
+        } while (cursor && page < 20)
+        if (cancelled) return
+        const items: CatalogItem[] = assets.flatMap(asset => {
+          const garmentCategory = fromAssetCategory(asset.category)
+          if (!garmentCategory || !asset.fileUrl) return []
+          return [{
+            id: asset.id,
+            assetId: asset.id,
+            fileUrl: asset.fileUrl,
+            texture: asset.fileUrl,
+            name: asset.attribution || `我的${garmentCategory}`,
+            category: garmentCategory,
+            note: '我的衣橱素材',
+          }]
+        })
+        setWardrobeItems(items)
+      } catch (error) {
+        if (cancelled) return
+        if (error instanceof Error && 'status' in error && error.status === 401) return
+        setSaveNotice(error instanceof Error ? `衣橱素材加载失败：${error.message}` : '衣橱素材加载失败')
+      }
+    }
+    void loadWardrobeAssets()
+    return () => { cancelled = true }
+  }, [])
+
+  const availableItems = useMemo(() => {
+    const merged = new Map<string, CatalogItem>()
+    for (const item of catalog) merged.set(item.id, item)
+    for (const item of wardrobeItems) merged.set(item.id, item)
+    return [...merged.values()]
+  }, [wardrobeItems])
+
+  const filtered = useMemo(() => availableItems.filter(item =>
     (category === '全部' || item.category === category) &&
     (item.name.toLowerCase().includes(query.trim().toLowerCase()) || item.category.includes(query.trim())),
-  ), [category, query])
+  ), [availableItems, category, query])
   const selectedItems = Object.values(selected)
   const cape = selected['披风']
 
@@ -437,6 +484,7 @@ export default function DressUpStudio() {
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
+      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
     }
     try {
       const next = selectedOutfit
@@ -467,8 +515,9 @@ export default function DressUpStudio() {
       setSkinUrl(outfit.skinAssetUrl || BASE_SKIN)
       setSkinName(outfit.skinName || 'Steve 默认皮肤')
     } else {
+      const savedAssets = Array.isArray(outfit.assetItems) ? outfit.assetItems : []
       setSelected((outfit.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
-        const item = catalog.find(entry => entry.id === id)
+        const item = savedAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
         if (item) items[item.category] = item
         return items
       }, {}))
@@ -538,8 +587,9 @@ export default function DressUpStudio() {
         return
       }
       const saved = JSON.parse(raw) as Partial<LocalOutfit>
+      const savedAssets = Array.isArray(saved.assetItems) ? saved.assetItems : []
       setSelected((saved.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
-        const item = catalog.find(entry => entry.id === id)
+        const item = savedAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
         if (item) items[item.category] = item
         return items
       }, {}))
@@ -563,6 +613,7 @@ export default function DressUpStudio() {
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
+      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
     }
     const blob = new Blob([JSON.stringify({ format: 'cdpc-outfit', version: 1, outfit: payload }, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -584,7 +635,9 @@ export default function DressUpStudio() {
       if (parsed.format !== 'cdpc-outfit' || parsed.version !== 1 || !outfit || !Array.isArray(outfit.itemIds)) {
         throw new Error('文件格式不正确或版本不受支持')
       }
-      const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string' && catalog.some(item => item.id === id))
+      const backupAssets = Array.isArray(outfit.assetItems) ? outfit.assetItems.filter(item => item && typeof item.id === 'string' && typeof item.fileUrl === 'string' && fromAssetCategory(item.category === '披肩' ? 'SHAWL' : item.category === '外套' ? 'COAT' : item.category === '披风' ? 'CAPE' : '') !== null) : []
+      const backupIds = new Set(backupAssets.map(item => item.id))
+      const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string' && (catalog.some(item => item.id === id) || backupIds.has(id)))
       const nextSkinUrl = typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png;base64,') ? outfit.skinUrl : undefined
       if (nextSkinUrl) {
         const image = await loadImage(nextSkinUrl)
@@ -599,6 +652,7 @@ export default function DressUpStudio() {
         skinUrl: nextSkinUrl,
         skinName: typeof outfit.skinName === 'string' ? outfit.skinName.slice(0, 160) : '导入的皮肤',
         savedAt: new Date().toISOString(),
+        assetItems: backupAssets as CatalogItem[],
       }
       const next = [...savedOutfits, restored]
       window.localStorage.setItem('cdpc:dress-up:outfits-v1', JSON.stringify(next))
@@ -607,7 +661,7 @@ export default function DressUpStudio() {
       setSelectedSavedOutfitId(restored.id)
       setOutfitName(restored.name)
       setSelected(itemIds.reduce<Record<string, CatalogItem>>((items, id) => {
-        const item = catalog.find(entry => entry.id === id)
+        const item = backupAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
         if (item) items[item.category] = item
         return items
       }, {}))
@@ -645,7 +699,7 @@ export default function DressUpStudio() {
       ]
       for (const item of selectedItems.filter(entry => entry.category !== '披风')) {
         const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
-        const overlay = await loadImage(ASSET_ROOT + textureName)
+        const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
         context.save()
         context.beginPath()
         uvRegions.forEach(region => context.rect(region.x, region.y, region.width, region.height))
@@ -710,7 +764,7 @@ export default function DressUpStudio() {
     setOutfitName('随机搭配 ' + new Date().toLocaleDateString())
     const next: Record<string, CatalogItem> = {}
     for (const itemCategory of ['披肩', '外套', '披风'] as const) {
-      const options = catalog.filter(item => item.category === itemCategory)
+      const options = availableItems.filter(item => item.category === itemCategory)
       if (options.length) next[itemCategory] = options[Math.floor(Math.random() * options.length)]
     }
     setSelected(next)
@@ -771,7 +825,7 @@ export default function DressUpStudio() {
           </div>
           {filtered.length === 0 && category !== '全部' && availableCategories.has(category) && <p className="dressup-empty">该分类暂无匹配素材，请更换关键词。</p>}
           {filtered.length === 0 && category === '全部' && <p className="dressup-empty">没有找到匹配的素材。试试其他关键词。</p>}
-          <div className="dressup-source-note">素材来自项目现有预设目录；如远程素材加载失败，可稍后重试。</div>
+          <div className="dressup-source-note">素材来自项目预设与账号衣橱；账号素材可直接试穿、保存和导出。</div>
         </section>
 
         <section className="dressup-panel dressup-preview" aria-label="角色搭配预览">
