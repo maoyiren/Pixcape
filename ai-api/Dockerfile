@@ -1,8 +1,10 @@
-FROM node:22-alpine
+FROM node:26.13.0-bookworm-slim
 ENV NODE_ENV=production
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY package.json ./
-RUN npm install --omit=dev
+COPY package*.json ./
+RUN npm ci --omit=dev --no-audit --no-fund
 COPY server.mjs ./
 USER node
 EXPOSE 8787
