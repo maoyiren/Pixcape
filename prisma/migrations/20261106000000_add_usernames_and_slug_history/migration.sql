@@ -1,6 +1,6 @@
 ALTER TABLE "User" ADD COLUMN "username" TEXT;
 UPDATE "User"
-SET "username" = 'user-' || lower(substr("id", 1, 12))
+SET "username" = 'user-' || lower(substr("id", 1, 16))
 WHERE "username" IS NULL;
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
