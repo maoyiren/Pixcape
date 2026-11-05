@@ -269,3 +269,30 @@ body { color: var(--cdpc-text); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+
+/* Admin controls: compact actions on touch screens; avoid full-width save bars. */
+.inventory-shell:has(.admin-subnav) .application-form > button,
+.inventory-shell:has(.admin-subnav) .admin-config-grid button,
+.inventory-shell:has(.admin-subnav) .actions > button,
+.inventory-shell:has(.admin-subnav) .health-footer > .pixel-button {
+  width: auto;
+  max-width: 100%;
+  justify-self: start;
+  flex: 0 0 auto;
+}
+.inventory-shell:has(.admin-subnav) .application-form > button { min-width: 132px; }
+@media (max-width: 640px) {
+  .inventory-shell:has(.admin-subnav) .application-form > button,
+  .inventory-shell:has(.admin-subnav) .admin-config-grid button,
+  .inventory-shell:has(.admin-subnav) .actions > button,
+  .inventory-shell:has(.admin-subnav) .health-footer > .pixel-button {
+    width: auto !important;
+    min-width: 0;
+    min-height: 40px;
+    padding: 9px 13px;
+    font-size: 13px;
+  }
+  .inventory-shell:has(.admin-subnav) .application-form > button { justify-self: start; }
+  .inventory-shell:has(.admin-subnav) .actions { align-items: center; }
+}
