@@ -6,26 +6,13 @@ import AzureADProvider from 'next-auth/providers/azure-ad'
 import AppleProvider from 'next-auth/providers/apple'
 import EmailProvider from 'next-auth/providers/email'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { timingSafeEqual, scryptSync, createDecipheriv, createHash } from 'node:crypto'
+import { timingSafeEqual, scryptSync } from 'node:crypto'
+import { decryptSecretSetting } from '@/lib/secret-settings'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 
 const authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
-function decryptSettingSecret(value: string | undefined): string | undefined {
-  if (!value) return undefined
-  try {
-    const [ivText, tagText, encryptedText] = value.split('.')
-    if (!ivText || !tagText || !encryptedText) return undefined
-    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
-    if (!secret) return undefined
-    const key = createHash('sha256').update(secret).digest()
-    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivText, 'base64url'))
-    decipher.setAuthTag(Buffer.from(tagText, 'base64url'))
-    return Buffer.concat([decipher.update(Buffer.from(encryptedText, 'base64url')), decipher.final()]).toString('utf8')
-  } catch { return undefined }
-}
-
 async function buildProviders(): Promise<NextAuthOptions['providers']> {
 const providers: NextAuthOptions['providers'] = []
 const stored = await prisma.appSetting.findMany({
@@ -41,7 +28,7 @@ const stored = await prisma.appSetting.findMany({
 const config = Object.fromEntries(stored.map((item) => [item.key, item.value]))
 const credential = (provider: string, envId?: string, envSecret?: string): { clientId?: string; clientSecret?: string } => config['AUTH_OAUTH_' + provider + '_DISABLED'] === 'true' ? {} : ({
   clientId: config['AUTH_OAUTH_' + provider + '_CLIENT_ID'] || (envId ? process.env[envId] : undefined),
-  clientSecret: decryptSettingSecret(config['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET']) || (envSecret ? process.env[envSecret] : undefined),
+  clientSecret: decryptSecretSetting(config['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET']) || (envSecret ? process.env[envSecret] : undefined),
 })
 
 async function allowCredentialAttempt(request: { headers?: unknown }): Promise<boolean> {
@@ -148,7 +135,7 @@ const microsoft = credential('MICROSOFT', 'AUTH_MICROSOFT_ENTRA_ID_ID', 'AUTH_MI
 if (microsoft.clientId && microsoft.clientSecret) providers.push(AzureADProvider({ ...microsoft, tenantId: config.AUTH_OAUTH_MICROSOFT_TENANT_ID || process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common' }))
 const apple = credential('APPLE', 'AUTH_APPLE_ID', 'AUTH_APPLE_SECRET')
 if (apple.clientId && apple.clientSecret) providers.push(AppleProvider(apple))
-const smtpPassword = decryptSettingSecret(config.MAIL_SECRET_SMTP_PASSWORD)
+const smtpPassword = decryptSecretSetting(config.MAIL_SECRET_SMTP_PASSWORD)
 const smtpHost = config.MAIL_SMTP_HOST
 const smtpFrom = config.MAIL_FROM || process.env.EMAIL_FROM
 if ((smtpHost && smtpFrom && smtpPassword) || (process.env.EMAIL_SERVER && process.env.EMAIL_FROM)) {
