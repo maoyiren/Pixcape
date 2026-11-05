@@ -6,7 +6,6 @@ import { AccountMenu } from './account-menu'
 export async function SiteNav() {
   const session = await getServerSession(authOptions)
   const user = session?.user
-  const isAdmin = user?.role === 'ADMIN' && user.status === 'ACTIVE'
 
   return (
     <header className="cdpc-app-header">
@@ -36,7 +35,6 @@ export async function SiteNav() {
               email={user.email ?? ''}
               role={user.role ?? 'USER'}
               status={user.status ?? 'ACTIVE'}
-              isAdmin={isAdmin}
             />
           ) : (
             <>
