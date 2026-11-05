@@ -19,7 +19,7 @@ Open the configured admin route, then Storage. Set:
 - Access Key ID
 - Secret Access Key
 
-Save both credentials. Leaving a credential blank preserves its existing encrypted value; use the clear checkbox to remove it.
+Save both credentials. On the first configuration both are required; later, leaving a credential blank preserves its existing encrypted value. Rotate credentials by entering the replacement values. Credentials cannot be cleared independently while S3-backed assets still reference the bucket.
 
 ## Operational notes
 
