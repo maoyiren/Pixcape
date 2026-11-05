@@ -45,11 +45,22 @@ test('security headers are sent on public pages', async () => {
   assert.equal(response.headers.get('referrer-policy'), 'strict-origin-when-cross-origin')
 })
 
-for (const path of ['/account', '/creator', '/admin', '/admin/user', '/admin/audit', '/admin/stat']) {
+const adminPath = process.env.CDPC_ADMIN_PATH || '/control-room'
+
+for (const path of ['/account', '/creator', adminPath, `${adminPath}/user`, `${adminPath}/audit`, `${adminPath}/stat`]) {
   test(`anonymous access to ${path} is denied`, async () => {
     const response = await fetch(new URL(path, base), { redirect: 'manual' })
     assert.ok([302, 307, 308].includes(response.status), `${path} should redirect unauthenticated users (got ${response.status})`)
     assert.match(response.headers.get('location') || '', /login/)
+  })
+}
+
+for (const path of ['/admin', '/admin/user', '/admin/audit', '/admin/stat']) {
+  test(`legacy public admin path ${path} is hidden`, async () => {
+    const response = await fetch(new URL(path, base), { redirect: 'manual' })
+    assert.equal(response.status, 404, `${path} must remain inaccessible through the legacy route`)
+    assert.equal(response.headers.get('cache-control'), 'no-store')
+    assert.match(response.headers.get('x-robots-tag') || '', /noindex/)
   })
 }
 
@@ -209,7 +220,8 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
 
     const ownerFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
     assert.equal(ownerFile.status, 200, 'owner can read uploaded PNG')
-    assert.equal(Number(ownerFile.headers.get('content-length')), createTinyPng().length)
+    const ownerFileBytes = Buffer.from(await ownerFile.arrayBuffer())
+    assert.equal(ownerFileBytes.length, createTinyPng().length, 'owner receives the complete PNG bytes')
 
     const otherAssets = await fetch(new URL('/api/assets', base), { headers: { cookie: otherSession } })
     assert.equal(otherAssets.status, 200)
