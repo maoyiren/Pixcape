@@ -59,6 +59,7 @@ export default async function AdminAuthPage({
             <input id={provider.id + '-client-id'} name="clientId" maxLength={512} defaultValue={config['AUTH_OAUTH_' + provider.id + '_CLIENT_ID'] ?? process.env[provider.envId] ?? ''} placeholder={provider.hasId ? '留空保留现有配置' : '填写 OAuth Client ID'}/>
             <label htmlFor={provider.id + '-client-secret'}>Client Secret（留空保留已保存密钥）</label>
             <input id={provider.id + '-client-secret'} name="clientSecret" type="password" autoComplete="new-password" maxLength={2048} placeholder="仅在新增或更换时填写"/>
+            <label><input type="checkbox" name="clearClientSecret"/> 清除已保存 Client Secret</label>
             {provider.id === 'MICROSOFT' ? <><label htmlFor="microsoft-tenant">Microsoft Tenant ID</label><input id="microsoft-tenant" name="tenantId" defaultValue={config.AUTH_OAUTH_MICROSOFT_TENANT_ID ?? 'common'} maxLength={128}/></> : null}
             <button className="pixel-button primary" type="submit">保存 {provider.name} 配置</button>
           </form>
