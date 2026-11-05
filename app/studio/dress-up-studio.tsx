@@ -670,7 +670,7 @@ export default function DressUpStudio() {
         return items
       }, {}))
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
-      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
+      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) { setBackgroundScene('custom'); setBackground(saved.background) }
       if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
       else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
       if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
