@@ -15,11 +15,13 @@ This repository uses current stable/LTS releases where compatible with the produ
 | TypeScript | 7.0.2 |
 | Prisma ORM and adapters | 7.10.1 |
 | Mantine | 9.7.5 |
+| Lucide React | 1.69.0 |
 | Tailwind CSS | 4.3.4 |
 | Vite (legacy app/build tooling) | 8.3.5 |
 | Three.js | 0.186.x |
 | skinview3d | 3.4.2 |
-| Playwright | 1.64.x |
+| Playwright | 1.64.1 |
+| Express (AI API) | 5.3.0 |
 
 The Next.js and React versions are kept on stable releases. No canary, alpha, beta, or release-candidate packages are introduced as part of routine upgrades.
 
