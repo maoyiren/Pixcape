@@ -429,7 +429,7 @@ export default function DressUpStudio() {
     }
     void updatePreview()
     return () => { cancelled = true }
-  }, [skinUrl, model, selected, retryVersion, elytraVisible])
+  }, [skinUrl, model, selected, retryVersion])
 
   function toggleItem(item: CatalogItem) {
     setSelected(current => {
