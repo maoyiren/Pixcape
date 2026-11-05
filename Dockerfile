@@ -1,7 +1,7 @@
 # Build Blockbench as a static sub-app served under /blockbench/.
 FROM node:26.13.0-bookworm-slim AS blockbench-build
 ARG BLOCKBENCH_REF=5b0c99cd5a0e0ef3d15f52e91e945672076022ac
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /blockbench
 RUN git init \
@@ -17,7 +17,7 @@ RUN mkdir -p /runtime \
 
 FROM node:26.13.0-bookworm-slim AS next-build
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package*.json ./
@@ -26,6 +26,8 @@ COPY . .
 RUN npm run next:build
 
 FROM node:26.13.0-bookworm-slim AS ai-api-build
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /ai-api
 COPY ai-api/package*.json ./
 RUN npm ci --omit=dev --include=optional --no-audit --no-fund
