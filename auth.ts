@@ -221,3 +221,8 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
 export async function getAuthOptions(): Promise<NextAuthOptions> {
   return { ...authOptionsBase, providers: await buildProviders() }
 }
+
+// Compatibility options for legacy getServerSession(authOptions) call sites.
+// OAuth callback initialization always uses getAuthOptions() in the NextAuth handler;
+// this provider-less object shares the same JWT/session callbacks and adapter.
+export const authOptions = authOptionsBase as NextAuthOptions
