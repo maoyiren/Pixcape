@@ -190,9 +190,9 @@ export async function saveSystemConfiguration(formData: FormData) {
   const actor = await requireActiveAdmin()
   const callbackUrl = String(formData.get('defaultCallbackUrl') ?? '/workbench').trim()
   const returnToOriginalPage = String(formData.get('returnToOriginalPage') ?? 'true')
-  if (!['true', 'false'].includes(returnToOriginalPage)) redirect('/admin?error=invalid_return_behavior#configuration')
+  if (!['true', 'false'].includes(returnToOriginalPage)) redirect('/admin/auth?error=invalid_return_behavior')
   if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//') || callbackUrl.includes(String.fromCharCode(92)) || callbackUrl.length > 300) {
-    redirect('/admin?error=invalid_default_callback#configuration')
+    redirect('/admin/auth?error=invalid_default_callback')
   }
   await prisma.$transaction(async (tx) => {
     await tx.appSetting.upsert({
@@ -209,15 +209,15 @@ export async function saveSystemConfiguration(formData: FormData) {
       data: { actorId: actor.id, action: 'SYSTEM_CONFIGURATION_UPDATED', targetType: 'AppSetting', targetId: 'AUTH_LOGIN_REDIRECT', details: { defaultCallbackUrl: callbackUrl, returnToOriginalPage: returnToOriginalPage === 'true' } },
     })
   })
-  redirect('/admin?systemConfigurationSaved=1#configuration')
+  redirect('/admin/auth?systemConfigurationSaved=1')
 }
 
 export async function setEmailVerificationRequired(formData: FormData) {
   const actor = await requireActiveAdmin()
   const value = String(formData.get('required') ?? '')
-  if (!['true', 'false'].includes(value)) redirect('/admin?error=invalid_email_verification_setting')
+  if (!['true', 'false'].includes(value)) redirect('/admin/auth?error=invalid_email_verification_setting')
   if (value === 'true' && (!process.env.EMAIL_SERVER || !process.env.EMAIL_FROM || !process.env.NEXTAUTH_URL)) {
-    redirect('/admin?error=email_verification_smtp_missing')
+    redirect('/admin/auth?error=email_verification_smtp_missing')
   }
   await prisma.$transaction(async (tx) => {
     await tx.appSetting.upsert({
@@ -235,7 +235,7 @@ export async function setEmailVerificationRequired(formData: FormData) {
       },
     })
   })
-  redirect('/admin?emailVerificationUpdated=1#configuration')
+  redirect('/admin/auth?emailVerificationUpdated=1')
 }
 
 
