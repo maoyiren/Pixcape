@@ -108,3 +108,11 @@
 - [ ] 存储驱动尚未读取 S3 设置；Webhook 投递、重试与签名尚未接入，页面明确标记为未启用。
 - [ ] OAuth 仍需用真实开发者应用验证 GitHub / Google / Microsoft / Apple 授权回调、账号关联和错误处理。
 - [ ] 尚未完成本地构建、lint、完整浏览器回归、移动端与生产环境验证。
+
+
+## PR #48 代码审查补充
+
+- 动态 OAuth Provider 读取通过数据库 AppSetting 配置；Client Secret 仅加密值保存在数据库，表单不回显，支持显式清除。
+- 认证 handler、服务端 session、登录页提供商状态使用同一套 Provider 配置源。
+- `proxy.ts` 已加入 Next TypeScript 检查范围；`tests/unit/admin-path.test.ts` 覆盖自定义路径解析规则。
+- 真实 OAuth 授权往返、S3 驱动和 Webhook 事件投递仍需真实环境集成验证，不把配置保存成功当成服务验证成功。
