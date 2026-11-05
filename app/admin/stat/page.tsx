@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { adminUrl } from '@/lib/admin-path'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
 
@@ -14,7 +15,7 @@ export default async function AdminStatsPage() {
   ])
   return (
     <main className="inventory-shell cdpc-page">
-      <header className="topbar cdpc-panel"><div><p className="eyebrow">ADMIN / STATS</p><h1>平台统计</h1></div><Link className="pixel-button cdpc-control" href="/admin">管理后台</Link></header>
+      <header className="topbar cdpc-panel"><div><p className="eyebrow">ADMIN / STATS</p><h1>平台统计</h1></div><Link className="pixel-button cdpc-control" href={adminUrl()}>管理后台</Link></header>
       <section className="cdpc-tool-grid" aria-label="平台统计">
         {[['用户总数', users], ['正常账户', activeUsers], ['创作者资料', creators], ['审计事件', auditEvents]].map(([label, value]) => <article className="application-card cdpc-panel" key={String(label)}><h2>{label}</h2><p>{value}</p></article>)}
       </section>
