@@ -315,6 +315,11 @@ test('authenticated avatar menu supports touch, outside click and Escape focus r
   await expect(page.getByRole('link', { name: /账户资料/ })).toBeVisible()
   await page.locator('body').click({ position: { x: 5, y: 5 } })
   await expect(page.getByRole('link', { name: /账户资料/ })).toHaveCount(0)
+
+  await trigger.click()
+  await page.getByRole('link', { name: /账户资料/ }).click()
+  await expect(page).toHaveURL(/\\/account$/)
+  await expect(page.getByRole('heading', { name: '我的账户' })).toBeVisible()
 })
 
 test('login page exposes email credentials and account registration', async ({ page }) => {
