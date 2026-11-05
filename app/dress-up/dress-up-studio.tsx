@@ -3,10 +3,19 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
-import { SkinViewer } from 'skinview3d'
+import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
 const BASE_SKIN = ASSET_ROOT + 'stevea.png'
+const SCENE_BACKGROUNDS: Record<string, string> = {
+  day: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/exploration-mindful.jpg',
+  night: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/MCV_holiday_release_Eyeblossom_NightTrail_1280x720_01.jpg',
+  plains: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/exploration-mindful.jpg',
+  desert: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/exploration-structures.jpg',
+  forest: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/forest-carousel1.jpg',
+  nether: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/waste-carousel1.jpg',
+  end: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/highlands-carousel1.jpg',
+}
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
@@ -28,6 +37,7 @@ const catalog: CatalogItem[] = [
 ]
 const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风'])
 type ModelType = 'steve' | 'alex'
+type StudioPose = 'idle' | 'wave' | 'walk' | 'fly'
 type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
 
 
@@ -69,6 +79,10 @@ export default function DressUpStudio() {
   const [status, setStatus] = useState('正在初始化 3D 预览…')
   const [loadError, setLoadError] = useState('')
   const [background, setBackground] = useState('#182437')
+  const [backgroundScene, setBackgroundScene] = useState('night')
+  const [pose, setPose] = useState<StudioPose>('idle')
+  const [elytraVisible, setElytraVisible] = useState(false)
+  const [autoRotate, setAutoRotate] = useState(false)
   const [isBusy, setIsBusy] = useState(false)
   const [retryVersion, setRetryVersion] = useState(0)
   const [saveNotice, setSaveNotice] = useState('')
@@ -286,6 +300,8 @@ export default function DressUpStudio() {
       viewer.controls.enablePan = false
       viewer.controls.enableRotate = true
       viewer.controls.enableZoom = true
+      viewer.controls.autoRotate = false
+      viewer.controls.autoRotateSpeed = 1.25
       viewer.controls.rotateSpeed = 0.9
       viewer.renderer.setClearColor(0x182437, 1)
       host.replaceChildren(canvas)
@@ -310,6 +326,57 @@ export default function DressUpStudio() {
       viewerRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    viewer.controls.autoRotate = autoRotate
+  }, [autoRotate])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const url = SCENE_BACKGROUNDS[backgroundScene]
+    if (!url) {
+      viewer.background = Number.parseInt(background.replace('#', ''), 16)
+      return
+    }
+    let cancelled = false
+    void viewer.loadBackground(url).catch(() => {
+      if (!cancelled) {
+        viewer.background = Number.parseInt(background.replace('#', ''), 16)
+        setSaveNotice('场景背景加载失败，已切换为纯色背景')
+      }
+    })
+    return () => { cancelled = true }
+  }, [backgroundScene, background])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const animation = pose === 'fly' ? new FlyingAnimation() : pose === 'walk' ? new WalkingAnimation() : new IdleAnimation()
+    if (pose === 'wave') {
+      animation.addAnimation((player, progress) => {
+        player.skin.rightArm.rotation.z = -2.35 + Math.sin(progress * 5) * 0.22
+        player.skin.rightArm.rotation.x = Math.sin(progress * 3) * 0.12
+      })
+    }
+    if (pose === 'fly' && cape && !elytraVisible) {
+      animation.addAnimation((player, progress) => {
+        player.cape.rotation.x = 0.35 + Math.sin(progress * 2.2) * 0.02
+        player.cape.rotation.z = Math.sin(progress * 1.8) * 0.025
+      })
+    }
+    animation.speed = pose === 'walk' ? 0.72 : 1
+    viewer.animation = animation
+    return () => { if (viewer.animation === animation) viewer.animation = null }
+  }, [pose, cape?.id, elytraVisible])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    viewer.playerObject.backEquipment = elytraVisible ? 'elytra' : cape ? 'cape' : null
+  }, [elytraVisible, cape?.id])
 
   useEffect(() => {
     const viewer = viewerRef.current
@@ -345,12 +412,11 @@ export default function DressUpStudio() {
         if (cape) {
           await viewer.loadCape(cape.fileUrl || ASSET_ROOT + cape.texture, { makeVisible: false })
           if (cancelled) return
-          viewer.playerObject.backEquipment = 'cape'
+          viewer.playerObject.backEquipment = elytraVisible ? 'elytra' : 'cape'
         } else {
-          viewer.playerObject.backEquipment = null
+          viewer.playerObject.backEquipment = elytraVisible ? 'elytra' : null
         }
         if (cancelled) return
-        viewer.background = Number.parseInt(background.replace('#', ''), 16)
         setStatus('预览已更新')
       } catch (error) {
         if (!cancelled) {
@@ -363,7 +429,7 @@ export default function DressUpStudio() {
     }
     void updatePreview()
     return () => { cancelled = true }
-  }, [skinUrl, model, selected, background, retryVersion])
+  }, [skinUrl, model, selected, retryVersion, elytraVisible])
 
   function toggleItem(item: CatalogItem) {
     setSelected(current => {
@@ -752,6 +818,10 @@ export default function DressUpStudio() {
     setSkinUrl(BASE_SKIN)
     setSkinName('Steve 默认皮肤')
     setBackground('#182437')
+    setBackgroundScene('night')
+    setPose('idle')
+    setElytraVisible(false)
+    setAutoRotate(false)
     setSaveNotice('已恢复默认角色状态；此前保存的本地穿搭不会被删除')
   }
 
@@ -858,9 +928,21 @@ export default function DressUpStudio() {
               <button type="button" aria-pressed={model === 'steve'} onClick={() => setModel('steve')}>Steve 粗臂</button>
               <button type="button" aria-pressed={model === 'alex'} onClick={() => setModel('alex')}>Alex 细臂</button>
             </div>
-            <label className="dressup-background-control">背景 <input type="color" value={background} onChange={event => setBackground(event.target.value)} aria-label="预览背景颜色" /></label>
+            <label className="dressup-background-control">纯色背景 <input type="color" value={background} onChange={event => { setBackgroundScene('custom'); setBackground(event.target.value) }} aria-label="预览背景颜色" /></label>
+            <select aria-label="Minecraft 场景背景" value={backgroundScene} onChange={event => setBackgroundScene(event.target.value)}><option value="day">白天</option><option value="night">夜晚</option><option value="plains">平原</option><option value="desert">沙漠</option><option value="forest">森林</option><option value="nether">下界</option><option value="end">末地</option><option value="custom">自定义纯色</option></select>
           </div>
           <div className="dressup-preview-stage dressup-real-preview" ref={previewHost} />
+          <div className="dressup-preview-tools dressup-bottom-tools" role="group" aria-label="角色动作与视角">
+            <button type="button" aria-pressed={pose === 'idle'} onClick={() => setPose('idle')}>待机</button>
+            <button type="button" aria-pressed={pose === 'walk'} onClick={() => setPose('walk')}>行走</button>
+            <button type="button" aria-pressed={pose === 'fly'} onClick={() => setPose('fly')}>飞行</button>
+            <button type="button" aria-pressed={pose === 'wave'} onClick={() => setPose('wave')}>挥手</button>
+            <button type="button" aria-pressed={autoRotate} onClick={() => setAutoRotate(value => !value)}>{autoRotate ? '停止自动旋转' : '自动旋转'}</button>
+            <button type="button" aria-pressed={elytraVisible} onClick={() => setElytraVisible(value => !value)}>{elytraVisible ? '切换为披风' : '切换为鞘翅'}</button>
+            <button type="button" onClick={() => { const viewer = viewerRef.current; if (viewer) viewer.playerObject.rotation.y = 0 }}>正面</button>
+            <button type="button" onClick={() => { const viewer = viewerRef.current; if (viewer) viewer.playerObject.rotation.y = Math.PI }}>背面</button>
+            <button type="button" onClick={() => { const viewer = viewerRef.current; if (viewer) viewer.playerObject.rotation.y = Math.PI / 2 }}>侧面</button>
+          </div>
           <div className="dressup-preview-tools dressup-bottom-tools">
             <span className="dressup-skin-name" title={skinName}>当前皮肤：{skinName}</span>
             <button type="button" onClick={resetPreviewCamera}>重置视角</button>
