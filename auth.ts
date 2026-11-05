@@ -30,16 +30,16 @@ async function buildProviders(): Promise<NextAuthOptions['providers']> {
 const providers: NextAuthOptions['providers'] = []
 const stored = await prisma.appSetting.findMany({
   where: { key: { in: [
-    'AUTH_OAUTH_GITHUB_CLIENT_ID','AUTH_SECRET_OAUTH_GITHUB_CLIENT_SECRET',
-    'AUTH_OAUTH_GOOGLE_CLIENT_ID','AUTH_SECRET_OAUTH_GOOGLE_CLIENT_SECRET',
-    'AUTH_OAUTH_MICROSOFT_CLIENT_ID','AUTH_SECRET_OAUTH_MICROSOFT_CLIENT_SECRET','AUTH_OAUTH_MICROSOFT_TENANT_ID',
-    'AUTH_OAUTH_APPLE_CLIENT_ID','AUTH_SECRET_OAUTH_APPLE_CLIENT_SECRET',
+    'AUTH_OAUTH_GITHUB_CLIENT_ID','AUTH_SECRET_OAUTH_GITHUB_CLIENT_SECRET','AUTH_OAUTH_GITHUB_DISABLED',
+    'AUTH_OAUTH_GOOGLE_CLIENT_ID','AUTH_SECRET_OAUTH_GOOGLE_CLIENT_SECRET','AUTH_OAUTH_GOOGLE_DISABLED',
+    'AUTH_OAUTH_MICROSOFT_CLIENT_ID','AUTH_SECRET_OAUTH_MICROSOFT_CLIENT_SECRET','AUTH_OAUTH_MICROSOFT_TENANT_ID','AUTH_OAUTH_MICROSOFT_DISABLED',
+    'AUTH_OAUTH_APPLE_CLIENT_ID','AUTH_SECRET_OAUTH_APPLE_CLIENT_SECRET','AUTH_OAUTH_APPLE_DISABLED',
     'MAIL_SMTP_HOST','MAIL_SMTP_PORT','MAIL_SMTP_USER','MAIL_SECRET_SMTP_PASSWORD','MAIL_FROM','MAIL_SMTP_SECURE',
   ] } },
   select: { key: true, value: true },
 }).catch(() => [])
 const config = Object.fromEntries(stored.map((item) => [item.key, item.value]))
-const credential = (provider: string, envId?: string, envSecret?: string) => ({
+const credential = (provider: string, envId?: string, envSecret?: string) => config['AUTH_OAUTH_' + provider + '_DISABLED'] === 'true' ? {} : ({
   clientId: config['AUTH_OAUTH_' + provider + '_CLIENT_ID'] || (envId ? process.env[envId] : undefined),
   clientSecret: decryptSettingSecret(config['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET']) || (envSecret ? process.env[envSecret] : undefined),
 })
