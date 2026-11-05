@@ -38,9 +38,10 @@ The legacy `/wardrobe` path redirects to the signed-in user's personal wardrobe.
 ## Public sharing and access control
 
 - `POST /api/publications` only publishes assets/outfits owned by the signed-in user.
-- Publishing an asset makes that asset PUBLIC. Publishing an outfit makes its owned component assets PUBLIC; components not owned by the publisher must already be PUBLIC.
+- Publishing an asset or outfit creates an explicit publication record without changing the component assets' global visibility.
+- A PRIVATE component is readable by visitors only while it is referenced by an active PUBLISHED outfit; an asset's own share page is readable while its own publication is active. Unpublishing removes that publication-based access unless another active publication still references the asset.
 - `DELETE /api/publications/[publicationId]` unpublishes only a publication owned by the signed-in user.
-- Public and unlisted asset files can be read without a session; PRIVATE assets still require their owner.
+- Public and unlisted asset files can be read without a session. PRIVATE assets require their owner unless an active asset/outfit publication explicitly shares them; unpublishing revokes that publication-based access.
 - A non-owner can view an outfit only when it has a PUBLISHED publication record.
 - Private pages and data queries use session user ID, never a URL username, as the authorization principal.
 
@@ -53,7 +54,8 @@ The legacy `/wardrobe` path redirects to the signed-in user's personal wardrobe.
 - [ ] Confirm two accounts cannot claim the same current or historical slug concurrently.
 - [ ] Confirm user A cannot view user B's wardrobe, assets, favorites, creations, or settings.
 - [ ] Confirm public asset and published outfit links work while signed out.
-- [ ] Confirm PRIVATE assets remain inaccessible to signed-out visitors and other users.
+- [ ] Confirm PRIVATE assets remain inaccessible to signed-out visitors and other users unless referenced by an active published asset/outfit.
+- [ ] Confirm unpublishing an asset/outfit revokes its public access unless another active publication still references the asset.
 - [ ] Run Next.js build, unit/integration tests, browser regression, and Docker startup migration smoke test.
 
 No build, database migration, browser, API integration, or Docker test is claimed as passed by this change.
