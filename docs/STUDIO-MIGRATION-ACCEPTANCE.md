@@ -5,7 +5,7 @@ This checklist protects the existing 3D outfit workflow while routes converge on
 ## Preserved implementation
 
 - `app/studio/page.tsx` renders the existing `DressUpStudio`; it does not replace the editor or introduce a second 3D engine.
-- Local outfit drafts remain in `cdpc:dress-up:outfits-v1` and `cdpc:dress-up:local-v1`.
+- Local outfit drafts remain in `cdpc:dress-up:outfits-v1` and `cdpc:dress-up:local-v1`; local snapshots preserve embedded skin PNGs and cloud skin asset IDs/URLs.
 - Signed-in cloud outfits remain backed by `/api/outfits`; the active outfit pointer remains in the per-user `WorkspaceState`.
 - Wardrobe asset handoff remains backed by `/api/workspace` (`activeAssetId` / `activeOutfitId`).
 - Shawl, coat, and cape remain separate categories (`SHAWL`, `COAT`, `CAPE`).
@@ -28,7 +28,7 @@ This checklist protects the existing 3D outfit workflow while routes converge on
 
 - [ ] Next.js production build and typecheck
 - [ ] Browser test: skin + shawl + coat + cape preview and model switch (Steve/Alex)
-- [ ] Browser test: local save, reload, restore, export/import backup
+- [ ] Browser test: local save, reload, restore, export/import backup (including a selected cloud skin asset and an imported PNG skin)
 - [ ] Browser test: signed-in cloud save, update, delete, restore after reload
 - [ ] Browser test: wardrobe asset handoff and saved-outfit handoff to Studio
 - [ ] API test: user A cannot read, update, or delete user B's private outfits/assets
