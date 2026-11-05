@@ -289,7 +289,7 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
 test('authenticated avatar menu supports touch, outside click and Escape focus return', async ({ page }) => {
   const email = `avatar-${Date.now()}@example.com`
   await page.goto('/register')
-  const registration = await page.request.post('/api/register', {
+  const registration = await page.request.post('http://127.0.0.1:3000/api/register', {
     data: { email, name: 'CDPC Avatar Tester', password: 'CDPC-Avatar-Test-2026!' },
   })
   expect(registration.status()).toBe(201)
