@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { adminUrl } from '@/lib/admin-path'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
 
@@ -23,7 +24,7 @@ export default async function AdminAuditPage() {
     <main className="inventory-shell cdpc-page">
       <header className="topbar cdpc-panel">
         <div><p className="eyebrow">ADMIN / AUDIT</p><h1>审计日志</h1></div>
-        <Link className="pixel-button cdpc-control" href="/admin">管理后台</Link>
+        <Link className="pixel-button cdpc-control" href={adminUrl()}>管理后台</Link>
       </header>
       <section className="hero inventory-panel cdpc-panel">
         <h2>管理操作记录</h2>

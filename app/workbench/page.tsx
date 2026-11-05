@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { Badge, Button, Card, Container, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
-import { authOptions } from '@/auth'
+import { getAuthOptions } from '@/auth'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: '创作工作台 | CDPC' }
@@ -31,7 +31,7 @@ const entries = [
 ]
 
 export default async function WorkbenchPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(await getAuthOptions())
   const user = session?.user
 
   return (

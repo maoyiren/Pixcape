@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/auth'
+import { getAuthOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { loadAssetActor } from '@/lib/asset-api'
 import { WorkspacePointerSchema } from '@/src/domain/asset'
@@ -8,7 +8,7 @@ import { WorkspacePointerSchema } from '@/src/domain/asset'
 export const runtime = 'nodejs'
 
 async function resolveActor() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(await getAuthOptions())
   if (!session?.user?.id) return { response: NextResponse.json({ error: '请先登录。' }, { status: 401 }) }
   const actor = await loadAssetActor(session.user.id)
   if (!actor) return { response: NextResponse.json({ error: '账号不可用。' }, { status: 403 }) }

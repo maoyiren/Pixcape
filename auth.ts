@@ -7,12 +7,30 @@ import AppleProvider from 'next-auth/providers/apple'
 import EmailProvider from 'next-auth/providers/email'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { timingSafeEqual, scryptSync } from 'node:crypto'
+import { decryptSecretSetting } from '@/lib/secret-settings'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 
 const authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
+async function buildProviders(): Promise<NextAuthOptions['providers']> {
 const providers: NextAuthOptions['providers'] = []
+const stored = await prisma.appSetting.findMany({
+  where: { key: { in: [
+    'AUTH_OAUTH_GITHUB_CLIENT_ID','AUTH_SECRET_OAUTH_GITHUB_CLIENT_SECRET','AUTH_OAUTH_GITHUB_DISABLED',
+    'AUTH_OAUTH_GOOGLE_CLIENT_ID','AUTH_SECRET_OAUTH_GOOGLE_CLIENT_SECRET','AUTH_OAUTH_GOOGLE_DISABLED',
+    'AUTH_OAUTH_MICROSOFT_CLIENT_ID','AUTH_SECRET_OAUTH_MICROSOFT_CLIENT_SECRET','AUTH_OAUTH_MICROSOFT_TENANT_ID','AUTH_OAUTH_MICROSOFT_DISABLED',
+    'AUTH_OAUTH_APPLE_CLIENT_ID','AUTH_SECRET_OAUTH_APPLE_CLIENT_SECRET','AUTH_OAUTH_APPLE_DISABLED',
+    'MAIL_SMTP_HOST','MAIL_SMTP_PORT','MAIL_SMTP_USER','MAIL_SECRET_SMTP_PASSWORD','MAIL_FROM','MAIL_SMTP_SECURE',
+  ] } },
+  select: { key: true, value: true },
+}).catch(() => [])
+const config = Object.fromEntries(stored.map((item) => [item.key, item.value]))
+type OAuthCredentials = { clientId: string; clientSecret: string }
+const credential = (provider: string, envId?: string, envSecret?: string): Partial<OAuthCredentials> => config['AUTH_OAUTH_' + provider + '_DISABLED'] === 'true' ? {} : ({
+  clientId: config['AUTH_OAUTH_' + provider + '_CLIENT_ID'] || (envId ? process.env[envId] : undefined),
+  clientSecret: decryptSecretSetting(config['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET']) || (envSecret ? process.env[envSecret] : undefined),
+})
 
 async function allowCredentialAttempt(request: { headers?: unknown }): Promise<boolean> {
   const configuredHeader = (process.env.LOGIN_RATE_LIMIT_IP_HEADER || 'x-real-ip').toLowerCase()
@@ -51,13 +69,32 @@ if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMI
       if (!safeEqual(username, process.env.ADMIN_USERNAME!) || !safeEqual(password, process.env.ADMIN_PASSWORD!)) return null
       const email = process.env.ADMIN_EMAIL!.trim().toLowerCase()
       if (!email) return null
-      const user = await prisma.user.upsert({
-        where: { email },
-        update: { role: 'ADMIN' },
-        create: { email, name: username, role: 'ADMIN', status: 'ACTIVE' },
-        select: { id: true, email: true, name: true, role: true, status: true },
+      // Never mutate a suspended/deleted account while attempting emergency sign-in.
+      // Check status inside the same transaction as the role update to avoid a stale
+      // preflight check granting ADMIN after another request suspends the account.
+      const user = await prisma.$transaction(async (tx) => {
+        const existing = await tx.user.findUnique({
+          where: { email },
+          select: { id: true, status: true },
+        })
+        if (existing) {
+          if (existing.status !== 'ACTIVE') return null
+          const updated = await tx.user.updateMany({
+            where: { id: existing.id, status: 'ACTIVE' },
+            data: { role: 'ADMIN' },
+          })
+          if (updated.count !== 1) return null
+          return tx.user.findUnique({
+            where: { id: existing.id },
+            select: { id: true, email: true, name: true, role: true, status: true },
+          })
+        }
+        return tx.user.create({
+          data: { email, name: username, role: 'ADMIN', status: 'ACTIVE' },
+          select: { id: true, email: true, name: true, role: true, status: true },
+        })
       })
-      if (user.status !== 'ACTIVE') return null
+      if (!user || user.status !== 'ACTIVE') return null
       return { id: user.id, email: user.email, name: user.name, role: user.role, status: user.status }
     },
   }))
@@ -91,33 +128,32 @@ providers.push(CredentialsProvider({
   },
 }))
 
-if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
-  providers.push(GitHubProvider({ clientId: process.env.AUTH_GITHUB_ID, clientSecret: process.env.AUTH_GITHUB_SECRET }))
+function completeOAuthCredentials(value: { clientId?: string; clientSecret?: string }): OAuthCredentials | undefined {
+  if (!value.clientId || !value.clientSecret) return undefined
+  return { clientId: value.clientId, clientSecret: value.clientSecret }
 }
-if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
-  providers.push(GoogleProvider({ clientId: process.env.AUTH_GOOGLE_ID, clientSecret: process.env.AUTH_GOOGLE_SECRET }))
+const github = completeOAuthCredentials(credential('GITHUB', 'AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET'))
+if (github) providers.push(GitHubProvider(github))
+const google = completeOAuthCredentials(credential('GOOGLE', 'AUTH_GOOGLE_ID', 'AUTH_GOOGLE_SECRET'))
+if (google) providers.push(GoogleProvider(google))
+const microsoft = completeOAuthCredentials(credential('MICROSOFT', 'AUTH_MICROSOFT_ENTRA_ID_ID', 'AUTH_MICROSOFT_ENTRA_ID_SECRET'))
+if (microsoft) providers.push(AzureADProvider({ ...microsoft, tenantId: config.AUTH_OAUTH_MICROSOFT_TENANT_ID || process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common' }))
+const apple = completeOAuthCredentials(credential('APPLE', 'AUTH_APPLE_ID', 'AUTH_APPLE_SECRET'))
+if (apple) providers.push(AppleProvider(apple))
+const smtpPassword = decryptSecretSetting(config.MAIL_SECRET_SMTP_PASSWORD)
+const smtpHost = config.MAIL_SMTP_HOST
+const smtpFrom = config.MAIL_FROM || process.env.EMAIL_FROM
+if ((smtpHost && smtpFrom && smtpPassword) || (process.env.EMAIL_SERVER && process.env.EMAIL_FROM)) {
+  const server = smtpHost && smtpPassword
+    ? { host: smtpHost, port: Number(config.MAIL_SMTP_PORT || 587), secure: config.MAIL_SMTP_SECURE === 'true', auth: { user: config.MAIL_SMTP_USER || '', pass: smtpPassword } }
+    : process.env.EMAIL_SERVER!
+  providers.push(EmailProvider({ server, from: smtpFrom || process.env.EMAIL_FROM!, maxAge: 15 * 60 }))
 }
-if (process.env.AUTH_MICROSOFT_ENTRA_ID_ID && process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET) {
-  providers.push(AzureADProvider({
-    clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
-    clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
-    tenantId: process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common',
-  }))
-}
-if (process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET) {
-  providers.push(AppleProvider({ clientId: process.env.AUTH_APPLE_ID, clientSecret: process.env.AUTH_APPLE_SECRET }))
-}
-if (process.env.EMAIL_SERVER && process.env.EMAIL_FROM) {
-  providers.push(EmailProvider({
-    server: process.env.EMAIL_SERVER,
-    from: process.env.EMAIL_FROM,
-    maxAge: 15 * 60,
-  }))
+return providers
 }
 
-export const authOptions: NextAuthOptions = {
+const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
   adapter: PrismaAdapter(prisma as never),
-  providers,
   secret: authSecret,
   // Credentials providers require JWT sessions. Role/status are reloaded from DB below.
   session: { strategy: 'jwt', maxAge: 8 * 60 * 60, updateAge: 60 * 60 },
@@ -186,3 +222,12 @@ export const authOptions: NextAuthOptions = {
     },
   },
 }
+
+export async function getAuthOptions(): Promise<NextAuthOptions> {
+  return { ...authOptionsBase, providers: await buildProviders() }
+}
+
+// Compatibility options for legacy getServerSession(authOptions) call sites.
+// OAuth callback initialization always uses getAuthOptions() in the NextAuth handler;
+// this provider-less object shares the same JWT/session callbacks and adapter.
+export const authOptions = authOptionsBase as NextAuthOptions

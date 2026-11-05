@@ -749,3 +749,12 @@ test('cloud document save remains successful when the follow-up list refresh fai
   await expect(page.locator('.cdpc-pixel-stage small')).toContainText('云端文档已保存，但列表刷新失败')
   await expect(page.locator('.cdpc-pixel-stage small')).not.toContainText('云端保存失败')
 })
+
+
+test('legacy admin route is unavailable and the configured route remains protected', async ({ page }) => {
+  const legacyResponse = await page.goto('/admin')
+  expect(legacyResponse?.status()).toBe(404)
+
+  await page.goto('/control-room')
+  await expect(page).toHaveURL(/\/login(?:\?|$)/)
+})

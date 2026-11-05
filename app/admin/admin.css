@@ -1,0 +1,24 @@
+.cdpc-admin{--admin-bg:#0d1118;--admin-panel:#151c27;--admin-border:#2b3544;--admin-text:#e8edf5;--admin-muted:#9ba8b9;min-height:100vh;background:var(--admin-bg);color:var(--admin-text);display:grid;grid-template-columns:248px minmax(0,1fr)}
+.cdpc-admin-sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:22px 14px 16px;background:#111720;border-right:1px solid var(--admin-border);z-index:20}
+.cdpc-admin-brand{display:flex;align-items:center;gap:11px;padding:4px 9px 24px;color:var(--admin-text);text-decoration:none;border-bottom:1px solid var(--admin-border)}
+.cdpc-admin-brand-mark{display:grid;place-items:center;width:38px;height:38px;border:1px solid #6882ad;border-radius:9px;background:#263750;color:#dbe7ff;font-weight:900;font-size:21px}
+.cdpc-admin-brand strong,.cdpc-admin-brand small{display:block}.cdpc-admin-brand strong{font-size:16px;letter-spacing:.14em}.cdpc-admin-brand small{margin-top:3px;color:var(--admin-muted);font-size:9px;letter-spacing:.14em}
+.cdpc-admin-nav{display:grid;gap:23px;padding:23px 0;overflow:auto}.cdpc-admin-nav-section h2{margin:0 10px 9px;color:#78879a;font-size:10px;font-weight:800;letter-spacing:.12em}
+.cdpc-admin-nav-link{display:flex;align-items:center;gap:11px;min-height:40px;padding:8px 11px;border-radius:7px;color:#b8c4d4;text-decoration:none;font-size:13px;font-weight:650}
+.cdpc-admin-nav-link>span{display:grid;place-items:center;width:19px;color:#91a9ce;font-size:16px}
+.cdpc-admin-nav-link:hover{background:#202b3a;color:#fff}
+.cdpc-admin-sidebar-foot{display:flex;align-items:center;gap:8px;margin-top:auto;padding:13px 10px 2px;border-top:1px solid var(--admin-border);color:var(--admin-muted);font-size:11px}
+.cdpc-admin-online{width:7px;height:7px;border-radius:50%;background:#55c58b;box-shadow:0 0 0 3px #55c58b20}
+.cdpc-admin-main{min-width:0}.cdpc-admin-topbar{position:sticky;top:0;z-index:15;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px;padding:12px 28px;background:#111720ed;border-bottom:1px solid var(--admin-border);backdrop-filter:blur(14px)}
+.cdpc-admin-topbar>div:first-child{display:grid;gap:3px}.cdpc-admin-topbar-kicker{color:#91a9ce;font-size:9px;font-weight:800;letter-spacing:.13em}.cdpc-admin-topbar strong{font-size:14px}
+.cdpc-admin-topbar-actions{display:flex;align-items:center;gap:15px}.cdpc-admin-identity{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--admin-muted);font-size:12px}
+.cdpc-admin-back{padding:8px 11px;border:1px solid var(--admin-border);border-radius:6px;color:#dbe7ff;text-decoration:none;font-size:12px;font-weight:700}
+.cdpc-admin-content{min-width:0;padding:24px 28px 48px}.cdpc-admin-content>.inventory-shell{width:min(1240px,100%);margin:0 auto;padding:0}.cdpc-admin-content .topbar{display:none!important}
+.cdpc-admin-content .inventory-panel{margin-top:18px}.cdpc-admin-content .admin-subnav{display:none}
+.cdpc-admin-content .pixel-button{width:auto!important;min-width:0;max-width:100%;flex:0 0 auto}
+.cdpc-admin-content .actions,.cdpc-admin-content .admin-filter-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.cdpc-admin-content .actions button,.cdpc-admin-content .actions a,.cdpc-admin-content .admin-filter-actions button,.cdpc-admin-content .admin-filter-actions a{width:auto!important;max-width:100%;flex:0 0 auto}
+.cdpc-admin-content input,.cdpc-admin-content select,.cdpc-admin-content textarea{min-width:0;max-width:100%}
+@media(max-width:900px){.cdpc-admin{grid-template-columns:205px minmax(0,1fr)}.cdpc-admin-content{padding:18px 16px 36px}.cdpc-admin-topbar{padding-inline:18px}}
+@media(max-width:680px){.cdpc-admin{display:block}.cdpc-admin-sidebar{position:relative;width:100%;height:auto;padding:10px 12px 8px;border-right:0;border-bottom:1px solid var(--admin-border)}.cdpc-admin-brand{padding:2px 4px 10px;border-bottom:0}.cdpc-admin-brand-mark{width:32px;height:32px;font-size:18px}.cdpc-admin-nav{display:flex;gap:14px;padding:8px 0 2px;overflow-x:auto;overscroll-behavior-inline:contain}.cdpc-admin-nav-section{display:flex;align-items:center;gap:4px;flex:0 0 auto}.cdpc-admin-nav-section h2{display:none}.cdpc-admin-nav-link{min-height:36px;padding:7px 9px;white-space:nowrap;font-size:12px}.cdpc-admin-nav-link>span{width:auto}.cdpc-admin-sidebar-foot{display:none}.cdpc-admin-topbar{position:relative;min-height:54px;padding:9px 13px}.cdpc-admin-identity{display:none}.cdpc-admin-content{padding:14px 10px 30px}.cdpc-admin-content .inventory-panel{padding:14px!important}.cdpc-admin-content .application-form,.cdpc-admin-content .actions{min-width:0}.cdpc-admin-content .pixel-button{min-height:40px;padding:8px 11px;font-size:12px}}
+@media(max-width:380px){.cdpc-admin-topbar-actions{gap:7px}.cdpc-admin-back{padding:7px 8px;font-size:11px}.cdpc-admin-nav{gap:7px}.cdpc-admin-nav-link{padding-inline:7px}}

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { adminUrl } from '@/lib/admin-path'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
 
@@ -27,12 +28,12 @@ export default async function AdminUserPage({ searchParams }: { searchParams?: S
     <main className="inventory-shell cdpc-page">
       <header className="topbar cdpc-panel">
         <div><p className="eyebrow">ADMIN / USERS</p><h1>用户管理</h1></div>
-        <Link className="pixel-button cdpc-control" href="/admin">管理后台</Link>
+        <Link className="pixel-button cdpc-control" href={adminUrl()}>管理后台</Link>
       </header>
       <section className="hero inventory-panel cdpc-panel">
         <h2>账户目录</h2>
         <p>按用户名、邮箱或账户 ID 搜索，并按角色和状态筛选。每次最多显示 100 个匹配账户。</p>
-        <form method="get" action="/admin/user" className="application-form" aria-label="用户筛选">
+        <form method="get" action={adminUrl('/user')} className="application-form" aria-label="用户筛选">
           <label htmlFor="admin-user-q">搜索账户</label>
           <input id="admin-user-q" name="q" type="search" maxLength={100} defaultValue={q} placeholder="用户名、邮箱或账户 ID" />
           <label htmlFor="admin-user-role">角色</label>
@@ -51,7 +52,7 @@ export default async function AdminUserPage({ searchParams }: { searchParams?: S
           </select>
           <div className="actions">
             <button className="pixel-button primary cdpc-control cdpc-control-primary" type="submit">应用筛选</button>
-            <Link className="pixel-button cdpc-control" href="/admin/user">清除筛选</Link>
+            <Link className="pixel-button cdpc-control" href={adminUrl('/user')}>清除筛选</Link>
           </div>
         </form>
         <p>匹配结果：{users.length} 个账户{q || role || status ? '（当前为筛选结果）' : ''}</p>

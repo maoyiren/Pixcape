@@ -12,8 +12,13 @@ export type RateLimitResult = {
 
 /** Persistent, atomic fixed-window limiter shared by all app instances. */
 export async function consumeLoginRateLimit(clientAddress: string): Promise<RateLimitResult> {
-  const limit = parsePositiveInteger(process.env.LOGIN_RATE_LIMIT_MAX, 10, 100)
-  const windowSeconds = parsePositiveInteger(process.env.LOGIN_RATE_LIMIT_WINDOW_SECONDS, 900, 86_400)
+  const stored = await prisma.appSetting.findMany({
+    where: { key: { in: ['SECURITY_LOGIN_RATE_LIMIT_MAX', 'SECURITY_LOGIN_RATE_LIMIT_WINDOW_SECONDS'] } },
+    select: { key: true, value: true },
+  }).catch(() => [])
+  const settings = Object.fromEntries(stored.map((item) => [item.key, item.value]))
+  const limit = parsePositiveInteger(settings.SECURITY_LOGIN_RATE_LIMIT_MAX || process.env.LOGIN_RATE_LIMIT_MAX, 10, 100)
+  const windowSeconds = parsePositiveInteger(settings.SECURITY_LOGIN_RATE_LIMIT_WINDOW_SECONDS || process.env.LOGIN_RATE_LIMIT_WINDOW_SECONDS, 900, 86_400)
   const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'pixcape-local-only-rate-limit-pepper'
   const normalizedAddress = (clientAddress || 'unknown').trim().slice(0, 128) || 'unknown'
   const key = createHmac('sha256', secret).update('pixcape-login:').update(normalizedAddress).digest('hex')
