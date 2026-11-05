@@ -20,6 +20,7 @@ const sections = [
   ] },
   { title: '系统配置', items: [
     { href: '/admin/auth', label: '登录与身份', icon: '⚿' },
+    { href: '/admin/ai', label: 'AI 服务与模型', icon: '✧' },
     { href: '/admin/health', label: '系统健康', icon: '♡' },
     { href: '/admin#configuration', label: '旧版配置总览', icon: '⚙' },
   ] },
