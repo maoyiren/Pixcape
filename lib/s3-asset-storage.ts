@@ -27,7 +27,7 @@ function objectUrl(config: S3Config, key: string) {
     throw new Error('S3 endpoint must be a clean HTTPS URL')
   }
   const basePath = endpoint.pathname.replace(/\/$/, '')
-  const objectPath = key.split('/').map(encodeURIComponent).join('/')
+  const objectPath = key.replace(/^s3\\//, '').split('/').map(encodeURIComponent).join('/')
   endpoint.pathname = `${basePath}/${encodeURIComponent(config.bucket)}/${objectPath}`
   return endpoint
 }
