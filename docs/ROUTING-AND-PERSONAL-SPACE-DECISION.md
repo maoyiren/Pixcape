@@ -186,3 +186,42 @@ app/
 ## 11. 完成定义
 
 只有在路由真实可访问、数据关联稳定、服务端权限测试通过、旧链接兼容、Studio 保存到用户衣橱的完整链路通过测试后，才能标记为“已完成”。仅增加页面文件、导航链接或本规划文档，不等于功能交付。
+
+
+## 12. 2026-11-05 仓库只读盘点结果
+
+以下结论来自当前 `main` 分支文件读取；它们是代码盘点结果，不代表生产环境已经部署：
+
+### 已确认的 Next.js 路由现状
+
+- Next.js App Router 根目录是仓库根部的 `app/`，不是 `src/app/`。
+- 当前首页 `app/page.tsx` 仍将创作工坊指向 `/workbench`，衣服选装指向 `/wardrobe`。
+- `app/workbench/page.tsx` 是 AI、单品编辑和衣橱选装的入口聚合页。
+- `app/dress-up/page.tsx` 实际渲染 `DressUpStudio`，是当前 Next.js 3D 换装页面。
+- `app/workbench/dress/page.tsx` 已经重定向到 `/dress-up`。
+- `app/wardrobe/page.tsx` 渲染 `WardrobeLibrary`，负责云端素材、收藏与穿搭列表；其中选择素材或穿搭时会把工作区状态写入 API，再跳转到 `/dress-up`。
+- `app/components/site-nav.tsx` 当前仍同时显示 `/dress-up`、`/workbench`、`/wardrobe` 三个入口；`app/components/account-menu.tsx` 目前提供 `/account`、`/wardrobe` 和 `/creator`，尚未接入用户主页路径。
+
+### 已确认的数据模型
+
+- PostgreSQL、MySQL、SQLite 三套 Prisma schema 都有稳定的 `User.id`。
+- PostgreSQL / MySQL 的 `User` 模型当前没有 `username` 字段，也没有用户名历史/保留名模型；`CreatorProfile.displayName` 不能直接替代唯一用户名。
+- 已存在 `Outfit`、`OutfitItem`、`Asset`、`AssetFavorite`、`Publication`、`WorkspaceState`，且 Outfit/Asset 已通过 ownerId 关联用户。
+- 素材分类已区分 `SHAWL`、`COAT`、`CAPE`，这三类不能合并。
+- NextAuth 当前会话与用户身份基于数据库 user ID；后续应在 session 中安全提供 username，授权仍使用 user ID。
+
+### 对实施顺序的影响
+
+1. 不能直接创建新的独立换装引擎。应先将现有 `app/dress-up/dress-up-studio.tsx` 作为唯一 3D 换装实现迁移到规范的 `/studio` 入口。
+2. `/wardrobe` 现有页面是素材/衣橱库，不应粗暴重定向丢弃其功能；应拆分“我的私有衣橱”和“公共素材浏览”的产品职责，再把用户个人数据入口迁到 `/u/[username]/...`。
+3. `/workbench` 是旧的入口聚合页，需逐步退场或重定向；AI 与 Editor 保留各自正式主路径。
+4. 用户路由上线前必须先完成三套 Prisma schema 的 username/slug 历史设计与迁移，并补充 session 字段、服务端授权和测试。
+5. 在实际迁移 PR 中需同步更新首页、主导航、头像菜单、面包屑、站内链接、SEO canonical 和旧路径兼容规则。
+
+### 盘点状态
+
+- [x] 确认 App Router 根目录。
+- [x] 确认当前首页、工作台、换装页、衣橱页和账号菜单的主要入口。
+- [x] 确认三套 Prisma schema 中 User、Outfit、Asset、Publication 的关键关系。
+- [ ] 进一步检查完整换装组件、服务端 API 权限、数据库 migration 历史和 E2E 覆盖。
+- [ ] 在代码变更 PR 中完成路由迁移与验证。
