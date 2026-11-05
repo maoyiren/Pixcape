@@ -20,10 +20,8 @@ export default async function AdminStoragePage({ searchParams }: { searchParams?
         <label htmlFor="storage-bucket">Bucket 名称</label><input id="storage-bucket" name="bucket" required maxLength={128} defaultValue={config.STORAGE_S3_BUCKET ?? ''}/>
         <label htmlFor="storage-region">Region</label><input id="storage-region" name="region" defaultValue={config.STORAGE_S3_REGION ?? ''}/>
         <label htmlFor="storage-public-url">公开访问基础 URL（可选，HTTPS）</label><input id="storage-public-url" name="publicBaseUrl" type="url" defaultValue={config.STORAGE_PUBLIC_BASE_URL ?? ''}/>
-        <label htmlFor="storage-access-key">Access Key ID（留空保留）</label><input id="storage-access-key" name="accessKeyId" type="password" autoComplete="new-password" maxLength={2048} required={!config.STORAGE_SECRET_ACCESS_KEY_ID}/>
-        <label><input type="checkbox" name="clearAccessKeyId"/> 清除 Access Key ID</label>
-        <label htmlFor="storage-secret-key">Secret Access Key（留空保留）</label><input id="storage-secret-key" name="secretAccessKey" type="password" autoComplete="new-password" maxLength={2048} required={!config.STORAGE_SECRET_ACCESS_KEY}/>
-        <label><input type="checkbox" name="clearSecretAccessKey"/> 清除 Secret Access Key</label>
+        <label htmlFor="storage-access-key">Access Key ID（首次配置必填，留空保留）</label><input id="storage-access-key" name="accessKeyId" type="password" autoComplete="new-password" maxLength={2048} required={!config.STORAGE_SECRET_ACCESS_KEY_ID}/>
+        <label htmlFor="storage-secret-key">Secret Access Key（首次配置必填，留空保留）</label><input id="storage-secret-key" name="secretAccessKey" type="password" autoComplete="new-password" maxLength={2048} required={!config.STORAGE_SECRET_ACCESS_KEY}/>
         <button className="pixel-button primary" type="submit">保存存储配置</button>
       </form>
     </section>
