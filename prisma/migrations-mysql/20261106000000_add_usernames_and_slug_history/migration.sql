@@ -1,6 +1,6 @@
 ALTER TABLE `User` ADD COLUMN `username` VARCHAR(191) NULL;
 UPDATE `User`
-SET `username` = CONCAT('user-', LOWER(LEFT(`id`, 8)))
+SET `username` = CONCAT('user-', LOWER(LEFT(`id`, 12)))
 WHERE `username` IS NULL;
 CREATE UNIQUE INDEX `User_username_key` ON `User`(`username`);
 
