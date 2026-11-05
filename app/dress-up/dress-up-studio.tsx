@@ -621,8 +621,8 @@ export default function DressUpStudio() {
       model,
       background,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
-      skinAssetId: /\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/.exec(skinUrl)?.[1] ?? null,
-      skinAssetUrl: /\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/.test(skinUrl) ? skinUrl : undefined,
+      skinAssetId: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)?.[1] ?? null,
+      skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
       assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
@@ -651,7 +651,7 @@ export default function DressUpStudio() {
       const backupIds = new Set(backupAssets.map(item => item.id))
       const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string' && (catalog.some(item => item.id === id) || backupIds.has(id)))
       const nextSkinUrl = typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png;base64,') ? outfit.skinUrl : undefined
-      let nextSkinAssetUrl = typeof outfit.skinAssetUrl === 'string' && /\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/.test(outfit.skinAssetUrl) ? outfit.skinAssetUrl : undefined
+      let nextSkinAssetUrl = typeof outfit.skinAssetUrl === 'string' && /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(outfit.skinAssetUrl) ? outfit.skinAssetUrl : undefined
       let skinAssetUnavailable = false
       if (nextSkinUrl) {
         const image = await loadImage(nextSkinUrl)
