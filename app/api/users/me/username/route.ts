@@ -62,6 +62,9 @@ export async function PUT(request: Request) {
         }
       }
 
+      // Reserve the new slug in the same unique registry as historical slugs.
+      // This prevents a concurrent account from claiming it during a rename.
+      await tx.userSlugHistory.create({ data: { userId, username } })
       await tx.user.update({ where: { id: userId }, data: { username } })
       return { kind: 'ok' as const, username }
     })
@@ -70,7 +73,10 @@ export async function PUT(request: Request) {
     if (updated.kind === 'taken') return NextResponse.json({ error: '该用户名已被使用或曾经使用，不能重复分配。' }, { status: 409 })
     if (updated.kind === 'conflict') return NextResponse.json({ error: '用户名历史记录冲突，请联系管理员。' }, { status: 409 })
     return NextResponse.json({ username: updated.username }, { headers: { 'Cache-Control': 'private, no-store' } })
-  } catch {
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      return NextResponse.json({ error: '该用户名已被使用或曾经使用，不能重复分配。' }, { status: 409 })
+    }
     return NextResponse.json({ error: '用户名更新失败，请稍后重试。' }, { status: 500 })
   }
 }
