@@ -8,6 +8,12 @@ on:
       - package.json
       - ai-api/package.json
       - .github/workflows/refresh-stack-lock.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - package.json
+      - ai-api/package.json
+      - .github/workflows/refresh-stack-lock.yml
   workflow_dispatch:
     inputs:
       branch:
@@ -28,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.inputs.branch || github.ref_name }}
+          ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch || github.ref_name }}
       - uses: actions/setup-node@v7
         with:
           node-version: 26.13.0
