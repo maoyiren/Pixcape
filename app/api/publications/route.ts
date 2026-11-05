@@ -72,10 +72,6 @@ export async function POST(request: Request) {
           select: { id: true, ownerId: true },
         })
         if (assets.length !== assetIds.length) throw new Error('OUTFIT_ASSET_NOT_SHAREABLE')
-        await tx.asset.updateMany({
-          where: { id: { in: assetIds }, ownerId },
-          data: { visibility: 'PUBLIC' },
-        })
       }
       const existing = await tx.publication.findFirst({
         where: { ownerId, outfitId: outfit.id },
