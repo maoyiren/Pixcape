@@ -110,6 +110,9 @@ export async function readAssetFile(assetId: string, actorId: string | null) {
       OR: [
         { visibility: { in: ['PUBLIC', 'UNLISTED'] } },
         ...(actorId ? [{ ownerId: actorId }] : []),
+        { publications: { some: { status: 'PUBLISHED', publishedAt: { not: null } } } },
+        { skinOutfits: { some: { publications: { some: { status: 'PUBLISHED', publishedAt: { not: null } } } } } },
+        { outfitItems: { some: { outfit: { publications: { some: { status: 'PUBLISHED', publishedAt: { not: null } } } } } },
       ],
     },
     select: { storageKey: true, mimeType: true, byteSize: true, visibility: true },
