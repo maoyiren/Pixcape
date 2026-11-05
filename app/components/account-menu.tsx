@@ -9,7 +9,6 @@ type AccountMenuProps = {
   email: string
   role: string
   status: string
-  isAdmin: boolean
 }
 
 const roleLabels: Record<string, string> = {
@@ -24,7 +23,7 @@ function initials(name: string) {
   return Array.from(value).slice(0, 1).join('').toUpperCase()
 }
 
-export function AccountMenu({ name, email, role, status, isAdmin }: AccountMenuProps) {
+export function AccountMenu({ name, email, role, status }: AccountMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -85,7 +84,6 @@ export function AccountMenu({ name, email, role, status, isAdmin }: AccountMenuP
             <Link href="/account" onClick={() => setOpen(false)}>账户资料<span>›</span></Link>
             <Link href="/wardrobe" onClick={() => setOpen(false)}>我的衣橱<span>›</span></Link>
             <Link href="/creator" onClick={() => setOpen(false)}>创作者中心<span>›</span></Link>
-            {isAdmin ? <Link href="/admin" onClick={() => setOpen(false)}>管理后台<span>›</span></Link> : null}
           </div>
           <div className="site-account-logout"><SignOutButton /></div>
         </div>
