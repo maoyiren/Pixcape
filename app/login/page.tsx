@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Alert, Button, Container, Paper, Stack, Text, Title } from '@mantine/core'
 import LoginForm from './login-form'
 import { prisma } from '@/lib/prisma'
+import { decryptSecretSetting } from '@/lib/secret-settings'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,13 +27,13 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
   const hasProvider = (provider: string, envId: string, envSecret: string) =>
     oauth['AUTH_OAUTH_' + provider + '_DISABLED'] !== 'true' &&
     Boolean((oauth['AUTH_OAUTH_' + provider + '_CLIENT_ID'] || process.env[envId]) &&
-      (oauth['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET'] || process.env[envSecret]))
+      (decryptSecretSetting(oauth['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET']) || process.env[envSecret]))
   const methods = [
     { id: 'google', label: '使用 Google 账号登录', enabled: hasProvider('GOOGLE','AUTH_GOOGLE_ID','AUTH_GOOGLE_SECRET') },
     { id: 'azure-ad', label: '使用 Microsoft 账号登录', enabled: hasProvider('MICROSOFT','AUTH_MICROSOFT_ENTRA_ID_ID','AUTH_MICROSOFT_ENTRA_ID_SECRET') },
     { id: 'github', label: '使用 GitHub 账号登录', enabled: hasProvider('GITHUB','AUTH_GITHUB_ID','AUTH_GITHUB_SECRET') },
     { id: 'apple', label: '使用 Apple 账号登录', enabled: hasProvider('APPLE','AUTH_APPLE_ID','AUTH_APPLE_SECRET') },
-    { id: 'email', label: '通过邮箱链接登录', enabled: Boolean((process.env.EMAIL_SERVER && process.env.EMAIL_FROM) || (oauth['MAIL_SMTP_HOST'] && oauth['MAIL_FROM'] && oauth['MAIL_SECRET_SMTP_PASSWORD'])) },
+    { id: 'email', label: '通过邮箱链接登录', enabled: Boolean((process.env.EMAIL_SERVER && process.env.EMAIL_FROM) || (oauth['MAIL_SMTP_HOST'] && oauth['MAIL_FROM'] && decryptSecretSetting(oauth['MAIL_SECRET_SMTP_PASSWORD']))) },
   ]
   const enabledMethods = methods.filter((method) => method.enabled)
   const adminEnabled = Boolean(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL)
