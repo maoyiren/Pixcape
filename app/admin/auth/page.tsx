@@ -3,7 +3,12 @@ import { saveSystemConfiguration, setEmailVerificationRequired } from '../action
 
 export const metadata = { title: '登录与身份配置' }
 
-export default async function AdminAuthPage() {
+export default async function AdminAuthPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ systemConfigurationSaved?: string; emailVerificationUpdated?: string; error?: string }>
+}) {
+  const params = await searchParams
   const [callback, returnSetting, verification] = await Promise.all([
     prisma.appSetting.findUnique({ where: { key: 'AUTH_DEFAULT_CALLBACK_URL' } }).catch(() => null),
     prisma.appSetting.findUnique({ where: { key: 'AUTH_RETURN_TO_ORIGINAL_PAGE' } }).catch(() => null),
@@ -23,6 +28,12 @@ export default async function AdminAuthPage() {
     <section className="inventory-panel hero">
       <p className="eyebrow">IDENTITY & ACCESS</p><h1>登录与身份配置</h1>
       <p>此页只展示环境变量是否齐全，不会读取或回显 OAuth 密钥。当前 OAuth Provider 在 NextAuth 启动时由环境变量注册；数据库配置暂不支持动态添加 Provider。</p>
+      {params?.systemConfigurationSaved === '1' ? <p role="status" className="config-status">登录跳转设置已保存。</p> : null}
+      {params?.emailVerificationUpdated === '1' ? <p role="status" className="config-status">邮箱验证设置已更新。</p> : null}
+      {params?.error === 'invalid_return_behavior' ? <p role="alert">登录返回选项无效，请重新选择。</p> : null}
+      {params?.error === 'invalid_default_callback' ? <p role="alert">默认登录目标无效，请选择站内页面。</p> : null}
+      {params?.error === 'invalid_email_verification_setting' ? <p role="alert">邮箱验证开关参数无效，请重试。</p> : null}
+      {params?.error === 'email_verification_smtp_missing' ? <p role="alert">请先配置 EMAIL_SERVER、EMAIL_FROM 和 NEXTAUTH_URL，再开启邮箱验证。</p> : null}
       <div className="application-list">{providers.map((provider) => <article className="application-card" key={provider.name}>
         <h3>{provider.name} · {provider.ready ? '已检测到配置' : '未配置完整'}</h3><p>{provider.keys}</p>
       </article>)}</div>
