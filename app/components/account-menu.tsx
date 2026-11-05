@@ -78,6 +78,7 @@ export function AccountMenu({ name, username, email, role, status }: AccountMenu
             <span className="site-account-identity">
               <strong>{name || 'CDPC 用户'}</strong>
               <small>{email}</small>
+              {username ? <small>@{username}</small> : null}
               <small className="site-account-status">{status === 'ACTIVE' ? '● 账户正常' : '● 账户状态待确认'}</small>
             </span>
           </div>
