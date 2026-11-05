@@ -34,6 +34,6 @@ The Next.js and React versions are kept on stable releases. No canary, alpha, be
 
 ## Verification
 
-The stack refresh PR uses the existing CI workflow to regenerate both lockfiles from the declared ranges, then perform clean npm installs, AI API tests, dependency audit, unit tests, Next.js production build, and a full Docker image build before committing refreshed lockfiles back to the PR branch. The normal pull-request workflows then provide the PostgreSQL/MySQL/SQLite migration, security, browser, and Docker regression coverage.
+A default-branch maintenance workflow regenerates both npm lockfiles when the stack-upgrade branch changes. The pull-request CI then validates the committed lockfiles with clean installs, database migrations, security checks, browser tests, production builds, and Docker builds. The normal pull-request workflows then provide the PostgreSQL/MySQL/SQLite migration, security, browser, and Docker regression coverage.
 
 A CI pass validates the candidate code in GitHub Actions. It does not deploy to cdpc.cc or replace the production image automatically.
