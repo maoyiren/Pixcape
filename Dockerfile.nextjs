@@ -2,11 +2,11 @@
 # Intentionally separate from the root Dockerfile, which continues serving Vite + Blockbench.
 ARG DATABASE_PROVIDER=postgresql
 
-FROM node:24-bookworm-slim AS build
+FROM node:26.13.0-bookworm-slim AS build
 ARG DATABASE_PROVIDER
 ENV DATABASE_PROVIDER=${DATABASE_PROVIDER} \
     NEXT_TELEMETRY_DISABLED=1
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
@@ -15,7 +15,9 @@ RUN npm ci
 COPY . .
 RUN npm run db:generate && npm run next:build
 
-FROM node:24-bookworm-slim AS runtime
+FROM node:26.13.0-bookworm-slim AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
 ARG DATABASE_PROVIDER
 ENV DATABASE_PROVIDER=${DATABASE_PROVIDER} \
     NODE_ENV=production \
