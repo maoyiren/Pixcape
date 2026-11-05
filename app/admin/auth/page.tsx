@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { decryptSecretSetting } from '@/lib/secret-settings'
 import { saveOAuthConfiguration, saveSystemConfiguration, setEmailVerificationRequired } from '../actions'
 
 export const metadata = { title: '登录与身份配置' }
@@ -32,7 +33,7 @@ export default async function AdminAuthPage({
   const configured = providers.map((provider) => {
     const prefix = 'AUTH_OAUTH_' + provider.id
     const id = config[prefix + '_CLIENT_ID'] || process.env[provider.envId]
-    const secret = config['AUTH_SECRET_OAUTH_' + provider.id + '_CLIENT_SECRET'] || process.env[provider.envSecret]
+    const secret = decryptSecretSetting(config['AUTH_SECRET_OAUTH_' + provider.id + '_CLIENT_SECRET']) || process.env[provider.envSecret]
     const disabled = config[prefix + '_DISABLED'] === 'true'
     return { ...provider, enabled: !disabled && Boolean(id && secret), hasId: Boolean(id), hasSecret: Boolean(secret), disabled }
   })
