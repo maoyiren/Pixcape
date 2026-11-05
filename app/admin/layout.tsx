@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 }
 
 const sections = [
-  { title: '工作台', items: [{ href: '/admin', label: '总览', icon: '▦' }] },
+  { title: '工作台', items: [{ href: '/', label: '总览', icon: '▦' }] },
   { title: '账户与社区', items: [
-    { href: '/admin/user', label: '用户管理', icon: '♙' },
-    { href: '/admin/audit', label: '操作审计', icon: '≡' },
-    { href: '/admin/stat', label: '平台统计', icon: '▥' },
+    { href: '/user', label: '用户管理', icon: '♙' },
+    { href: '/audit', label: '操作审计', icon: '≡' },
+    { href: '/stat', label: '平台统计', icon: '▥' },
   ] },
   { title: '系统配置', items: [
     { href: '/auth', label: '登录与身份', icon: '⚿' },
