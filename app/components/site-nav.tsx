@@ -30,6 +30,7 @@ export async function SiteNav() {
           {user ? (
             <AccountMenu
               name={user.name ?? '我的账户'}
+              username={user.username ?? null}
               email={user.email ?? ''}
               role={user.role ?? 'USER'}
               status={user.status ?? 'ACTIVE'}
