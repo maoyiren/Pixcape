@@ -252,7 +252,7 @@ function encryptAISecret(value: string) {
 export async function saveAIConfiguration(formData: FormData) {
   const actor = await requireActiveAdmin()
   const provider = String(formData.get('provider') ?? 'auto')
-  if (!['auto', 'gemini', 'openai', 'openrouter', 'seedream'].includes(provider)) redirect('/admin?error=invalid_ai_provider#configuration')
+  if (!['auto', 'gemini', 'openai', 'openrouter', 'seedream'].includes(provider)) redirect('/admin/ai?error=invalid_ai_provider')
   const model = String(formData.get('model') ?? '').trim().slice(0, 160)
   const geminiModels = String(formData.get('geminiModels') ?? '').trim().slice(0, 500)
   const openaiModels = String(formData.get('openaiModels') ?? '').trim().slice(0, 500)
@@ -263,7 +263,7 @@ export async function saveAIConfiguration(formData: FormData) {
   try {
     const parsed = new URL(arkBaseUrl)
     if (parsed.protocol !== 'https:' || !/(^|\.)volces\.com$|(^|\.)volcengine\.com$/.test(parsed.hostname)) throw new Error()
-  } catch { redirect('/admin?error=invalid_ark_url#configuration') }
+  } catch { redirect('/admin/ai?error=invalid_ark_url') }
 
   const values: Record<string, string> = {
     AI_DEFAULT_PROVIDER: provider,
@@ -284,7 +284,7 @@ export async function saveAIConfiguration(formData: FormData) {
   ] as const
   for (const [field, clearField, settingKey] of secretFields) {
     const value = String(formData.get(field) ?? '').trim()
-    if (value.length > 2048) redirect('/admin?error=ai_key_too_long#configuration')
+    if (value.length > 2048) redirect('/admin/ai?error=ai_key_too_long')
     if (formData.get(clearField) === 'on') values[settingKey] = ''
     else if (value) values[settingKey] = encryptAISecret(value)
   }
@@ -306,5 +306,5 @@ export async function saveAIConfiguration(formData: FormData) {
       details: { provider, model, configuredModelLists: ['gemini', 'openai', 'openrouter', 'seedream', 'deepseek-text'] },
     } })
   })
-  redirect('/admin?aiConfigurationSaved=1#configuration')
+  redirect('/admin/ai?aiConfigurationSaved=1')
 }
