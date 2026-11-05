@@ -6,6 +6,7 @@ import path from 'node:path'
 import { parsePng } from '@/src/domain/png'
 import { prisma } from '@/lib/prisma'
 import { getS3AssetStorage } from '@/lib/s3-asset-storage'
+import { buildAssetStorageKey, isS3AssetStorageKey } from '@/src/domain/asset-storage'
 import type { AssetCategory, AssetKind, AssetSource, AssetVisibility } from '@/src/domain/asset'
 
 const MAX_ASSET_BYTES = 8 * 1024 * 1024
@@ -63,7 +64,7 @@ export async function saveAssetFile(input: {
       ? 'CLOTHING_TEXTURE'
       : 'ACCESSORY_TEXTURE'
   const s3Storage = await getS3AssetStorage()
-  const storageKey = `${s3Storage ? 's3/' : ''}assets/${id}.png`
+  const storageKey = buildAssetStorageKey(id, Boolean(s3Storage))
   const filePath = s3Storage ? storageKey : storagePath(storageKey)
   if (s3Storage) {
     await s3Storage.put(storageKey, bytes, 'image/png')
@@ -111,7 +112,7 @@ export async function readAssetFile(assetId: string, actorId: string) {
     select: { storageKey: true, mimeType: true, byteSize: true, visibility: true },
   })
   if (!asset) return null
-  const isS3Asset = asset.storageKey.startsWith('s3/')
+  const isS3Asset = isS3AssetStorageKey(asset.storageKey)
   const s3Storage = isS3Asset ? await getS3AssetStorage() : null
   if (isS3Asset && !s3Storage) throw new Error('S3 storage is not configured for this asset')
   const bytes = s3Storage ? await s3Storage.get(asset.storageKey) : await readFile(storagePath(asset.storageKey))
