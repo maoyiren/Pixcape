@@ -1,40 +1,98 @@
-# Studio migration acceptance checklist
+# Studio 完整迁移验收清单
 
-This checklist protects the existing 3D outfit workflow while routes converge on `/studio`.
+本清单是 CDPC 角色换装工作台的发布门槛。**所有复选框只在真实浏览器/设备中完成操作并留有结果后才能勾选**；源码存在、路由可打开、CI 构建通过都不等于交互验收通过。
 
-## Preserved implementation
+## 产品职责
 
-- `app/studio/page.tsx` renders the existing `DressUpStudio`; it does not replace the editor or introduce a second 3D engine.
-- Local outfit drafts remain in `cdpc:dress-up:outfits-v1` and `cdpc:dress-up:local-v1`; local snapshots preserve embedded skin PNGs and cloud skin asset IDs/URLs.
-- Signed-in cloud outfits remain backed by `/api/outfits`; the active outfit pointer remains in the per-user `WorkspaceState`.
-- Wardrobe asset handoff remains backed by `/api/workspace` (`activeAssetId` / `activeOutfitId`).
-- Shawl, coat, and cape remain separate categories (`SHAWL`, `COAT`, `CAPE`).
+- `/studio`：角色中心的换装工作台，负责角色皮肤、服装穿脱、3D 预览、动作、搭配、文件导入导出。
+- 素材库 / 个人衣橱：负责素材上传、分类、作者和来源、收藏、搜索、维护。
+- Studio 与素材库共享素材实体和用户身份，但不是同一个界面，也不各自维护一份素材数据。
+- 披肩（SHAWL）、外套（COAT）、披风（CAPE）是三个独立类别。披风是独立背部装备，不得合成进标准 Minecraft 皮肤 PNG。
 
-## Route and handoff acceptance
+## 45 项核心验收
 
-| Scenario | Expected result |
-| --- | --- |
-| Open `/studio` | Existing 3D editor initializes with its original controls and catalog |
-| Open legacy `/dress-up` or `/workbench/dress` | Redirects to `/studio` |
-| Choose a skin in the wardrobe | Workspace pointer stores the asset ID; Studio loads it as the base skin |
-| Choose a shawl, coat, or cape | Workspace pointer stores the asset ID; Studio equips it in the matching category |
-| Choose a saved cloud outfit | Workspace pointer stores the outfit ID; Studio restores its skin, model, background, and equipped assets |
-| Save a cloud outfit | Assets are persisted first, outfit is created/updated, and active outfit pointer is updated |
-| Reopen Studio | Active cloud outfit is restored for the signed-in user |
-| Save/restore a local draft | Existing browser-local draft format remains readable |
-| Use Studio while signed out | Local editing remains available; cloud endpoints return the existing authentication response |
+### 角色与皮肤
+- [ ] 01. 导入 64×64 Minecraft 皮肤 PNG，并拒绝错误格式/尺寸。
+- [ ] 02. 初次进入显示默认人物皮肤，皮肤加载失败有可恢复提示。
+- [ ] 03. Steve / Alex 模型切换正确，手臂 UV/宽度适配。
+- [ ] 04. 3D 预览与当前角色、服装共享同一套状态。
+- [ ] 05. 鼠标/触控拖动可完整 360° 旋转，不卡在 180°。
+- [ ] 06. 滚轮/双指缩放、视角重置可用。
+- [ ] 07. 正面、背面、左右侧面快捷视角正确。
+- [ ] 08. 恢复默认皮肤不删除已保存的穿搭。
+- [ ] 09. 切换模型或基础皮肤后，已选服装状态按规则保留。
 
-## Required automated/manual regression before release
+### 服装分类与穿脱
+- [ ] 10. 披肩独立选择、穿戴、脱下和切换。
+- [ ] 11. 外套独立选择、穿戴、脱下和切换。
+- [ ] 12. 披风独立选择、显示、隐藏和切换。
+- [ ] 13. 帽子分类有真实 PNG 素材和正确 UV/模型适配。
+- [ ] 14. 裤子分类有真实 PNG 素材和正确 UV/模型适配。
+- [ ] 15. 鞋子分类有真实 PNG 素材和正确 UV/模型适配。
+- [ ] 16. 眼镜/饰品等扩展分类可在不破坏旧类别的前提下接入。
+- [ ] 17. 点击素材立即穿戴，再次点击同素材可以脱下。
+- [ ] 18. 同分类切换素材、不同分类组合穿戴正确。
+- [ ] 19. 一键脱下当前分类与全部脱下均有效。
+- [ ] 20. 随机搭配只从真实可用素材中选择，不产生虚假 ID。
+- [ ] 21. 恢复默认搭配只重置当前工作状态，不误删保存记录。
+- [ ] 22. 切换服装只更新角色预览，不刷新整页或重复创建 3D viewer。
 
-- [ ] Next.js production build and typecheck
-- [ ] Browser test: skin + shawl + coat + cape preview and model switch (Steve/Alex)
-- [ ] Browser test: local save, reload, restore, export/import backup (including a selected cloud skin asset and an imported PNG skin)
-- [ ] Browser test: signed-in cloud save, update, delete, restore after reload
-- [ ] Browser test: wardrobe asset handoff and saved-outfit handoff to Studio
-- [ ] API test: user A cannot read, update, or delete user B's private outfits/assets
-- [ ] API test: public assets can be used without exposing private assets
-- [ ] Docker image build and startup migration smoke test
+### 3D 动作与装备
+- [ ] 23. 待机动作正常。
+- [ ] 24. 行走动作正常。
+- [ ] 25. 奔跑动作正常。
+- [ ] 26. 飞行动作正常。
+- [ ] 27. 挥手动作正常。
+- [ ] 28. 蹲下动作正常。
+- [ ] 29. 受击动作正常。
+- [ ] 30. 游泳动作正常。
+- [ ] 31. 披风 / 鞘翅互斥切换正确。
+- [ ] 32. 飞行时披风动态与人物动作同步，切换动作不丢失穿搭。
 
-## Validation status
+### 穿搭、文件与体验
+- [ ] 33. 保存自定义名称、多套穿搭，并可修改、删除和切换。
+- [ ] 34. 未登录用户本地保存/恢复；登录用户云端保存/跨设备恢复。
+- [ ] 35. 本地草稿、云端穿搭、衣橱交接和 JSON 备份互相兼容。
+- [ ] 36. 导出原版兼容 64×64 PNG，透明像素与皮肤 UV 正确。
+- [ ] 37. 披风单独管理/导出；标准皮肤 PNG 明确不包含披风。
+- [ ] 38. 导出当前 3D 预览截图，跨域素材失败时提示原因。
+- [ ] 39. JSON 导出包含必要的服装 ID、皮肤数据/引用、模型和搭配信息。
+- [ ] 40. JSON 导入校验版本、文件大小、PNG 尺寸，云端引用失效时有明确回退。
+- [ ] 41. 素材缩略图显示真实像素图，并呈现名称、分类、作者/来源。
+- [ ] 42. 素材搜索、分类筛选、选中高亮、收藏状态可用。
+- [ ] 43. 明暗/纯色背景、白天/夜晚和生物群系场景可切换。
+- [ ] 44. 桌面三栏布局与移动端预览优先、面板展开/收起均可用。
+- [ ] 45. 加载、空素材、素材失败、保存成功/失败、重置等状态提示完整。
 
-Source inspection only. The checks above are intentionally unchecked until actually executed in CI or a browser/Docker environment.
+## 源码核对：旧 Vite 实际具备的功能
+
+旧版 `src/App.tsx` 使用 `PresetStudio`、`AiSkinStudio` 和 `ThreeCapePreview`。旧版 `PresetStudio` 的真实预设目录只有披肩、外套、披风；`ThreeCapePreview` 的动作是待机、挥手、行走、飞行。旧源码没有帽子/裤子/鞋子完整素材目录，也没有蹲下、受击、游泳动作。验收项 13–16、25、28–30 是后续完整产品目标，不能误称为旧版已有能力。
+
+## 当前 Next.js 迁移状态（源码核对，不代表交互验收）
+
+- 已有：`/studio` 正式 Next.js 页面；组件实现已归入 `app/studio`；旧 `/dress-up` 路由保留兼容跳转。
+- 已有：skinview3d、Steve/Alex、皮肤 PNG 导入、披肩/外套/披风素材切换、穿脱、随机、全部脱下、重置。
+- 已有：本地/云端穿搭保存、恢复、删除、JSON 导入导出、标准皮肤 PNG 导出、预览截图。
+- 已迁移代码但未实测：待机/行走/飞行/挥手、自动旋转、披风/鞘翅切换、正/背/侧视角、场景背景选择。
+- 未完成：帽子/裤子/鞋子/其他配饰真实素材和 UV 适配；奔跑/蹲下/受击/游泳动作；完整收藏和作者/来源闭环；移动端实机验收。
+- 当前分类按钮出现不代表素材已经接入；没有真实素材时必须显示明确空状态。
+
+## 自动化与发布门槛
+
+- [ ] Next.js production build + TypeScript/Prisma 验证。
+- [ ] Playwright：皮肤 + 披肩 + 外套 + 披风组合、Steve/Alex、动作与视角。
+- [ ] Playwright：本地保存/刷新恢复、JSON 导入导出、PNG 文件尺寸检查。
+- [ ] 登录态 API：用户 A 无法读取/修改/删除用户 B 私有素材和穿搭。
+- [ ] 登录态 API：云端保存、更新、删除、跨设备恢复和衣橱 handoff。
+- [ ] 发布/取消发布：私有素材仅通过有效发布关系授权，取消发布后撤权。
+- [ ] Docker：同一镜像 PostgreSQL / MySQL / SQLite 启动与迁移 smoke test。
+- [ ] 桌面浏览器、移动端触屏、窄屏和横屏人工验收。
+
+## 关键约束
+
+1. 不以 Vite iframe 或包装旧 `src/App` 作为迁移完成。
+2. 不重写/删除已有穿搭状态和数据格式而不提供兼容恢复。
+3. 不将披肩称为披风；三类素材必须独立。
+4. 不用普通文字图标替代真实像素素材缩略图。
+5. 不把官方 Mojang 披风描述为标准皮肤 PNG 内置能力。
+6. 不把源码检查或 CI 构建通过描述为真实浏览器功能验收。
