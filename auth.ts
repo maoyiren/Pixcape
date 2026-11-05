@@ -26,7 +26,8 @@ const stored = await prisma.appSetting.findMany({
   select: { key: true, value: true },
 }).catch(() => [])
 const config = Object.fromEntries(stored.map((item) => [item.key, item.value]))
-const credential = (provider: string, envId?: string, envSecret?: string): { clientId?: string; clientSecret?: string } => config['AUTH_OAUTH_' + provider + '_DISABLED'] === 'true' ? {} : ({
+type OAuthCredentials = { clientId: string; clientSecret: string }
+const credential = (provider: string, envId?: string, envSecret?: string): Partial<OAuthCredentials> => config['AUTH_OAUTH_' + provider + '_DISABLED'] === 'true' ? {} : ({
   clientId: config['AUTH_OAUTH_' + provider + '_CLIENT_ID'] || (envId ? process.env[envId] : undefined),
   clientSecret: decryptSecretSetting(config['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET']) || (envSecret ? process.env[envSecret] : undefined),
 })
@@ -127,14 +128,17 @@ providers.push(CredentialsProvider({
   },
 }))
 
+function hasOAuthCredentials(value: Partial<OAuthCredentials>): value is OAuthCredentials {
+  return Boolean(value.clientId && value.clientSecret)
+}
 const github = credential('GITHUB', 'AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET')
-if (github.clientId && github.clientSecret) providers.push(GitHubProvider(github))
+if (hasOAuthCredentials(github)) providers.push(GitHubProvider(github))
 const google = credential('GOOGLE', 'AUTH_GOOGLE_ID', 'AUTH_GOOGLE_SECRET')
-if (google.clientId && google.clientSecret) providers.push(GoogleProvider(google))
+if (hasOAuthCredentials(google)) providers.push(GoogleProvider(google))
 const microsoft = credential('MICROSOFT', 'AUTH_MICROSOFT_ENTRA_ID_ID', 'AUTH_MICROSOFT_ENTRA_ID_SECRET')
-if (microsoft.clientId && microsoft.clientSecret) providers.push(AzureADProvider({ ...microsoft, tenantId: config.AUTH_OAUTH_MICROSOFT_TENANT_ID || process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common' }))
+if (hasOAuthCredentials(microsoft)) providers.push(AzureADProvider({ ...microsoft, tenantId: config.AUTH_OAUTH_MICROSOFT_TENANT_ID || process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common' }))
 const apple = credential('APPLE', 'AUTH_APPLE_ID', 'AUTH_APPLE_SECRET')
-if (apple.clientId && apple.clientSecret) providers.push(AppleProvider(apple))
+if (hasOAuthCredentials(apple)) providers.push(AppleProvider(apple))
 const smtpPassword = decryptSecretSetting(config.MAIL_SECRET_SMTP_PASSWORD)
 const smtpHost = config.MAIL_SMTP_HOST
 const smtpFrom = config.MAIL_FROM || process.env.EMAIL_FROM
