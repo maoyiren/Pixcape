@@ -151,6 +151,7 @@ export default function DressUpStudio() {
         setSkinUrl(activeOutfit.skinAssetUrl || BASE_SKIN)
         setSkinName(activeOutfit.skinName || 'Steve 默认皮肤')
         setModel(activeOutfit.model)
+        setBackgroundScene('custom')
         setBackground(activeOutfit.background)
         setOutfitName(activeOutfit.name)
         setSelectedSavedOutfitId(activeOutfit.id)
@@ -189,7 +190,7 @@ export default function DressUpStudio() {
       }, {})
       setSelected(restored)
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
-      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
+      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) { setBackgroundScene('custom'); setBackground(saved.background) }
       if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
       else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
       else setSkinUrl(BASE_SKIN)
@@ -601,7 +602,7 @@ export default function DressUpStudio() {
       if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
     }
     if (outfit.model === 'steve' || outfit.model === 'alex') setModel(outfit.model)
-    if (/^#[0-9a-f]{6}$/i.test(outfit.background)) setBackground(outfit.background)
+    if (/^#[0-9a-f]{6}$/i.test(outfit.background)) { setBackgroundScene('custom'); setBackground(outfit.background) }
     setOutfitName(outfit.name)
     setSaveNotice(outfit.cloud ? `已从账号云端载入“${outfit.name}”` : `已载入本地草稿“${outfit.name}”`)
     if (outfit.cloud) {
@@ -753,6 +754,7 @@ export default function DressUpStudio() {
         return items
       }, {}))
       setModel(restored.model)
+      setBackgroundScene('custom')
       setBackground(restored.background)
       setSkinUrl(restored.skinAssetUrl || restored.skinUrl || BASE_SKIN)
       setSkinName(restored.skinAssetUrl || restored.skinUrl ? restored.skinName : 'Steve 默认皮肤')
