@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { AccountMenu } from './account-menu'
 
 export async function SiteNav() {
   const session = await getServerSession(authOptions)
-  const isAdmin = session?.user?.role === 'ADMIN' && session.user.status === 'ACTIVE'
+  const user = session?.user
+  const isAdmin = user?.role === 'ADMIN' && user.status === 'ACTIVE'
 
   return (
     <header className="cdpc-app-header">
@@ -28,14 +30,14 @@ export async function SiteNav() {
           <Link href="/creator">创作者中心</Link>
         </div>
         <div className="site-nav-account">
-          {session?.user ? (
-            <>
-              {isAdmin ? <Link className="site-nav-admin" href="/admin">管理后台</Link> : null}
-              <Link className="site-nav-user" href="/account" title="打开个人中心">
-                <span className="site-nav-avatar" aria-hidden="true">我</span>
-                <span>我的账户</span>
-              </Link>
-            </>
+          {user ? (
+            <AccountMenu
+              name={user.name ?? '我的账户'}
+              email={user.email ?? ''}
+              role={user.role ?? 'USER'}
+              status={user.status ?? 'ACTIVE'}
+              isAdmin={isAdmin}
+            />
           ) : (
             <>
               <Link href="/login">登录</Link>
