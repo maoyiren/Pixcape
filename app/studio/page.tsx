@@ -1,10 +1,10 @@
-import { redirect } from 'next/navigation'
+import DressUpStudio from '../dress-up/dress-up-studio'
 
-export const metadata = { title: '创作工作台 | CDPC' }
+export const metadata = {
+  title: 'Studio 角色换装工作室 | CDPC',
+  description: '为 Minecraft 角色搭配披肩、外套与披风，实时预览并保存穿搭。',
+}
 
-export default async function StudioCompatibilityRoute({ searchParams }: { searchParams?: Promise<{ mode?: string }> }) {
-  const params = await searchParams
-  if (params?.mode === 'ai') redirect('/ai')
-  if (params?.mode === 'wardrobe') redirect('/wardrobe')
-  redirect('/editor')
+export default function StudioPage() {
+  return <DressUpStudio />
 }
