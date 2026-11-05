@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import { requireRole } from '@/lib/require-role'
 import './admin.css'
 
@@ -18,12 +19,13 @@ const sections = [
     { href: '/admin/stat', label: '平台统计', icon: '▥' },
   ] },
   { title: '系统配置', items: [
-    { href: '/admin#configuration', label: '配置中心', icon: '⚙' },
-    { href: '/admin#health', label: '系统健康', icon: '♡' },
+    { href: '/admin/auth', label: '登录与身份', icon: '⚿' },
+    { href: '/admin/health', label: '系统健康', icon: '♡' },
+    { href: '/admin#configuration', label: '旧版配置总览', icon: '⚙' },
   ] },
 ]
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
   const admin = await requireRole('ADMIN')
   return (
     <div className="cdpc-admin">
