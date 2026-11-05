@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -51,6 +51,11 @@ jobs:
         with:
           node-version: 26.13.0
           check-latest: true
+      - name: Refresh lockfiles for the stack upgrade PR
+        if: github.event_name == 'pull_request' && github.head_ref == 'chore/stack-refresh-nov-2026'
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm --prefix ai-api install --package-lock-only --ignore-scripts --no-audit --no-fund
       - run: npm ci --no-audit --no-fund
       - name: Run unit tests
         run: npm run test:unit
@@ -104,3 +109,23 @@ jobs:
         run: docker build --tag pixcape-ai-api-test ./ai-api
       - name: Build complete Pixcape image including Blockbench
         run: docker build --tag pixcape-integration-test .
+      - name: Commit refreshed lockfiles to the stack upgrade PR
+        if: github.event_name == 'pull_request' && github.head_ref == 'chore/stack-refresh-nov-2026'
+        env:
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        run: |
+          cp package-lock.json /tmp/pixcape-package-lock.json
+          cp ai-api/package-lock.json /tmp/pixcape-ai-api-package-lock.json
+          git fetch origin "$BRANCH_NAME"
+          git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
+          cp /tmp/pixcape-package-lock.json package-lock.json
+          cp /tmp/pixcape-ai-api-package-lock.json ai-api/package-lock.json
+          if git diff --quiet -- package-lock.json ai-api/package-lock.json; then
+            echo "Lockfiles already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json ai-api/package-lock.json
+          git commit -m "chore(deps): regenerate npm lockfiles"
+          git push origin "$BRANCH_NAME"
