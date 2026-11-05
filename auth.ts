@@ -234,3 +234,7 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
 export async function getAuthOptions(): Promise<NextAuthOptions> {
   return { ...authOptionsBase, providers: await buildProviders() }
 }
+
+// Compatibility export for existing getServerSession(authOptions) call sites.
+// Runtime NextAuth handlers use getAuthOptions() so database-backed providers stay dynamic.
+export const authOptions = authOptionsBase as NextAuthOptions
