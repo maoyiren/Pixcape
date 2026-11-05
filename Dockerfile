@@ -1,5 +1,5 @@
 # Build Blockbench as a static sub-app served under /blockbench/.
-FROM node:24-bookworm-slim AS blockbench-build
+FROM node:26.13.0-bookworm-slim AS blockbench-build
 ARG BLOCKBENCH_REF=5b0c99cd5a0e0ef3d15f52e91e945672076022ac
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -15,7 +15,7 @@ RUN mkdir -p /runtime \
     && test -s /runtime/dist/bundle.js \
     && test -s /runtime/LICENSE.MD
 
-FROM node:24-bookworm-slim AS next-build
+FROM node:26.13.0-bookworm-slim AS next-build
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
@@ -25,15 +25,15 @@ RUN npm ci --no-audit --no-fund && npm cache clean --force
 COPY . .
 RUN npm run next:build
 
-FROM node:24-bookworm-slim AS ai-api-build
+FROM node:26.13.0-bookworm-slim AS ai-api-build
 WORKDIR /ai-api
 COPY ai-api/package*.json ./
 RUN npm ci --omit=dev --include=optional --no-audit --no-fund
 COPY ai-api/ ./
 
 # Debian runtime matches the native Prisma SQLite addon built in next-build.
-FROM node:24-bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends bash nginx ca-certificates wget \
+FROM node:26.13.0-bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends bash nginx ca-certificates wget libatomic1 \
     && rm -f /etc/nginx/sites-enabled/default \
     && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=127.0.0.1 NEXTAUTH_URL=https://cdpc.cc
