@@ -1,10 +1,12 @@
 import 'server-only'
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import { cleanupUploadedAssetAfterCreateFailure, deleteStoredAsset } from '@/lib/asset-storage'
 import path from 'node:path'
 import { parsePng } from '@/src/domain/png'
 import { prisma } from '@/lib/prisma'
+import { getS3AssetStorage } from '@/lib/s3-asset-storage'
+import { buildAssetStorageKey, isS3AssetStorageKey } from '@/src/domain/asset-storage'
 import type { AssetCategory, AssetKind, AssetSource, AssetVisibility } from '@/src/domain/asset'
 
 const MAX_ASSET_BYTES = 8 * 1024 * 1024
@@ -56,15 +58,20 @@ export async function saveAssetFile(input: {
   }
 
   const id = randomUUID()
-  const storageKey = `assets/${id}.png`
   const kind: AssetKind = input.category === 'SKIN'
     ? 'SKIN_TEXTURE'
     : ['SHAWL', 'COAT', 'CAPE', 'PANTS'].includes(input.category)
       ? 'CLOTHING_TEXTURE'
       : 'ACCESSORY_TEXTURE'
-  const filePath = storagePath(storageKey)
-  await mkdir(STORAGE_ROOT, { recursive: true })
-  await writeFile(filePath, bytes, { flag: 'wx', mode: 0o600 })
+  const s3Storage = await getS3AssetStorage()
+  const storageKey = buildAssetStorageKey(id, Boolean(s3Storage))
+  const filePath = s3Storage ? storageKey : storagePath(storageKey)
+  if (s3Storage) {
+    await s3Storage.put(storageKey, bytes, 'image/png')
+  } else {
+    await mkdir(STORAGE_ROOT, { recursive: true })
+    await writeFile(filePath, bytes, { flag: 'wx', mode: 0o600 })
+  }
   try {
     return await prisma.asset.create({
       data: {
@@ -89,7 +96,10 @@ export async function saveAssetFile(input: {
       },
     })
   } catch (error) {
-    return cleanupUploadedAssetAfterCreateFailure(filePath, error)
+    return cleanupUploadedAssetAfterCreateFailure(filePath, error, async (target) => {
+      if (s3Storage) await s3Storage.delete(target)
+      else await unlink(target)
+    })
   }
 }
 
@@ -102,7 +112,10 @@ export async function readAssetFile(assetId: string, actorId: string) {
     select: { storageKey: true, mimeType: true, byteSize: true, visibility: true },
   })
   if (!asset) return null
-  const bytes = await readFile(storagePath(asset.storageKey))
+  const isS3Asset = isS3AssetStorageKey(asset.storageKey)
+  const s3Storage = isS3Asset ? await getS3AssetStorage() : null
+  if (isS3Asset && !s3Storage) throw new Error('S3 storage is not configured for this asset')
+  const bytes = s3Storage ? await s3Storage.get(asset.storageKey) : await readFile(storagePath(asset.storageKey))
   if (bytes.length !== asset.byteSize) throw new Error('Stored asset integrity check failed')
   return { bytes, mimeType: asset.mimeType, visibility: asset.visibility }
 }
@@ -114,11 +127,19 @@ export async function deleteAssetForActor(assetId: string, actorId: string) {
   })
   if (!asset) return false
 
-  return deleteStoredAsset(
-    storagePath(asset.storageKey),
-    async () => {
-      const deleted = await prisma.asset.deleteMany({ where: { id: assetId, ownerId: actorId } })
-      return deleted.count
-    },
-  )
+  const isS3Asset = isS3AssetStorageKey(asset.storageKey)
+  const s3Storage = isS3Asset ? await getS3AssetStorage() : null
+  if (isS3Asset && !s3Storage) throw new Error('S3 storage is not configured for this asset')
+  const deleteRecord = async () => {
+    const deleted = await prisma.asset.deleteMany({ where: { id: assetId, ownerId: actorId } })
+    return deleted.count
+  }
+  if (s3Storage) {
+    return deleteStoredAsset(asset.storageKey, deleteRecord, {
+      readFile: async (key) => s3Storage.get(key),
+      unlink: async (key) => s3Storage.delete(key),
+      writeFile: async (key, bytes) => s3Storage.put(key, Buffer.from(bytes), 'image/png'),
+    })
+  }
+  return deleteStoredAsset(storagePath(asset.storageKey), deleteRecord)
 }

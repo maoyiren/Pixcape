@@ -1,9 +1,9 @@
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 
 type Storage = {
-  readFile: typeof readFile
-  unlink: typeof unlink
-  writeFile: typeof writeFile
+  readFile: (path: string) => Promise<Buffer>
+  unlink: (path: string) => Promise<void>
+  writeFile: (path: string, data: Uint8Array, options?: { flag?: string; mode?: number }) => Promise<void>
 }
 
 export async function deleteStoredAsset(

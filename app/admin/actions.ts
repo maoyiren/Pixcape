@@ -351,10 +351,21 @@ export async function saveStorageConfiguration(formData: FormData) {
   const region = String(formData.get('region') ?? '').trim().slice(0,128)
   const publicBaseUrl = String(formData.get('publicBaseUrl') ?? '').trim().slice(0,300)
   try {
-    if (endpoint) { const url = new URL(endpoint); if (url.protocol !== 'https:') throw new Error() }
-    if (publicBaseUrl) { const url = new URL(publicBaseUrl); if (url.protocol !== 'https:') throw new Error() }
+    const url = new URL(endpoint)
+    if (url.protocol !== 'https:') throw new Error()
+    if (publicBaseUrl) { const publicUrl = new URL(publicBaseUrl); if (publicUrl.protocol !== 'https:') throw new Error() }
   } catch { redirect(adminUrl('/storage?error=invalid_storage_url')) }
   if (!bucket || !/^[a-zA-Z0-9._-]{3,128}$/.test(bucket)) redirect(adminUrl('/storage?error=invalid_bucket'))
+  const existingSecrets = await prisma.appSetting.findMany({
+    where: { key: { in: ['STORAGE_SECRET_ACCESS_KEY_ID', 'STORAGE_SECRET_ACCESS_KEY'] } },
+    select: { key: true, value: true },
+  })
+  const existing = Object.fromEntries(existingSecrets.map((row) => [row.key, row.value]))
+  const accessKeyInput = String(formData.get('accessKeyId') ?? '').trim()
+  const secretKeyInput = String(formData.get('secretAccessKey') ?? '').trim()
+  const accessKeyReady = formData.get('clearAccessKeyId') !== 'on' && Boolean(accessKeyInput || decryptSecretSetting(existing.STORAGE_SECRET_ACCESS_KEY_ID))
+  const secretKeyReady = formData.get('clearSecretAccessKey') !== 'on' && Boolean(secretKeyInput || decryptSecretSetting(existing.STORAGE_SECRET_ACCESS_KEY))
+  if (!accessKeyReady || !secretKeyReady) redirect(adminUrl('/storage?error=credentials_required'))
   const values: Record<string,string> = { STORAGE_S3_ENDPOINT:endpoint, STORAGE_S3_BUCKET:bucket, STORAGE_S3_REGION:region, STORAGE_PUBLIC_BASE_URL:publicBaseUrl }
   parseSecretField(formData,'accessKeyId','clearAccessKeyId','STORAGE_SECRET_ACCESS_KEY_ID',values)
   parseSecretField(formData,'secretAccessKey','clearSecretAccessKey','STORAGE_SECRET_ACCESS_KEY',values)
