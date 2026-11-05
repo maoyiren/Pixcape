@@ -79,7 +79,7 @@ export async function getS3AssetStorage(): Promise<S3AssetStorage | null> {
   if (!config) return null
   const activeConfig: S3Config = config
 
-  async function request(method: 'PUT' | 'GET' | 'DELETE', key: string, bytes = Buffer.alloc(0), contentType = 'application/octet-stream') {
+  async function request(method: 'PUT' | 'GET' | 'DELETE', key: string, bytes: Buffer<ArrayBufferLike> = Buffer.alloc(0), contentType = 'application/octet-stream') {
     const url = objectUrl(activeConfig, key)
     const signed = authorization(activeConfig, method, url, bytes)
     const response = await fetch(url, {
