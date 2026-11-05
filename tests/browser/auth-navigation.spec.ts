@@ -286,6 +286,49 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披风')
 })
 
+test('authenticated avatar menu supports hover, click, outside dismissal and Escape focus return', async ({ page }) => {
+  const email = `avatar-${Date.now()}@example.com`
+  await page.goto('/register')
+  const registration = await page.request.post('http://127.0.0.1:3000/api/register', {
+    data: { email, name: 'CDPC Avatar Tester', password: 'CDPC-Avatar-Test-2026!' },
+  })
+  expect(registration.status()).toBe(201)
+
+  await page.goto('/login')
+  await page.getByLabel('用户名或邮箱地址').fill(email)
+  await page.locator('#login-password').fill('CDPC-Avatar-Test-2026!')
+  await page.getByRole('button', { name: '登录 CDPC' }).click()
+
+  const trigger = page.getByRole('button', { name: /CDPC Avatar Tester/ })
+  await expect(trigger).toBeVisible({ timeout: 15_000 })
+  await trigger.click()
+  await expect(page.getByText('账户正常')).toBeVisible()
+  const accountLinks = page.locator('.site-account-links')
+  await expect(accountLinks.getByRole('link', { name: /账户资料/ })).toHaveAttribute('href', '/account')
+  await expect(accountLinks.getByRole('link', { name: /我的衣橱/ })).toHaveAttribute('href', '/wardrobe')
+  await expect(accountLinks.getByRole('link', { name: /创作者中心/ })).toHaveAttribute('href', '/creator')
+
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('link', { name: /账户资料/ })).toHaveCount(0)
+  await expect(trigger).toBeFocused()
+
+  await trigger.click()
+  await expect(page.getByRole('link', { name: /账户资料/ })).toBeVisible()
+  await page.evaluate(() => {
+    const target = document.createElement('div')
+    target.id = 'account-menu-outside-test-target'
+    target.style.cssText = 'position:fixed;right:0;bottom:0;width:32px;height:32px;z-index:9999'
+    document.body.append(target)
+  })
+  await page.locator('#account-menu-outside-test-target').click()
+  await expect(page.getByRole('link', { name: /账户资料/ })).toHaveCount(0)
+
+  await trigger.click()
+  await page.getByRole('link', { name: /账户资料/ }).click()
+  await expect(page).toHaveURL(/\/account$/)
+  await expect(page.getByRole('heading', { name: '我的账户' })).toBeVisible()
+})
+
 test('login page exposes email credentials and account registration', async ({ page }) => {
   await page.goto('/login')
   await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()

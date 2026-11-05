@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SignOutButton } from '@/app/account/sign-out-button'
 
 type AccountMenuProps = {
@@ -26,26 +26,42 @@ function initials(name: string) {
 
 export function AccountMenu({ name, email, role, status, isAdmin }: AccountMenuProps) {
   const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    function closeOnOutsidePointer(event: PointerEvent) {
+      if (event.target instanceof Node && !menuRef.current?.contains(event.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePointer)
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer)
+  }, [])
 
   return (
     <div
+      ref={menuRef}
       className="site-account-menu"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onPointerEnter={(event) => { if (event.pointerType === 'mouse') setOpen(true) }}
+      onPointerLeave={(event) => { if (event.pointerType === 'mouse') setOpen(false) }}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false)
       }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape') setOpen(false)
+        if (event.key === 'Escape' && open) {
+          event.preventDefault()
+          setOpen(false)
+          triggerRef.current?.focus()
+        }
       }}
     >
       <button
+        ref={triggerRef}
         className="site-account-trigger"
         type="button"
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls="site-account-dropdown"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen(true)}
       >
         <span className="site-nav-avatar" aria-hidden="true">{initials(name)}</span>
         <span className="site-account-trigger-copy">

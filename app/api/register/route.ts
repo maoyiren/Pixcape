@@ -74,7 +74,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, requiresVerification: true, message: '注册已提交，请查收验证邮件。验证链接 30 分钟后过期。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
     }
     return NextResponse.json({ ok: true, requiresVerification: false, message: '注册成功，正在进入创作工坊。' }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
-  } catch {
+  } catch (error) {
+    // Keep the client response generic while preserving a PII-safe diagnostic for operators.
+    console.error('[register] registration failed', error instanceof Error ? {
+      name: error.name,
+      code: 'code' in error && typeof error.code === 'string' ? error.code : undefined,
+    } : { name: 'UnknownError' })
     return NextResponse.json({ error: '注册失败，请稍后重试。' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
 }
