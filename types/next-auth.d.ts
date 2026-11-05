@@ -5,6 +5,7 @@ declare module 'next-auth' {
   interface Session {
     user: {
       id: string
+      username: string | null
       role: 'USER' | 'CREATOR' | 'ADMIN'
       status: 'ACTIVE' | 'SUSPENDED' | 'DELETED'
     } & NonNullable<DefaultSession['user']>
@@ -13,5 +14,12 @@ declare module 'next-auth' {
   interface User {
     role: 'USER' | 'CREATOR' | 'ADMIN'
     status: 'ACTIVE' | 'SUSPENDED' | 'DELETED'
+  }
+}
+
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    username?: string | null
   }
 }
