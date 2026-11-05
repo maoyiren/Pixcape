@@ -165,7 +165,7 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
       if (token.sub) {
         const record = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { role: true, status: true, email: true, name: true },
+          select: { role: true, status: true, email: true, name: true, username: true },
         })
         const status = typeof record?.status === 'string' ? record.status.trim().toUpperCase() : ''
         if (!record || status !== 'ACTIVE') {
@@ -175,6 +175,7 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
           token.status = 'ACTIVE'
           token.email = record.email ?? token.email
           token.name = record.name ?? token.name
+          token.username = record.username
           token.authDisabled = false
         }
       }
@@ -185,8 +186,10 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
         session.user.id = token.sub
         session.user.role = token.role as typeof session.user.role
         session.user.status = token.status as typeof session.user.status
+        session.user.username = typeof token.username === 'string' ? token.username : null
       } else if (session.user && token.authDisabled) {
         session.user.id = ''
+        session.user.username = null
       }
       return session
     },
