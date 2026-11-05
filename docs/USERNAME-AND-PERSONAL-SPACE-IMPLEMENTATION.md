@@ -20,6 +20,7 @@ Migration `20261106000000_add_usernames_and_slug_history` adds the unique userna
 
 - `GET /api/users/me/username`: read the signed-in user's current username.
 - `PUT /api/users/me/username`: validate, reserve, and update the current user's slug in a transaction.
+- New OAuth, email, and emergency-admin sign-ins reserve a deterministic username before a session is issued.
 - NextAuth reloads the username from the database and exposes it on `session.user.username`.
 - The account menu and primary wardrobe link use the canonical `/u/[username]` routes.
 
@@ -47,6 +48,7 @@ The legacy `/wardrobe` path redirects to the signed-in user's personal wardrobe.
 
 - [ ] Validate all three Prisma schemas and apply migrations against PostgreSQL, MySQL, and SQLite.
 - [ ] Confirm existing accounts receive unique deterministic usernames.
+- [ ] Confirm newly registered OAuth, email, and emergency-admin accounts receive a username before their first authenticated page render.
 - [ ] Confirm username rename reserves both old and new slugs and old URLs redirect.
 - [ ] Confirm two accounts cannot claim the same current or historical slug concurrently.
 - [ ] Confirm user A cannot view user B's wardrobe, assets, favorites, creations, or settings.
