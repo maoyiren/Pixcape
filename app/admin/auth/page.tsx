@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { adminUrl } from '@/lib/admin-path'
 import { saveSystemConfiguration, setEmailVerificationRequired } from '../actions'
 
 export const metadata = { title: '登录与身份配置' }
