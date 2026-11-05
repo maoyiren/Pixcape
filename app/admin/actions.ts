@@ -390,3 +390,29 @@ export async function saveSecurityConfiguration(formData: FormData) {
   await saveModuleSettings(actor.id,'SECURITY_CONFIGURATION_UPDATED','LOGIN_RATE_LIMIT',values)
   redirect(adminUrl('/security?saved=1'))
 }
+
+export async function saveOAuthConfiguration(formData: FormData) {
+  const actor = await requireActiveAdmin()
+  const provider = String(formData.get('provider') ?? '').toUpperCase()
+  const providers = ['GITHUB','GOOGLE','MICROSOFT','APPLE']
+  if (!providers.includes(provider)) redirect(adminUrl('/auth?error=invalid_oauth_provider'))
+  const enabled = formData.get('enabled') === 'on'
+  const clientId = String(formData.get('clientId') ?? '').trim().slice(0, 512)
+  const clientSecret = String(formData.get('clientSecret') ?? '').trim()
+  const tenantId = String(formData.get('tenantId') ?? 'common').trim().slice(0, 128)
+  if (clientSecret.length > 2048) redirect(adminUrl('/auth?error=oauth_secret_too_long'))
+  const idKey = 'AUTH_OAUTH_' + provider + '_CLIENT_ID'
+  const secretKey = 'AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET'
+  const disabledKey = 'AUTH_OAUTH_' + provider + '_DISABLED'
+  if (enabled && !clientId) redirect(adminUrl('/auth?error=oauth_client_id_required'))
+  const existingSecret = await prisma.appSetting.findUnique({ where: { key: secretKey }, select: { value: true } })
+  if (enabled && !clientSecret && !existingSecret?.value && !(provider === 'GITHUB' ? process.env.AUTH_GITHUB_SECRET : provider === 'GOOGLE' ? process.env.AUTH_GOOGLE_SECRET : provider === 'MICROSOFT' ? process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET : process.env.AUTH_APPLE_SECRET)) {
+    redirect(adminUrl('/auth?error=oauth_secret_required'))
+  }
+  const values: Record<string,string> = { [disabledKey]: enabled ? 'false' : 'true' }
+  if (clientId) values[idKey] = clientId
+  if (clientSecret) values[secretKey] = encryptSettingSecret(clientSecret)
+  if (provider === 'MICROSOFT') values.AUTH_OAUTH_MICROSOFT_TENANT_ID = tenantId || 'common'
+  await saveModuleSettings(actor.id,'OAUTH_PROVIDER_CONFIGURATION_UPDATED','OAuth:' + provider,values)
+  redirect(adminUrl('/auth?oauthSaved=' + provider.toLowerCase()))
+}
