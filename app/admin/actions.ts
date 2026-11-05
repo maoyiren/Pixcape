@@ -1,14 +1,14 @@
 'use server'
 
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/auth'
+import { getAuthOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { createCipheriv, createHash, randomBytes } from 'node:crypto'
 import { adminUrl } from '@/lib/admin-path'
 
 async function requireActiveAdmin() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(await getAuthOptions())
   if (!session?.user?.id) redirect('/login')
   // Re-read role/status for every privileged mutation; never trust form data or stale UI state.
   const actor = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, role: true, status: true } })
