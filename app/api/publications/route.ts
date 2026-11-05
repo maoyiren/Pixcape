@@ -37,6 +37,16 @@ export async function POST(request: Request) {
         })
         if (!asset) return null
         await tx.asset.update({ where: { id: asset.id }, data: { visibility: 'PUBLIC' } })
+        const existing = await tx.publication.findFirst({
+          where: { ownerId, assetId: asset.id },
+          select: { id: true },
+        })
+        if (existing) {
+          return tx.publication.update({
+            where: { id: existing.id },
+            data: { title: input.title, description: input.description, status: 'PUBLISHED', publishedAt: new Date() },
+          })
+        }
         return tx.publication.create({
           data: {
             ownerId, assetId: asset.id, title: input.title,
@@ -66,6 +76,16 @@ export async function POST(request: Request) {
         await tx.asset.updateMany({
           where: { id: { in: assetIds }, ownerId },
           data: { visibility: 'PUBLIC' },
+        })
+      }
+      const existing = await tx.publication.findFirst({
+        where: { ownerId, outfitId: outfit.id },
+        select: { id: true },
+      })
+      if (existing) {
+        return tx.publication.update({
+          where: { id: existing.id },
+          data: { title: input.title, description: input.description, status: 'PUBLISHED', publishedAt: new Date() },
         })
       }
       return tx.publication.create({
