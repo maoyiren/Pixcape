@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
-import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus, setEmailVerificationRequired, saveAIConfiguration, saveSystemConfiguration } from './actions'
+import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus, setEmailVerificationRequired, saveSystemConfiguration } from './actions'
 
 type HealthCheck = {
   name: string
@@ -94,12 +94,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
   const returnToOriginalPage = returnToOriginalSetting?.value !== 'false'
   const emailVerificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } }).catch(() => null)
   const emailVerificationRequired = emailVerificationSetting?.value === 'true'
-  const aiSettings = await prisma.appSetting.findMany({ where: { key: { in: [
-    'AI_DEFAULT_PROVIDER', 'AI_DEFAULT_MODEL', 'GEMINI_IMAGE_MODELS', 'OPENAI_IMAGE_MODELS',
-    'OPENROUTER_IMAGE_MODELS', 'SEEDREAM_IMAGE_MODELS', 'ARK_BASE_URL',
-    'AI_SECRET_GEMINI_API_KEY', 'AI_SECRET_OPENAI_API_KEY', 'AI_SECRET_OPENROUTER_API_KEY', 'AI_SECRET_ARK_API_KEY', 'DEEPSEEK_TEXT_MODEL', 'AI_SECRET_DEEPSEEK_API_KEY',
-  ] } } }).catch(() => [])
-  const aiConfig = Object.fromEntries(aiSettings.map((entry) => [entry.key, entry.value]))
+
   const q = (params?.q ?? '').trim().slice(0, 100)
   const role = ['USER', 'CREATOR', 'ADMIN'].includes(params?.role ?? '') ? params?.role : ''
   const status = ['ACTIVE', 'SUSPENDED', 'DELETED'].includes(params?.status ?? '') ? params?.status : ''
@@ -196,34 +191,6 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     <section className="hero inventory-panel" id="audit"><h2>操作审计日志</h2><p>最近 30 条管理操作，用于追踪账号状态、角色调整和创作者审核。敏感凭据不会写入日志。</p>
       {auditLogs.length === 0 ? <p>暂无日志，或日志暂时无法读取。</p> : <div className="application-list">{auditLogs.map((entry) => <article className="application-card" key={entry.id}><h3>{entry.action}</h3><p>操作者：{entry.actor.name ?? entry.actor.email ?? '管理员账号'}</p><p>目标：{entry.targetType} · {entry.targetId}</p><p>时间：{entry.createdAt.toISOString().replace('T', ' ').slice(0, 19)} UTC</p><p>详情：{entry.details ? JSON.stringify(entry.details) : '无附加详情'}</p></article>)}</div>}
     </section>
-    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>可动态生效的配置在此管理；需要服务启动前读取的 OAuth、SMTP 和基础设施密钥仍由部署 Secrets 管理。所有后台变更都会记录审计日志。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>OAuth 凭据与 SMTP 服务器请在部署环境配置。邮箱验证当前：<strong>{emailVerificationRequired ? '已开启' : '关闭（默认）'}</strong>。</p><form action={saveSystemConfiguration} className="application-form cdpc-stack"><label htmlFor="return-to-original-page">登录成功后的跳转规则</label><select id="return-to-original-page" name="returnToOriginalPage" defaultValue={returnToOriginalPage ? 'true' : 'false'}><option value="true">返回登录前页面（有原页面时）</option><option value="false">始终进入指定默认页面</option></select><label htmlFor="default-callback-url">默认登录成功页面</label><select id="default-callback-url" name="defaultCallbackUrl" defaultValue={defaultCallbackUrl}><option value="/account">账号界面（/account）</option><option value="/workbench">工作台（/workbench）</option><option value="/studio">编辑入口（/studio）</option><option value="/">首页（/）</option></select><p>选择“返回登录前页面”时，系统优先返回安全校验通过的站内原页面；没有原页面时使用下方默认页面。选择“始终进入指定默认页面”时忽略原页面地址。管理员密码登录仍进入管理员后台。</p><button className="pixel-button primary" type="submit">保存登录跳转设置</button></form><form action={setEmailVerificationRequired} className="actions"><button className="pixel-button" type="submit" name="required" value={emailVerificationRequired ? 'false' : 'true'}>{emailVerificationRequired ? '关闭邮箱验证' : '开启邮箱验证'}</button></form><span className="config-status">{emailVerificationRequired ? '新注册账户需点击验证邮件' : '注册无需验证码'}</span></article><article className="ai-config-card"><h3>AI 服务商与模型</h3>
-  <p>在此维护 AI 默认供应商、模型清单和 API Key。密钥使用服务端认证密钥加密保存，页面不会回显原始密钥。</p>
-  {aiConfig.AI_SECRET_GEMINI_API_KEY || process.env.GEMINI_API_KEY ? <p className="config-status">Gemini：已配置</p> : <p className="config-status">Gemini：未配置</p>}
-  {aiConfig.AI_SECRET_OPENAI_API_KEY || process.env.OPENAI_API_KEY ? <p className="config-status">OpenAI：已配置</p> : <p className="config-status">OpenAI：未配置</p>}
-  {aiConfig.AI_SECRET_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY ? <p className="config-status">OpenRouter：已配置</p> : <p className="config-status">OpenRouter：未配置</p>}
-  {aiConfig.AI_SECRET_ARK_API_KEY || process.env.ARK_API_KEY || process.env.VOLCENGINE_ARK_API_KEY ? <p className="config-status">豆包 Seedream：已配置</p> : <p className="config-status">豆包 Seedream：未配置</p>}
-  {aiConfig.AI_SECRET_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY ? <p className="config-status">DeepSeek 文本模型：已配置</p> : <p className="config-status">DeepSeek 文本模型：未配置</p>}
-  <form action={saveAIConfiguration} className="application-form cdpc-stack">
-    <label htmlFor="ai-provider">默认供应商</label><select id="ai-provider" name="provider" defaultValue={aiConfig.AI_DEFAULT_PROVIDER ?? 'auto'}><option value="auto">自动选择</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI Images</option><option value="openrouter">OpenRouter</option><option value="seedream">豆包 Seedream</option></select>
-    <label htmlFor="ai-model">默认模型 ID（可留空自动选择）</label><input id="ai-model" name="model" className="cdpc-input" maxLength={160} defaultValue={aiConfig.AI_DEFAULT_MODEL ?? ''} placeholder="例如 gemini-2.5-flash-image"/>
-    <label htmlFor="gemini-models">Gemini 模型列表（逗号分隔）</label><input id="gemini-models" name="geminiModels" className="cdpc-input" defaultValue={aiConfig.GEMINI_IMAGE_MODELS ?? 'gemini-2.5-flash-image'} maxLength={500}/>
-    <label htmlFor="openai-models">OpenAI 模型列表（逗号分隔）</label><input id="openai-models" name="openaiModels" className="cdpc-input" defaultValue={aiConfig.OPENAI_IMAGE_MODELS ?? 'gpt-image-1'} maxLength={500}/>
-    <label htmlFor="openrouter-models">OpenRouter 模型列表（逗号分隔）</label><input id="openrouter-models" name="openrouterModels" className="cdpc-input" defaultValue={aiConfig.OPENROUTER_IMAGE_MODELS ?? ''} maxLength={1000}/>
-    <label htmlFor="deepseek-text-model">DeepSeek 文本模型（提示词/文本任务）</label><input id="deepseek-text-model" name="deepseekTextModel" className="cdpc-input" defaultValue={aiConfig.DEEPSEEK_TEXT_MODEL ?? "deepseek-chat"} maxLength={160}/>
-    <label htmlFor="deepseek-api-key">DeepSeek API Key（留空保留现有值）</label><input id="deepseek-api-key" name="deepseekApiKey" className="cdpc-input" type="password" autoComplete="new-password" maxLength={2048} placeholder="不会回显已保存的密钥"/><label><input type="checkbox" name="clearDeepseekApiKey"/> 清除 DeepSeek API Key</label>
-    <label htmlFor="seedream-models">Seedream 模型列表（逗号分隔）</label><input id="seedream-models" name="seedreamModels" className="cdpc-input" defaultValue={aiConfig.SEEDREAM_IMAGE_MODELS ?? 'doubao-seedream-5-0-lite-260128'} maxLength={500}/>
-    <label htmlFor="ark-base-url">火山引擎 Ark API 地址（仅允许官方 HTTPS 域名）</label><input id="ark-base-url" name="arkBaseUrl" className="cdpc-input" defaultValue={aiConfig.ARK_BASE_URL ?? 'https://ark.cn-beijing.volces.com/api/v3'} maxLength={300}/>
-    <label htmlFor="gemini-key">Gemini API Key（留空保留现有密钥）</label><input id="gemini-key" name="geminiApiKey" className="cdpc-input" type="password" autoComplete="new-password" maxLength={2048} placeholder="仅在新增或更换时填写"/>
-    <label><input type="checkbox" name="clearGeminiApiKey"/> 清除已保存的 Gemini Key</label>
-    <label htmlFor="openai-key">OpenAI API Key（留空保留现有密钥）</label><input id="openai-key" name="openaiApiKey" className="cdpc-input" type="password" autoComplete="new-password" maxLength={2048} placeholder="仅在新增或更换时填写"/>
-    <label><input type="checkbox" name="clearOpenaiApiKey"/> 清除已保存的 OpenAI Key</label>
-    <label htmlFor="openrouter-key">OpenRouter API Key（留空保留现有密钥）</label><input id="openrouter-key" name="openrouterApiKey" className="cdpc-input" type="password" autoComplete="new-password" maxLength={2048} placeholder="仅在新增或更换时填写"/>
-    <label><input type="checkbox" name="clearOpenrouterApiKey"/> 清除已保存的 OpenRouter Key</label>
-    <label htmlFor="seedream-key">豆包 Ark API Key（留空保留现有密钥）</label><input id="seedream-key" name="seedreamApiKey" className="cdpc-input" type="password" autoComplete="new-password" maxLength={2048} placeholder="仅在新增或更换时填写"/>
-    <label><input type="checkbox" name="clearSeedreamApiKey"/> 清除已保存的 Seedream Key</label>
-    <button className="pixel-button primary cdpc-control cdpc-control-primary" type="submit">保存 AI 配置</button>
-  </form>
-  <p>注意：保存后先写入 CDPC 数据库。要让独立 AI 服务读取这些设置，还需在两个服务中配置同一个 AI_CONFIG_SYNC_TOKEN；未配置同步前，AI 服务仍会使用自身环境变量。</p>
-</article><article><h3>安全策略</h3><p>登录限流、会话有效期与账户角色由服务端校验。</p><span className="config-status">登录与注册限流已启用</span></article></div></section>
+    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>可动态生效的配置在此管理；需要服务启动前读取的 OAuth、SMTP 和基础设施密钥仍由部署 Secrets 管理。所有后台变更都会记录审计日志。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>OAuth 凭据与 SMTP 服务器请在部署环境配置。邮箱验证当前：<strong>{emailVerificationRequired ? '已开启' : '关闭（默认）'}</strong>。</p><form action={saveSystemConfiguration} className="application-form cdpc-stack"><label htmlFor="return-to-original-page">登录成功后的跳转规则</label><select id="return-to-original-page" name="returnToOriginalPage" defaultValue={returnToOriginalPage ? 'true' : 'false'}><option value="true">返回登录前页面（有原页面时）</option><option value="false">始终进入指定默认页面</option></select><label htmlFor="default-callback-url">默认登录成功页面</label><select id="default-callback-url" name="defaultCallbackUrl" defaultValue={defaultCallbackUrl}><option value="/account">账号界面（/account）</option><option value="/workbench">工作台（/workbench）</option><option value="/studio">编辑入口（/studio）</option><option value="/">首页（/）</option></select><p>选择“返回登录前页面”时，系统优先返回安全校验通过的站内原页面；没有原页面时使用下方默认页面。选择“始终进入指定默认页面”时忽略原页面地址。管理员密码登录仍进入管理员后台。</p><button className="pixel-button primary" type="submit">保存登录跳转设置</button></form><form action={setEmailVerificationRequired} className="actions"><button className="pixel-button" type="submit" name="required" value={emailVerificationRequired ? 'false' : 'true'}>{emailVerificationRequired ? '关闭邮箱验证' : '开启邮箱验证'}</button></form><span className="config-status">{emailVerificationRequired ? '新注册账户需点击验证邮件' : '注册无需验证码'}</span></article><article className="ai-config-card"><h3>AI 服务商与模型</h3><p>AI 供应商、模型清单和加密 API 凭据已迁移到独立配置页面，避免与平台总览混在一起。</p><p><Link className="pixel-button primary" href="/admin/ai">打开 AI 配置</Link></p></article><article><h3>安全策略</h3><p>登录限流、会话有效期与账户角色由服务端校验。</p><span className="config-status">登录与注册限流已启用</span></article></div></section>
   </main>
 }
