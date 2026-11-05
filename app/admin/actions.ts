@@ -412,12 +412,14 @@ export async function saveOAuthConfiguration(formData: FormData) {
   const disabledKey = 'AUTH_OAUTH_' + provider + '_DISABLED'
   if (enabled && !clientId) redirect(adminUrl('/auth?error=oauth_client_id_required'))
   const existingSecret = await prisma.appSetting.findUnique({ where: { key: secretKey }, select: { value: true } })
-  if (enabled && !clientSecret && !existingSecret?.value && !(provider === 'GITHUB' ? process.env.AUTH_GITHUB_SECRET : provider === 'GOOGLE' ? process.env.AUTH_GOOGLE_SECRET : provider === 'MICROSOFT' ? process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET : process.env.AUTH_APPLE_SECRET)) {
+  const clearClientSecret = formData.get('clearClientSecret') === 'on'
+  if (enabled && !clientSecret && (clearClientSecret || !existingSecret?.value) && !(provider === 'GITHUB' ? process.env.AUTH_GITHUB_SECRET : provider === 'GOOGLE' ? process.env.AUTH_GOOGLE_SECRET : provider === 'MICROSOFT' ? process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET : process.env.AUTH_APPLE_SECRET)) {
     redirect(adminUrl('/auth?error=oauth_secret_required'))
   }
   const values: Record<string,string> = { [disabledKey]: enabled ? 'false' : 'true' }
   if (clientId) values[idKey] = clientId
-  if (clientSecret) values[secretKey] = encryptSettingSecret(clientSecret)
+  if (clearClientSecret) values[secretKey] = ''
+  else if (clientSecret) values[secretKey] = encryptSettingSecret(clientSecret)
   if (provider === 'MICROSOFT') values.AUTH_OAUTH_MICROSOFT_TENANT_ID = tenantId || 'common'
   await saveModuleSettings(actor.id,'OAUTH_PROVIDER_CONFIGURATION_UPDATED','OAuth:' + provider,values)
   redirect(adminUrl('/auth?oauthSaved=' + provider.toLowerCase()))
