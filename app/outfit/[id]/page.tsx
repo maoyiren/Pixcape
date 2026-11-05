@@ -22,7 +22,8 @@ export default async function OutfitDetailPage({ params }: { params: Promise<{ i
   if (!outfit) notFound()
   const isOwner = Boolean(session?.user?.id && session.user.id === outfit.ownerId)
   if (!isOwner && outfit.publications.length === 0) notFound()
-  const canShowAsset = (visibility: string) => isOwner || visibility === 'PUBLIC' || visibility === 'UNLISTED'
+  // A published outfit intentionally shares its complete component set without changing each asset's global visibility.
+  const canShowAsset = (_visibility: string) => isOwner || outfit.publications.length > 0
   const skin = outfit.skinAsset && canShowAsset(outfit.skinAsset.visibility) ? outfit.skinAsset : null
   const items = outfit.items.filter(item => canShowAsset(item.asset.visibility))
 
