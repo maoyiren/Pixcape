@@ -15,6 +15,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
       'AUTH_OAUTH_GOOGLE_CLIENT_ID','AUTH_SECRET_OAUTH_GOOGLE_CLIENT_SECRET','AUTH_OAUTH_GOOGLE_DISABLED',
       'AUTH_OAUTH_MICROSOFT_CLIENT_ID','AUTH_SECRET_OAUTH_MICROSOFT_CLIENT_SECRET','AUTH_OAUTH_MICROSOFT_DISABLED',
       'AUTH_OAUTH_APPLE_CLIENT_ID','AUTH_SECRET_OAUTH_APPLE_CLIENT_SECRET','AUTH_OAUTH_APPLE_DISABLED',
+      'MAIL_SMTP_HOST','MAIL_FROM','MAIL_SECRET_SMTP_PASSWORD',
     ] } } }).catch(() => []),
   ])
   const safePath = (value: string | undefined) => value && value.startsWith('/') && !value.startsWith('//') && !value.includes(String.fromCharCode(92)) ? value : ''
@@ -31,7 +32,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
     { id: 'azure-ad', label: '使用 Microsoft 账号登录', enabled: hasProvider('MICROSOFT','AUTH_MICROSOFT_ENTRA_ID_ID','AUTH_MICROSOFT_ENTRA_ID_SECRET') },
     { id: 'github', label: '使用 GitHub 账号登录', enabled: hasProvider('GITHUB','AUTH_GITHUB_ID','AUTH_GITHUB_SECRET') },
     { id: 'apple', label: '使用 Apple 账号登录', enabled: hasProvider('APPLE','AUTH_APPLE_ID','AUTH_APPLE_SECRET') },
-    { id: 'email', label: '通过邮箱链接登录', enabled: Boolean(process.env.EMAIL_SERVER && process.env.EMAIL_FROM) || oauthRows.some((row) => row.key === 'MAIL_SECRET_SMTP_PASSWORD' && Boolean(row.value)) },
+    { id: 'email', label: '通过邮箱链接登录', enabled: Boolean((process.env.EMAIL_SERVER && process.env.EMAIL_FROM) || (oauth['MAIL_SMTP_HOST'] && oauth['MAIL_FROM'] && oauth['MAIL_SECRET_SMTP_PASSWORD'])) },
   ]
   const enabledMethods = methods.filter((method) => method.enabled)
   const adminEnabled = Boolean(process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD && process.env.ADMIN_EMAIL)
