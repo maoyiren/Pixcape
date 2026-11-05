@@ -39,7 +39,7 @@ const stored = await prisma.appSetting.findMany({
   select: { key: true, value: true },
 }).catch(() => [])
 const config = Object.fromEntries(stored.map((item) => [item.key, item.value]))
-const credential = (provider: string, envId?: string, envSecret?: string) => config['AUTH_OAUTH_' + provider + '_DISABLED'] === 'true' ? {} : ({
+const credential = (provider: string, envId?: string, envSecret?: string): { clientId?: string; clientSecret?: string } => config['AUTH_OAUTH_' + provider + '_DISABLED'] === 'true' ? {} : ({
   clientId: config['AUTH_OAUTH_' + provider + '_CLIENT_ID'] || (envId ? process.env[envId] : undefined),
   clientSecret: decryptSettingSecret(config['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET']) || (envSecret ? process.env[envSecret] : undefined),
 })
