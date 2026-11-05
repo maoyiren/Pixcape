@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { adminUrl } from '@/lib/admin-path'
 import { saveAIConfiguration } from '../actions'
 
 export const metadata = { title: 'AI 服务与模型配置' }
@@ -32,7 +33,7 @@ export default async function AdminAIPage({
   return <main className="inventory-shell">
     <header className="topbar">
       <div><p className="eyebrow">AI PLATFORM</p><h1>AI 服务与模型</h1></div>
-      <a className="pixel-button" href="/admin">返回总览</a>
+      <a className="pixel-button" href={adminUrl()}>返回总览</a>
     </header>
     {params?.aiConfigurationSaved === '1' ? <p role="status" className="config-status">AI 配置已加密保存。是否已同步到 AI API 服务，取决于服务间同步令牌是否正确配置。</p> : null}
     {params?.error === 'invalid_ai_provider' ? <p role="alert">AI 供应商选项无效，请重新选择。</p> : null}
