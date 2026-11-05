@@ -1,9 +1,9 @@
 import NextAuth from 'next-auth'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { authOptions } from '@/auth'
+import { getAuthOptions } from '@/auth'
 import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 
-const nextAuthHandler = NextAuth(authOptions)
+// Provider credentials are loaded from the encrypted settings store on every auth request.
 
 export default async function authHandler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET && !process.env.AUTH_SECRET) {
@@ -36,5 +36,5 @@ export default async function authHandler(req: NextApiRequest, res: NextApiRespo
     }
   }
 
-  await nextAuthHandler(req, res)
+  await NextAuth(await getAuthOptions())(req, res)
 }
