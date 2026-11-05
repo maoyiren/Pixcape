@@ -621,6 +621,8 @@ export default function DressUpStudio() {
       model,
       background,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
+      skinAssetId: /\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/.exec(skinUrl)?.[1] ?? null,
+      skinAssetUrl: /\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
       assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
@@ -649,9 +651,16 @@ export default function DressUpStudio() {
       const backupIds = new Set(backupAssets.map(item => item.id))
       const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string' && (catalog.some(item => item.id === id) || backupIds.has(id)))
       const nextSkinUrl = typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png;base64,') ? outfit.skinUrl : undefined
+      let nextSkinAssetUrl = typeof outfit.skinAssetUrl === 'string' && /\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/.test(outfit.skinAssetUrl) ? outfit.skinAssetUrl : undefined
+      let skinAssetUnavailable = false
       if (nextSkinUrl) {
         const image = await loadImage(nextSkinUrl)
         if (image.width !== 64 || image.height !== 64) throw new Error('备份中的皮肤不是 64 × 64 PNG')
+      } else if (nextSkinAssetUrl) {
+        try { await loadImage(nextSkinAssetUrl) } catch {
+          nextSkinAssetUrl = undefined
+          skinAssetUnavailable = true
+        }
       }
       const restored: LocalOutfit = {
         id: `outfit-${Date.now()}`,
@@ -660,6 +669,8 @@ export default function DressUpStudio() {
         model: outfit.model === 'alex' ? 'alex' : 'steve',
         background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
         skinUrl: nextSkinUrl,
+        skinAssetId: typeof outfit.skinAssetId === 'string' ? outfit.skinAssetId : null,
+        skinAssetUrl: nextSkinAssetUrl,
         skinName: typeof outfit.skinName === 'string' ? outfit.skinName.slice(0, 160) : '导入的皮肤',
         savedAt: new Date().toISOString(),
         assetItems: backupAssets as CatalogItem[],
@@ -677,11 +688,13 @@ export default function DressUpStudio() {
       }, {}))
       setModel(restored.model)
       setBackground(restored.background)
-      setSkinUrl(restored.skinUrl || BASE_SKIN)
-      setSkinName(restored.skinUrl ? restored.skinName : 'Steve 默认皮肤')
-      setSaveNotice(restored.skinUrl
+      setSkinUrl(restored.skinAssetUrl || restored.skinUrl || BASE_SKIN)
+      setSkinName(restored.skinAssetUrl || restored.skinUrl ? restored.skinName : 'Steve 默认皮肤')
+      setSaveNotice(restored.skinAssetUrl || restored.skinUrl
         ? `已导入“${restored.name}”，并保存到此设备`
-        : `已导入“${restored.name}”。备份未包含可迁移的皮肤 PNG，已使用默认皮肤；如需保留自定义皮肤，请先导入 64 × 64 PNG 后重新备份。`)
+        : skinAssetUnavailable
+          ? `已导入“${restored.name}”，但备份引用的云端皮肤当前不可访问，已使用默认皮肤。`
+          : `已导入“${restored.name}”。备份未包含可迁移的皮肤 PNG，已使用默认皮肤；如需保留自定义皮肤，请先导入 64 × 64 PNG 后重新备份。`)
     } catch (error) {
       setSaveNotice(error instanceof Error ? `导入失败：${error.message}` : '导入失败，请选择有效的 CDPC JSON 备份')
     }
