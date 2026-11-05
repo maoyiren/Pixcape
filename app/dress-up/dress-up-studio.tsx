@@ -412,11 +412,15 @@ export default function DressUpStudio() {
       }
 
       let skinAssetId: string | null = null
-      const existingSkin = skinUrl.match(/\/api\/assets\/([^/]+)\/file(?:\?|$)/)
-      if (existingSkin) skinAssetId = existingSkin[1]
-      else if (skinUrl.startsWith('data:image/png')) {
+      let skinAssetUrl: string | undefined
+      const existingSkin = /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)
+      if (existingSkin) {
+        skinAssetId = existingSkin[1]
+        skinAssetUrl = skinUrl
+      } else if (skinUrl.startsWith('data:image/png')) {
         const skin = await uploadAssetFromUrl(skinUrl, 'SKIN', skinName || '换装基础皮肤')
         skinAssetId = skin.id
+        skinAssetUrl = skin.fileUrl
       }
 
       const input: OutfitInput = {
@@ -483,8 +487,8 @@ export default function DressUpStudio() {
       model,
       background,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
-      skinAssetId: skinUrl.match(/\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/)?.[1] ?? null,
-      skinAssetUrl: skinUrl.match(/\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/) ? skinUrl : undefined,
+      skinAssetId: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)?.[1] ?? null,
+      skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
       assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
