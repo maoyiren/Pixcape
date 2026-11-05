@@ -286,7 +286,7 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披风')
 })
 
-test('authenticated avatar menu supports touch, outside click and Escape focus return', async ({ page }) => {
+test('authenticated avatar menu supports hover, click, outside dismissal and Escape focus return', async ({ page }) => {
   const email = `avatar-${Date.now()}@example.com`
   await page.goto('/register')
   const registration = await page.request.post('http://127.0.0.1:3000/api/register', {
