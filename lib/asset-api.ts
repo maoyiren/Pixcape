@@ -57,13 +57,13 @@ export async function saveAssetFile(input: {
   }
 
   const id = randomUUID()
-  const storageKey = `assets/${id}.png`
   const kind: AssetKind = input.category === 'SKIN'
     ? 'SKIN_TEXTURE'
     : ['SHAWL', 'COAT', 'CAPE', 'PANTS'].includes(input.category)
       ? 'CLOTHING_TEXTURE'
       : 'ACCESSORY_TEXTURE'
   const s3Storage = await getS3AssetStorage()
+  const storageKey = `${s3Storage ? 's3/' : ''}assets/${id}.png`
   const filePath = s3Storage ? storageKey : storagePath(storageKey)
   if (s3Storage) {
     await s3Storage.put(storageKey, bytes, 'image/png')
@@ -111,7 +111,9 @@ export async function readAssetFile(assetId: string, actorId: string) {
     select: { storageKey: true, mimeType: true, byteSize: true, visibility: true },
   })
   if (!asset) return null
-  const s3Storage = await getS3AssetStorage()
+  const isS3Asset = asset.storageKey.startsWith('s3/')
+  const s3Storage = isS3Asset ? await getS3AssetStorage() : null
+  if (isS3Asset && !s3Storage) throw new Error('S3 storage is not configured for this asset')
   const bytes = s3Storage ? await s3Storage.get(asset.storageKey) : await readFile(storagePath(asset.storageKey))
   if (bytes.length !== asset.byteSize) throw new Error('Stored asset integrity check failed')
   return { bytes, mimeType: asset.mimeType, visibility: asset.visibility }
@@ -124,7 +126,9 @@ export async function deleteAssetForActor(assetId: string, actorId: string) {
   })
   if (!asset) return false
 
-  const s3Storage = await getS3AssetStorage()
+  const isS3Asset = asset.storageKey.startsWith('s3/')
+  const s3Storage = isS3Asset ? await getS3AssetStorage() : null
+  if (isS3Asset && !s3Storage) throw new Error('S3 storage is not configured for this asset')
   const deleteRecord = async () => {
     const deleted = await prisma.asset.deleteMany({ where: { id: assetId, ownerId: actorId } })
     return deleted.count
