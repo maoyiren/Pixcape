@@ -12,7 +12,13 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
 
   const [assets, publications] = await Promise.all([
     prisma.asset.findMany({
-      where: { ownerId: found.user.id, visibility: 'PUBLIC' },
+      where: {
+        ownerId: found.user.id,
+        OR: [
+          { visibility: 'PUBLIC' },
+          { publications: { some: { status: 'PUBLISHED', publishedAt: { not: null } } } },
+        ],
+      },
       orderBy: { updatedAt: 'desc' },
       take: 12,
       select: { id: true, category: true, attribution: true, updatedAt: true },
