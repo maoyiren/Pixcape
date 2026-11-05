@@ -313,7 +313,13 @@ test('authenticated avatar menu supports touch, outside click and Escape focus r
 
   await trigger.click()
   await expect(page.getByRole('link', { name: /账户资料/ })).toBeVisible()
-  await page.locator('body').click({ position: { x: 5, y: 5 } })
+  await page.evaluate(() => {
+    const target = document.createElement('div')
+    target.id = 'account-menu-outside-test-target'
+    target.style.cssText = 'position:fixed;right:0;bottom:0;width:32px;height:32px;z-index:9999'
+    document.body.append(target)
+  })
+  await page.locator('#account-menu-outside-test-target').click()
   await expect(page.getByRole('link', { name: /账户资料/ })).toHaveCount(0)
 
   await trigger.click()
