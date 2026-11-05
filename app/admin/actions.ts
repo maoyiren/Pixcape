@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { getAuthOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { createCipheriv, createHash, randomBytes } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
 import { adminUrl } from '@/lib/admin-path'
 
 async function requireActiveAdmin() {
@@ -222,7 +222,7 @@ export async function setEmailVerificationRequired(formData: FormData) {
     select: { key: true, value: true },
   })
   const smtp = Object.fromEntries(smtpSettings.map((item) => [item.key,item.value]))
-  const smtpReady = Boolean((smtp.MAIL_SMTP_HOST && smtp.MAIL_FROM && smtp.MAIL_SECRET_SMTP_PASSWORD) || (process.env.EMAIL_SERVER && process.env.EMAIL_FROM))
+  const smtpReady = Boolean((smtp.MAIL_SMTP_HOST && smtp.MAIL_FROM && decryptSettingSecret(smtp.MAIL_SECRET_SMTP_PASSWORD)) || (process.env.EMAIL_SERVER && process.env.EMAIL_FROM))
   if (value === 'true' && (!smtpReady || !process.env.NEXTAUTH_URL)) {
     redirect(adminUrl('/auth?error=email_verification_smtp_missing'))
   }
@@ -254,6 +254,19 @@ function encryptSettingSecret(value: string) {
   const cipher = createCipheriv('aes-256-gcm', key, iv)
   const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()])
   return [iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), encrypted.toString('base64url')].join('.')
+}
+
+function decryptSettingSecret(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  try {
+    const [ivText, tagText, encryptedText] = value.split('.')
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+    if (!ivText || !tagText || !encryptedText || !secret) return undefined
+    const key = createHash('sha256').update(secret).digest()
+    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivText, 'base64url'))
+    decipher.setAuthTag(Buffer.from(tagText, 'base64url'))
+    return Buffer.concat([decipher.update(Buffer.from(encryptedText, 'base64url')), decipher.final()]).toString('utf8')
+  } catch { return undefined }
 }
 
 export async function saveAIConfiguration(formData: FormData) {
@@ -413,7 +426,7 @@ export async function saveOAuthConfiguration(formData: FormData) {
   if (enabled && !clientId) redirect(adminUrl('/auth?error=oauth_client_id_required'))
   const existingSecret = await prisma.appSetting.findUnique({ where: { key: secretKey }, select: { value: true } })
   const clearClientSecret = formData.get('clearClientSecret') === 'on'
-  if (enabled && !clientSecret && (clearClientSecret || !existingSecret?.value) && !(provider === 'GITHUB' ? process.env.AUTH_GITHUB_SECRET : provider === 'GOOGLE' ? process.env.AUTH_GOOGLE_SECRET : provider === 'MICROSOFT' ? process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET : process.env.AUTH_APPLE_SECRET)) {
+  if (enabled && !clientSecret && (clearClientSecret || !decryptSettingSecret(existingSecret?.value)) && !(provider === 'GITHUB' ? process.env.AUTH_GITHUB_SECRET : provider === 'GOOGLE' ? process.env.AUTH_GOOGLE_SECRET : provider === 'MICROSOFT' ? process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET : process.env.AUTH_APPLE_SECRET)) {
     redirect(adminUrl('/auth?error=oauth_secret_required'))
   }
   const values: Record<string,string> = { [disabledKey]: enabled ? 'false' : 'true' }
