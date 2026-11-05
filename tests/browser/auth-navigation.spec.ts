@@ -303,9 +303,10 @@ test('authenticated avatar menu supports hover, click, outside dismissal and Esc
   await expect(trigger).toBeVisible({ timeout: 15_000 })
   await trigger.click()
   await expect(page.getByText('账户正常')).toBeVisible()
-  await expect(page.getByRole('link', { name: /账户资料/ })).toHaveAttribute('href', '/account')
-  await expect(page.getByRole('link', { name: /我的衣橱/ })).toHaveAttribute('href', '/wardrobe')
-  await expect(page.getByRole('link', { name: /创作者中心/ })).toHaveAttribute('href', '/creator')
+  const accountLinks = page.locator('.site-account-links')
+  await expect(accountLinks.getByRole('link', { name: /账户资料/ })).toHaveAttribute('href', '/account')
+  await expect(accountLinks.getByRole('link', { name: /我的衣橱/ })).toHaveAttribute('href', '/wardrobe')
+  await expect(accountLinks.getByRole('link', { name: /创作者中心/ })).toHaveAttribute('href', '/creator')
 
   await page.keyboard.press('Escape')
   await expect(page.getByRole('link', { name: /账户资料/ })).toHaveCount(0)
