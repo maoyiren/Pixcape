@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { adminUrl } from '@/lib/admin-path'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
 import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus, setEmailVerificationRequired, saveSystemConfiguration } from './actions'
@@ -137,7 +138,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
   return <main className="inventory-shell">
     <header className="topbar"><div><p className="eyebrow">SERVER OPERATIONS</p><h1>管理员后台</h1></div><Link className="pixel-button" href="/">返回</Link></header>
     <nav className="admin-subnav" aria-label="管理后台分区">
-      <a href="#overview">总览</a><a href="#health">系统健康</a><a href="#creators">创作者审核</a><a href="/admin/user">用户管理</a><a href="/admin/audit">操作审计</a><a href="/admin/stat">平台统计</a><a href="#configuration">配置中心</a>
+      <a href="#overview">总览</a><a href="#health">系统健康</a><a href="#creators">创作者审核</a><a href={adminUrl('/user')}>用户管理</a><a href={adminUrl('/audit')}>操作审计</a><a href={adminUrl('/stat')}>平台统计</a><a href="#configuration">配置中心</a>
     </nav>
     {params?.aiConfigurationSaved === '1' ? <p role="status" className="config-status">AI 配置已保存到数据库。服务间同步已启用时，AI API 会在后续请求中自动读取新配置。</p> : null}
     {params?.systemConfigurationSaved === '1' ? <p role="status" className="config-status">默认登录页面已保存。</p> : null}
@@ -164,7 +165,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
         <div className="health-card-heading"><h3>{check.name}</h3><span className={`health-dot ${check.status}`}>{check.status === 'healthy' ? '正常' : check.status === 'warning' ? '关注' : '异常'}</span></div>
         <p>{check.detail}</p>
       </article>)}</div>
-      <div className="health-footer"><span>管理员：{admin.name ?? admin.email ?? admin.id}</span><Link className="pixel-button primary" href="/admin">刷新检查</Link></div>
+      <div className="health-footer"><span>管理员：{admin.name ?? admin.email ?? admin.id}</span><Link className="pixel-button primary" href={adminUrl()}>刷新检查</Link></div>
       <p className="health-disclaimer">健康状态基于应用层轻量探测，不代表完整压力测试，也不代表第三方 API 密钥已通过实际调用验证。建议同时配置外部存活探针，以便在应用无法加载时仍能监测服务状态。</p>
     </section>
     <section className="hero inventory-panel" id="creators"><h2>创作者申请审核</h2><p>待审核申请：{pending.length}（最多显示 100 条）。每次审核都会记录审计日志。</p>
@@ -174,7 +175,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
       </article>)}</div>}
     </section>
     <section className="hero inventory-panel" id="users"><h2>用户管理</h2><p>按姓名、邮箱或用户 ID 搜索，并按角色和状态筛选。每次最多显示 50 条结果。</p>
-      <form action="/admin" method="get" className="admin-filters">
+      <form action={adminUrl()} method="get" className="admin-filters">
         <label>搜索用户<input type="search" name="q" defaultValue={q} placeholder="姓名、邮箱或用户 ID" maxLength={100}/></label>
         <label>角色<select name="role" defaultValue={role}><option value="">全部角色</option><option value="USER">普通用户</option><option value="CREATOR">创作者</option><option value="ADMIN">管理员</option></select></label>
         <label>状态<select name="status" defaultValue={status}><option value="">全部状态</option><option value="ACTIVE">正常</option><option value="SUSPENDED">已封禁</option><option value="DELETED">已删除</option></select></label>
@@ -191,6 +192,6 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     <section className="hero inventory-panel" id="audit"><h2>操作审计日志</h2><p>最近 30 条管理操作，用于追踪账号状态、角色调整和创作者审核。敏感凭据不会写入日志。</p>
       {auditLogs.length === 0 ? <p>暂无日志，或日志暂时无法读取。</p> : <div className="application-list">{auditLogs.map((entry) => <article className="application-card" key={entry.id}><h3>{entry.action}</h3><p>操作者：{entry.actor.name ?? entry.actor.email ?? '管理员账号'}</p><p>目标：{entry.targetType} · {entry.targetId}</p><p>时间：{entry.createdAt.toISOString().replace('T', ' ').slice(0, 19)} UTC</p><p>详情：{entry.details ? JSON.stringify(entry.details) : '无附加详情'}</p></article>)}</div>}
     </section>
-    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>可动态生效的配置在此管理；需要服务启动前读取的 OAuth、SMTP 和基础设施密钥仍由部署 Secrets 管理。所有后台变更都会记录审计日志。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>OAuth 凭据与 SMTP 服务器请在部署环境配置。邮箱验证当前：<strong>{emailVerificationRequired ? '已开启' : '关闭（默认）'}</strong>。</p><form action={saveSystemConfiguration} className="application-form cdpc-stack"><label htmlFor="return-to-original-page">登录成功后的跳转规则</label><select id="return-to-original-page" name="returnToOriginalPage" defaultValue={returnToOriginalPage ? 'true' : 'false'}><option value="true">返回登录前页面（有原页面时）</option><option value="false">始终进入指定默认页面</option></select><label htmlFor="default-callback-url">默认登录成功页面</label><select id="default-callback-url" name="defaultCallbackUrl" defaultValue={defaultCallbackUrl}><option value="/account">账号界面（/account）</option><option value="/workbench">工作台（/workbench）</option><option value="/studio">编辑入口（/studio）</option><option value="/">首页（/）</option></select><p>选择“返回登录前页面”时，系统优先返回安全校验通过的站内原页面；没有原页面时使用下方默认页面。选择“始终进入指定默认页面”时忽略原页面地址。管理员密码登录仍进入管理员后台。</p><button className="pixel-button primary" type="submit">保存登录跳转设置</button></form><form action={setEmailVerificationRequired} className="actions"><button className="pixel-button" type="submit" name="required" value={emailVerificationRequired ? 'false' : 'true'}>{emailVerificationRequired ? '关闭邮箱验证' : '开启邮箱验证'}</button></form><span className="config-status">{emailVerificationRequired ? '新注册账户需点击验证邮件' : '注册无需验证码'}</span></article><article className="ai-config-card"><h3>AI 服务商与模型</h3><p>AI 供应商、模型清单和加密 API 凭据已迁移到独立配置页面，避免与平台总览混在一起。</p><p><Link className="pixel-button primary" href="/admin/ai">打开 AI 配置</Link></p></article><article><h3>安全策略</h3><p>登录限流、会话有效期与账户角色由服务端校验。</p><span className="config-status">登录与注册限流已启用</span></article></div></section>
+    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>可动态生效的配置在此管理；需要服务启动前读取的 OAuth、SMTP 和基础设施密钥仍由部署 Secrets 管理。所有后台变更都会记录审计日志。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>OAuth 凭据与 SMTP 服务器请在部署环境配置。邮箱验证当前：<strong>{emailVerificationRequired ? '已开启' : '关闭（默认）'}</strong>。</p><form action={saveSystemConfiguration} className="application-form cdpc-stack"><label htmlFor="return-to-original-page">登录成功后的跳转规则</label><select id="return-to-original-page" name="returnToOriginalPage" defaultValue={returnToOriginalPage ? 'true' : 'false'}><option value="true">返回登录前页面（有原页面时）</option><option value="false">始终进入指定默认页面</option></select><label htmlFor="default-callback-url">默认登录成功页面</label><select id="default-callback-url" name="defaultCallbackUrl" defaultValue={defaultCallbackUrl}><option value="/account">账号界面（/account）</option><option value="/workbench">工作台（/workbench）</option><option value="/studio">编辑入口（/studio）</option><option value="/">首页（/）</option></select><p>选择“返回登录前页面”时，系统优先返回安全校验通过的站内原页面；没有原页面时使用下方默认页面。选择“始终进入指定默认页面”时忽略原页面地址。管理员密码登录仍进入管理员后台。</p><button className="pixel-button primary" type="submit">保存登录跳转设置</button></form><form action={setEmailVerificationRequired} className="actions"><button className="pixel-button" type="submit" name="required" value={emailVerificationRequired ? 'false' : 'true'}>{emailVerificationRequired ? '关闭邮箱验证' : '开启邮箱验证'}</button></form><span className="config-status">{emailVerificationRequired ? '新注册账户需点击验证邮件' : '注册无需验证码'}</span></article><article className="ai-config-card"><h3>AI 服务商与模型</h3><p>AI 供应商、模型清单和加密 API 凭据已迁移到独立配置页面，避免与平台总览混在一起。</p><p><Link className="pixel-button primary" href={adminUrl('/ai')}>打开 AI 配置</Link></p></article><article><h3>安全策略</h3><p>登录限流、会话有效期与账户角色由服务端校验。</p><span className="config-status">登录与注册限流已启用</span></article></div></section>
   </main>
 }
