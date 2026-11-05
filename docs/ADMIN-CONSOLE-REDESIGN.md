@@ -31,12 +31,12 @@
 - 配置保存后必须验证回调域名、授权端点和必要字段；未通过验证时不能对用户开放该登录方式。
 - OAuth 凭据不应写入公开配置、客户端 bundle、URL、日志或审计详情。
 
-重要实现约束：当前 `auth.ts` 在模块加载时仅根据环境变量注册 NextAuth providers，后台现有说明也明确 OAuth 凭据由部署 Secrets 管理。因此，单纯新增表单并保存到 AppSetting 并不会让登录方式动态生效。正式实现必须先把认证配置读取/解密与 NextAuth handler 的 provider 初始化设计成一致的服务端流程，并覆盖 `getServerSession`、登录页提供商列表、回调和多实例缓存刷新；不能做一个“看起来能保存、实际上登录不生效”的假配置页。首选保留环境变量作为紧急回退，并把数据库配置作为受控的动态来源。
+已实现的动态配置流程：NextAuth handler 与服务端 session 读取统一调用 `getAuthOptions()`；该函数在每次请求时从数据库读取 Provider 设置并解密 Client Secret，再构建 GitHub、Google、Microsoft 和 Apple Provider。登录页按同一组设置展示可用登录方式。环境变量保留为数据库配置缺省时的回退；数据库显式禁用项优先级最高。配置更新即时影响后续请求，不依赖单实例内存缓存。
 
 ## 3. 后台地址与访问安全
 
 - 公开导航、头像菜单、页脚、站点 sitemap 和普通页面都不显示后台地址；已从头像菜单移除“管理后台”入口。
-- 将内部路由从 `/admin` 迁移到部署时配置的专用路径（例如通过 `ADMIN_ROUTE` 设置），旧路径返回 404，不做公开跳转或提示新地址。
+- 将内部路由从 `/admin` 迁移到部署时配置的专用路径（通过 `CDPC_ADMIN_PATH` 设置），旧路径返回 404，不做公开跳转或提示新地址。
 - 路径隐藏只作为降低扫描噪声的措施，绝不能替代权限：每个页面、Server Action、Route Handler 都必须重新验证数据库中的 ACTIVE + ADMIN 状态。
 - 后台禁用搜索引擎索引，设置 noindex；避免在页面源码、公开 API、客户端日志中泄露内部路径。
 - 管理员登录增加独立限流；后续支持 TOTP/Passkey 和可信设备；敏感配置变更要求二次确认。
@@ -59,15 +59,16 @@
 - 新增 `app/admin/admin.css`：桌面侧栏布局、移动端横向菜单、窄屏适配、表单按钮按内容宽度显示、后台页面 noindex。
 - 现有总览、用户、审计和统计页面均继续保留各自的 `requireRole('ADMIN')` 校验；后台 layout 额外进行一次入口校验。
 - 保留原有 AI 配置和用户管理业务逻辑，没有用演示表单替换实际数据库操作。
-- 新增 `/admin/auth` 登录与身份页面：检测 OAuth / 邮箱 / 应急管理员环境配置，复用登录跳转和邮箱验证的真实 Server Actions；页面明确提示 OAuth 动态配置尚未打通，不会伪装成可保存密钥。
-- 新增 `/admin/health` 独立健康检查页，执行数据库、认证密钥、NEXTAUTH_URL 与 AI API 轻量探测。
+- 新增登录与身份配置模块：支持 GitHub、Google、Microsoft、Apple 的数据库 Client ID / 加密 Client Secret、启用/禁用与 Microsoft Tenant 设置；Provider 在 NextAuth handler 与 session 中动态加载。
+- 新增系统健康独立页，执行数据库、认证密钥、NEXTAUTH_URL 与 AI API 轻量探测。
+- 新增邮件、存储、平台集成、安全独立页面；SMTP 配置接入 NextAuth Email Provider，登录限流阈值由数据库设置动态读取。
 - 后台 layout 导航已加入登录与身份、系统健康独立入口；ReactNode 类型改为显式类型导入。
 
 ### 尚未完成 / 不得视为已上线
 
-- 总览仍含旧配置表单；AI 配置表单仍在旧总览中，AI、邮件、存储、平台集成等配置页尚未完全拆分。登录与身份页当前只检测 OAuth 环境变量，不支持数据库动态编辑 OAuth Secret。
-- OAuth providers 仍在 `auth.ts` 模块加载时由环境变量注册；数据库动态 OAuth 配置尚未实现，不能声称后台保存即可启用第三方登录。
-- `/admin` 尚未迁移为部署可配置的隐藏路径；旧路径关闭和全站内部链接迁移未完成。
+- 存储和平台集成页面目前完成独立配置、加密保存与审计，但尚未接入实际对象存储驱动和 Webhook 投递器；不能把保存状态视为服务已启用。
+- OAuth Provider 配置已动态接入 NextAuth 初始化、登录页可用 Provider 列表与 callback handler；仍需真实 OAuth 应用凭据验证完整授权往返。
+- 自定义后台路径和旧 `/admin` 的 404 由 `proxy.ts` 实现；部署时必须设置并持久化 `CDPC_ADMIN_PATH`，并完成生产反向代理与浏览器验证。
 - 用户详情、内容审核、创作者管理、AI 服务、邮件服务、平台集成、存储/CDN、安全等完整页面和细粒度权限仍待实现。
 - 尚未完成本地构建、lint、E2E、移动端浏览器及生产环境验证。
 
@@ -89,3 +90,19 @@
 - [ ] 邮件、存储、平台集成、安全策略等模块仍需继续拆分。
 
 本次新增代码已推送到后台重构 PR 分支，须以 GitHub Actions 完成结果为准；尚未合并或部署生产。
+
+
+## 2026-11-05 第二阶段实施补充
+
+- [x] 增加 `CDPC_ADMIN_PATH` 与 `lib/admin-path.ts`，默认路径为 `/control-room`，校验路径段格式并拒绝保留路由名。
+- [x] 增加 Next.js `proxy.ts`：自定义路径重写到内部后台路由；公开访问 `/admin` 及子路径返回 404。
+- [x] 侧栏、后台页面链接、筛选表单和后台 Server Action 重定向统一使用动态路径 helper。
+- [x] 总览移除登录、邮件、安全等旧配置表单，改为模块入口卡片。
+- [x] OAuth GitHub、Google、Microsoft、Apple 配置可保存 Client ID 与 AES-256-GCM 加密 Secret；NextAuth 请求时动态读取，支持禁用配置覆盖环境变量回退。
+- [x] 登录页根据数据库 OAuth 设置与环境变量回退动态展示登录按钮。
+- [x] SMTP 设置独立保存；NextAuth Email Provider 在请求时读取数据库 SMTP 参数。
+- [x] 安全模块可设置登录限流次数和窗口，限流服务从数据库动态读取。
+- [x] 存储与平台集成独立页面已建立，凭据加密、审计和字段校验已接入。
+- [ ] 存储驱动尚未读取 S3 设置；Webhook 投递、重试与签名尚未接入，页面明确标记为未启用。
+- [ ] OAuth 仍需用真实开发者应用验证 GitHub / Google / Microsoft / Apple 授权回调、账号关联和错误处理。
+- [ ] 尚未完成本地构建、lint、完整浏览器回归、移动端与生产环境验证。
