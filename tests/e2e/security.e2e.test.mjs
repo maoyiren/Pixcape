@@ -209,7 +209,8 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
 
     const ownerFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
     assert.equal(ownerFile.status, 200, 'owner can read uploaded PNG')
-    assert.equal(Number(ownerFile.headers.get('content-length')), createTinyPng().length)
+    const ownerFileBytes = Buffer.from(await ownerFile.arrayBuffer())
+    assert.equal(ownerFileBytes.length, createTinyPng().length, 'owner receives the complete PNG bytes')
 
     const otherAssets = await fetch(new URL('/api/assets', base), { headers: { cookie: otherSession } })
     assert.equal(otherAssets.status, 200)
