@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { adminUrl } from '@/lib/admin-path'
 import { requireRole } from '@/lib/require-role'
 import { prisma } from '@/lib/prisma'
-import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus, setEmailVerificationRequired, saveSystemConfiguration } from './actions'
+import { reviewCreatorApplication, setAdminAccess, setUserRole, setUserStatus } from './actions'
 
 type HealthCheck = {
   name: string
@@ -87,15 +87,6 @@ async function getHealthChecks(): Promise<HealthCheck[]> {
 export default async function AdminPage({ searchParams }: { searchParams?: Promise<{ q?: string; role?: string; status?: string; aiConfigurationSaved?: string; systemConfigurationSaved?: string; error?: string }> }) {
   const admin = await requireRole('ADMIN')
   const params = await searchParams
-  const [defaultCallbackSetting, returnToOriginalSetting] = await Promise.all([
-    prisma.appSetting.findUnique({ where: { key: 'AUTH_DEFAULT_CALLBACK_URL' } }).catch(() => null),
-    prisma.appSetting.findUnique({ where: { key: 'AUTH_RETURN_TO_ORIGINAL_PAGE' } }).catch(() => null),
-  ])
-  const defaultCallbackUrl = defaultCallbackSetting?.value || '/workbench'
-  const returnToOriginalPage = returnToOriginalSetting?.value !== 'false'
-  const emailVerificationSetting = await prisma.appSetting.findUnique({ where: { key: 'EMAIL_VERIFICATION_REQUIRED' } }).catch(() => null)
-  const emailVerificationRequired = emailVerificationSetting?.value === 'true'
-
   const q = (params?.q ?? '').trim().slice(0, 100)
   const role = ['USER', 'CREATOR', 'ADMIN'].includes(params?.role ?? '') ? params?.role : ''
   const status = ['ACTIVE', 'SUSPENDED', 'DELETED'].includes(params?.status ?? '') ? params?.status : ''
@@ -179,7 +170,7 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
         <label>搜索用户<input type="search" name="q" defaultValue={q} placeholder="姓名、邮箱或用户 ID" maxLength={100}/></label>
         <label>角色<select name="role" defaultValue={role}><option value="">全部角色</option><option value="USER">普通用户</option><option value="CREATOR">创作者</option><option value="ADMIN">管理员</option></select></label>
         <label>状态<select name="status" defaultValue={status}><option value="">全部状态</option><option value="ACTIVE">正常</option><option value="SUSPENDED">已封禁</option><option value="DELETED">已删除</option></select></label>
-        <div className="admin-filter-actions"><button className="pixel-button primary" type="submit">筛选</button><Link className="pixel-button" href="/admin#users">重置</Link></div>
+        <div className="admin-filter-actions"><button className="pixel-button primary" type="submit">筛选</button><Link className="pixel-button" href={adminUrl('/#users')}>重置</Link></div>
       </form>
       <p>当前结果：{users.length} 条{q || role || status ? '（已应用筛选）' : ''}。为避免误操作，管理员账户不能从此处封禁，也不能封禁当前登录账号。</p>
       {!adminData ? <p>用户列表暂不可用。</p> : <div className="application-list">{users.map((user) => <article className="application-card" key={user.id}>
@@ -192,6 +183,17 @@ export default async function AdminPage({ searchParams }: { searchParams?: Promi
     <section className="hero inventory-panel" id="audit"><h2>操作审计日志</h2><p>最近 30 条管理操作，用于追踪账号状态、角色调整和创作者审核。敏感凭据不会写入日志。</p>
       {auditLogs.length === 0 ? <p>暂无日志，或日志暂时无法读取。</p> : <div className="application-list">{auditLogs.map((entry) => <article className="application-card" key={entry.id}><h3>{entry.action}</h3><p>操作者：{entry.actor.name ?? entry.actor.email ?? '管理员账号'}</p><p>目标：{entry.targetType} · {entry.targetId}</p><p>时间：{entry.createdAt.toISOString().replace('T', ' ').slice(0, 19)} UTC</p><p>详情：{entry.details ? JSON.stringify(entry.details) : '无附加详情'}</p></article>)}</div>}
     </section>
-    <section className="hero inventory-panel" id="configuration"><h2>系统配置中心</h2><p>可动态生效的配置在此管理；需要服务启动前读取的 OAuth、SMTP 和基础设施密钥仍由部署 Secrets 管理。所有后台变更都会记录审计日志。</p><div className="admin-config-grid"><article><h3>登录与邮箱</h3><p>OAuth 凭据与 SMTP 服务器请在部署环境配置。邮箱验证当前：<strong>{emailVerificationRequired ? '已开启' : '关闭（默认）'}</strong>。</p><form action={saveSystemConfiguration} className="application-form cdpc-stack"><label htmlFor="return-to-original-page">登录成功后的跳转规则</label><select id="return-to-original-page" name="returnToOriginalPage" defaultValue={returnToOriginalPage ? 'true' : 'false'}><option value="true">返回登录前页面（有原页面时）</option><option value="false">始终进入指定默认页面</option></select><label htmlFor="default-callback-url">默认登录成功页面</label><select id="default-callback-url" name="defaultCallbackUrl" defaultValue={defaultCallbackUrl}><option value="/account">账号界面（/account）</option><option value="/workbench">工作台（/workbench）</option><option value="/studio">编辑入口（/studio）</option><option value="/">首页（/）</option></select><p>选择“返回登录前页面”时，系统优先返回安全校验通过的站内原页面；没有原页面时使用下方默认页面。选择“始终进入指定默认页面”时忽略原页面地址。管理员密码登录仍进入管理员后台。</p><button className="pixel-button primary" type="submit">保存登录跳转设置</button></form><form action={setEmailVerificationRequired} className="actions"><button className="pixel-button" type="submit" name="required" value={emailVerificationRequired ? 'false' : 'true'}>{emailVerificationRequired ? '关闭邮箱验证' : '开启邮箱验证'}</button></form><span className="config-status">{emailVerificationRequired ? '新注册账户需点击验证邮件' : '注册无需验证码'}</span></article><article className="ai-config-card"><h3>AI 服务商与模型</h3><p>AI 供应商、模型清单和加密 API 凭据已迁移到独立配置页面，避免与平台总览混在一起。</p><p><Link className="pixel-button primary" href={adminUrl('/ai')}>打开 AI 配置</Link></p></article><article><h3>安全策略</h3><p>登录限流、会话有效期与账户角色由服务端校验。</p><span className="config-status">登录与注册限流已启用</span></article></div></section>
+    <section className="hero inventory-panel" id="configuration">
+      <h2>系统配置模块</h2>
+      <p>各项配置已拆分为独立页面。总览仅保留入口和运行状态，凭据不会在总览中展示。</p>
+      <div className="admin-config-grid">
+        <article><h3>登录与身份</h3><p>Google、GitHub、Microsoft、Apple OAuth 与邮箱验证。</p><Link className="pixel-button primary" href={adminUrl('/auth')}>打开登录配置</Link></article>
+        <article><h3>AI 服务与模型</h3><p>模型供应商、默认模型和加密 API 凭据。</p><Link className="pixel-button primary" href={adminUrl('/ai')}>打开 AI 配置</Link></article>
+        <article><h3>邮件服务</h3><p>SMTP 主机、端口、发件人和邮件凭据。</p><Link className="pixel-button" href={adminUrl('/mail')}>打开邮件配置</Link></article>
+        <article><h3>文件存储</h3><p>S3 兼容对象存储与公开资源域名。</p><Link className="pixel-button" href={adminUrl('/storage')}>打开存储配置</Link></article>
+        <article><h3>平台集成</h3><p>外部平台 Webhook 和集成凭据。</p><Link className="pixel-button" href={adminUrl('/integrations')}>打开集成配置</Link></article>
+        <article><h3>安全策略</h3><p>登录频率限制、会话和权限防护。</p><Link className="pixel-button" href={adminUrl('/security')}>打开安全配置</Link></article>
+      </div>
+    </section>
   </main>
 }
