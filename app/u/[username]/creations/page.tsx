@@ -1,4 +1,4 @@
-import PublishButton from '../creations/publish-button'
+import PublishButton from './publish-button'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { requireUserSpaceOwner } from '@/lib/user-space'
