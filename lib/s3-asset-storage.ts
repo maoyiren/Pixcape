@@ -21,13 +21,13 @@ const sha256 = (value: Buffer | string) => createHash('sha256').update(value).di
 const hmac = (key: Buffer | string, value: string) => createHmac('sha256', key).update(value).digest()
 
 function objectUrl(config: S3Config, key: string) {
-  if (!/^assets\/[a-f0-9-]+\.png$/i.test(key)) throw new Error('Invalid asset storage key')
+  if (!/^(?:s3\/)?assets\/[a-f0-9-]+\.png$/i.test(key)) throw new Error('Invalid asset storage key')
   const endpoint = new URL(config.endpoint)
   if (endpoint.protocol !== 'https:' || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
     throw new Error('S3 endpoint must be a clean HTTPS URL')
   }
   const basePath = endpoint.pathname.replace(/\/$/, '')
-  const objectPath = key.replace(/^s3\\//, '').split('/').map(encodeURIComponent).join('/')
+  const objectPath = key.replace(/^s3\//, '').split('/').map(encodeURIComponent).join('/')
   endpoint.pathname = `${basePath}/${encodeURIComponent(config.bucket)}/${objectPath}`
   return endpoint
 }
