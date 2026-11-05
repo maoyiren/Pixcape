@@ -207,8 +207,26 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
       // Every authenticated account can create immediately. Keep ADMIN privileged, but
       // promote legacy USER accounts to CREATOR and ensure profile creation is idempotent.
       await prisma.$transaction(async (tx) => {
-        const current = await tx.user.findUnique({ where: { id: user.id }, select: { id: true, name: true, email: true, role: true } })
+        const current = await tx.user.findUnique({ where: { id: user.id }, select: { id: true, name: true, email: true, role: true, username: true } })
         if (!current) throw new Error('Authenticated user disappeared')
+        if (!current.username) {
+          // New OAuth, email, and emergency-admin accounts receive a reserved URL slug
+          // before a session is issued. The immutable user ID remains the auth principal.
+          let candidate = `user-${current.id.slice(0, 16).toLowerCase()}`
+          let suffix = 0
+          while (true) {
+            const reservation = await tx.userSlugHistory.upsert({
+              where: { username: candidate },
+              create: { userId: current.id, username: candidate },
+              update: {},
+              select: { userId: true },
+            })
+            if (reservation.userId === current.id) break
+            suffix += 1
+            candidate = `user-${current.id.slice(0, 12).toLowerCase()}-${suffix}`
+          }
+          await tx.user.update({ where: { id: current.id }, data: { username: candidate } })
+        }
         if (current.role === 'USER') {
           await tx.user.update({ where: { id: current.id }, data: { role: 'CREATOR' } })
         }
