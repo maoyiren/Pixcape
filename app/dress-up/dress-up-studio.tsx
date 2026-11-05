@@ -176,7 +176,8 @@ export default function DressUpStudio() {
       setSelected(restored)
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
       if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
-      if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
+      if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
+      else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
       if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
       setSaveNotice('已恢复上次保存在此设备的穿搭')
     } catch {
@@ -453,7 +454,7 @@ export default function DressUpStudio() {
       const localCache: LocalOutfit = {
         id: savedId, name, itemIds: persistedItems.map(item => item.id), model, background,
         skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
-        skinAssetId, skinName, savedAt: new Date().toISOString(), cloud: true,
+        skinAssetId, skinAssetUrl, skinName, savedAt: new Date().toISOString(), cloud: true,
         assetItems: persistedItems,
       }
       setSavedOutfits(current => [...current.filter(item => item.id !== savedId), localCache])
@@ -482,6 +483,8 @@ export default function DressUpStudio() {
       model,
       background,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
+      skinAssetId: skinUrl.match(/\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/)?.[1] ?? null,
+      skinAssetUrl: skinUrl.match(/\\/api\\/assets\\/([^/]+)\\/file(?:\\?|$)/) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
       assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
@@ -521,7 +524,8 @@ export default function DressUpStudio() {
         if (item) items[item.category] = item
         return items
       }, {}))
-      if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png')) setSkinUrl(outfit.skinUrl)
+      if (typeof outfit.skinAssetUrl === 'string') setSkinUrl(outfit.skinAssetUrl)
+      else if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png')) setSkinUrl(outfit.skinUrl)
       else setSkinUrl(BASE_SKIN)
       if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
     }
@@ -595,7 +599,8 @@ export default function DressUpStudio() {
       }, {}))
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
       if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
-      if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
+      if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
+      else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
       if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
       setSaveNotice('已恢复最近保存的本地穿搭')
     } catch {
