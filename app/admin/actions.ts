@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { getAuthOptions } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
+import { encryptSecretSetting, decryptSecretSetting } from '@/lib/secret-settings'
 import { adminUrl } from '@/lib/admin-path'
 
 async function requireActiveAdmin() {
@@ -222,7 +222,7 @@ export async function setEmailVerificationRequired(formData: FormData) {
     select: { key: true, value: true },
   })
   const smtp = Object.fromEntries(smtpSettings.map((item) => [item.key,item.value]))
-  const smtpReady = Boolean((smtp.MAIL_SMTP_HOST && smtp.MAIL_FROM && decryptSettingSecret(smtp.MAIL_SECRET_SMTP_PASSWORD)) || (process.env.EMAIL_SERVER && process.env.EMAIL_FROM))
+  const smtpReady = Boolean((smtp.MAIL_SMTP_HOST && smtp.MAIL_FROM && decryptSecretSetting(smtp.MAIL_SECRET_SMTP_PASSWORD)) || (process.env.EMAIL_SERVER && process.env.EMAIL_FROM))
   if (value === 'true' && (!smtpReady || !process.env.NEXTAUTH_URL)) {
     redirect(adminUrl('/auth?error=email_verification_smtp_missing'))
   }
@@ -245,29 +245,6 @@ export async function setEmailVerificationRequired(formData: FormData) {
   redirect(adminUrl('/auth?emailVerificationUpdated=1'))
 }
 
-
-function encryptSettingSecret(value: string) {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
-  if (!secret) throw new Error('缺少 AUTH_SECRET / NEXTAUTH_SECRET，无法安全保存系统凭据')
-  const iv = randomBytes(12)
-  const key = createHash('sha256').update(secret).digest()
-  const cipher = createCipheriv('aes-256-gcm', key, iv)
-  const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()])
-  return [iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), encrypted.toString('base64url')].join('.')
-}
-
-function decryptSettingSecret(value: string | undefined): string | undefined {
-  if (!value) return undefined
-  try {
-    const [ivText, tagText, encryptedText] = value.split('.')
-    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
-    if (!ivText || !tagText || !encryptedText || !secret) return undefined
-    const key = createHash('sha256').update(secret).digest()
-    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivText, 'base64url'))
-    decipher.setAuthTag(Buffer.from(tagText, 'base64url'))
-    return Buffer.concat([decipher.update(Buffer.from(encryptedText, 'base64url')), decipher.final()]).toString('utf8')
-  } catch { return undefined }
-}
 
 export async function saveAIConfiguration(formData: FormData) {
   const actor = await requireActiveAdmin()
@@ -306,7 +283,7 @@ export async function saveAIConfiguration(formData: FormData) {
     const value = String(formData.get(field) ?? '').trim()
     if (value.length > 2048) redirect(adminUrl('/ai?error=ai_key_too_long'))
     if (formData.get(clearField) === 'on') values[settingKey] = ''
-    else if (value) values[settingKey] = encryptSettingSecret(value)
+    else if (value) values[settingKey] = encryptSecretSetting(value)
   }
   await prisma.$transaction(async (tx) => {
     for (const [key, value] of Object.entries(values)) {
@@ -334,7 +311,7 @@ function parseSecretField(formData: FormData, field: string, clearField: string,
   const value = String(formData.get(field) ?? '').trim()
   if (value.length > 2048) redirect(adminUrl('/?error=secret_too_long'))
   if (formData.get(clearField) === 'on') values[key] = ''
-  else if (value) values[key] = encryptSettingSecret(value)
+  else if (value) values[key] = encryptSecretSetting(value)
 }
 
 async function saveModuleSettings(actorId: string, action: string, target: string, values: Record<string, string>) {
@@ -392,7 +369,7 @@ export async function saveIntegrationConfiguration(formData: FormData) {
   if (!name) redirect(adminUrl('/integrations?error=invalid_name'))
   try { const url = new URL(webhookUrl); if (url.protocol !== 'https:') throw new Error() }
   catch { redirect(adminUrl('/integrations?error=invalid_webhook')) }
-  const values: Record<string,string> = { PLATFORM_INTEGRATION_NAME:name, PLATFORM_WEBHOOK_URL:encryptSettingSecret(webhookUrl) }
+  const values: Record<string,string> = { PLATFORM_INTEGRATION_NAME:name, PLATFORM_WEBHOOK_URL:encryptSecretSetting(webhookUrl) }
   parseSecretField(formData,'webhookSecret','clearWebhookSecret','PLATFORM_SECRET_WEBHOOK_TOKEN',values)
   await saveModuleSettings(actor.id,'PLATFORM_INTEGRATION_UPDATED','PLATFORM_WEBHOOK',values)
   redirect(adminUrl('/integrations?saved=1'))
@@ -426,12 +403,12 @@ export async function saveOAuthConfiguration(formData: FormData) {
   if (enabled && !clientId) redirect(adminUrl('/auth?error=oauth_client_id_required'))
   const existingSecret = await prisma.appSetting.findUnique({ where: { key: secretKey }, select: { value: true } })
   const clearClientSecret = formData.get('clearClientSecret') === 'on'
-  if (enabled && !clientSecret && (clearClientSecret || !decryptSettingSecret(existingSecret?.value)) && !(provider === 'GITHUB' ? process.env.AUTH_GITHUB_SECRET : provider === 'GOOGLE' ? process.env.AUTH_GOOGLE_SECRET : provider === 'MICROSOFT' ? process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET : process.env.AUTH_APPLE_SECRET)) {
+  if (enabled && !clientSecret && (clearClientSecret || !decryptSecretSetting(existingSecret?.value)) && !(provider === 'GITHUB' ? process.env.AUTH_GITHUB_SECRET : provider === 'GOOGLE' ? process.env.AUTH_GOOGLE_SECRET : provider === 'MICROSOFT' ? process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET : process.env.AUTH_APPLE_SECRET)) {
     redirect(adminUrl('/auth?error=oauth_secret_required'))
   }
   const values: Record<string,string> = { [disabledKey]: enabled ? 'false' : 'true' }
   if (clientId) values[idKey] = clientId
-  if (clientSecret) values[secretKey] = encryptSettingSecret(clientSecret)
+  if (clientSecret) values[secretKey] = encryptSecretSetting(clientSecret)
   else if (clearClientSecret) values[secretKey] = ''
   if (provider === 'MICROSOFT') values.AUTH_OAUTH_MICROSOFT_TENANT_ID = tenantId || 'common'
   await saveModuleSettings(actor.id,'OAUTH_PROVIDER_CONFIGURATION_UPDATED','OAuth:' + provider,values)
