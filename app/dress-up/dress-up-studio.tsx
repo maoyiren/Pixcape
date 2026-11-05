@@ -178,6 +178,7 @@ export default function DressUpStudio() {
       if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
       if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
       else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
+      else setSkinUrl(BASE_SKIN)
       if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
       setSaveNotice('已恢复上次保存在此设备的穿搭')
     } catch {
