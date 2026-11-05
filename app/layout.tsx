@@ -8,6 +8,7 @@ import '../src/tailwind.css'
 import './next.css'
 import '../src/design-system.css'
 import './components/cdpc-ui-overrides.css'
+import './components/account-menu.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://cdpc.cc'),

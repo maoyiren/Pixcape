@@ -8,9 +8,9 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的衣橱' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
   await page.getByRole('navigation', { name: '主导航' }).getByText('创作工具').click()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 创作' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '单品编辑器' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作工坊' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: /AI 创作/ })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: /单品编辑器/ })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: /创作工坊/ })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
   await expect(page.getByRole('contentinfo')).toContainText('CDPC')
 })
@@ -341,12 +341,16 @@ test('workbench remains usable at a narrow mobile viewport', async ({ page }) =>
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport + 1)
 })
 
-test('account entry points to the actual personal center route', async ({ page }) => {
+test('main navigation groups creation tools and keeps wardrobe and dress-up distinct', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作工坊' })).toHaveAttribute('href', '/workbench')
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '衣橱' })).toHaveAttribute('href', '/wardrobe')
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '3D 换装' })).toHaveAttribute('href', '/dress-up')
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'AI 创作' })).toHaveAttribute('href', '/ai')
+  const navigation = page.getByRole('navigation', { name: '主导航' })
+  await expect(navigation.getByRole('link', { name: '角色穿搭' })).toHaveAttribute('href', '/dress-up')
+  await expect(navigation.getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', '/wardrobe')
+  await navigation.getByText('创作工具').click()
+  const tools = navigation.locator('.site-nav-dropdown')
+  await expect(tools.getByRole('link', { name: /AI 创作/ })).toHaveAttribute('href', '/ai')
+  await expect(tools.getByRole('link', { name: /单品编辑器/ })).toHaveAttribute('href', '/editor')
+  await expect(tools.getByRole('link', { name: /创作工坊/ })).toHaveAttribute('href', '/workbench')
 })
 
 
