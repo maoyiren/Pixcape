@@ -234,5 +234,3 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
 export async function getAuthOptions(): Promise<NextAuthOptions> {
   return { ...authOptionsBase, providers: await buildProviders() }
 }
-
-export const authOptions = authOptionsBase as NextAuthOptions
