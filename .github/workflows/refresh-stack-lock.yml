@@ -1,0 +1,57 @@
+name: Refresh dependency lockfiles
+
+on:
+  push:
+    branches:
+      - chore/stack-refresh-nov-2026
+    paths:
+      - package.json
+      - ai-api/package.json
+      - .github/workflows/refresh-stack-lock.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-stack-lock
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: chore/stack-refresh-nov-2026
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26.13.0
+          check-latest: true
+          cache: npm
+      - name: Regenerate root lockfile from declared stable versions
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Regenerate AI API lockfile
+        run: npm --prefix ai-api install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Clean install root dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Clean install and test AI API
+        run: npm --prefix ai-api ci --no-audit --no-fund && npm --prefix ai-api test
+      - name: Reject high and critical dependency advisories
+        run: npm audit --audit-level=high
+      - name: Run unit tests
+        run: npm run test:unit
+      - name: Build Next.js application
+        run: npm run build
+      - name: Build production Docker image
+        run: docker build --tag pixcape-stack-refresh .
+      - name: Commit regenerated lockfiles
+        run: |
+          if git diff --quiet -- package-lock.json ai-api/package-lock.json; then
+            echo "Lockfiles already match the declared dependency ranges."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json ai-api/package-lock.json
+          git commit -m "chore(deps): regenerate npm lockfiles"
+          git push origin chore/stack-refresh-nov-2026
