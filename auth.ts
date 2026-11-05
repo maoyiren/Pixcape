@@ -128,17 +128,18 @@ providers.push(CredentialsProvider({
   },
 }))
 
-function hasOAuthCredentials(value: Partial<OAuthCredentials>): value is OAuthCredentials {
-  return Boolean(value.clientId && value.clientSecret)
+function completeOAuthCredentials(value: { clientId?: string; clientSecret?: string }): OAuthCredentials | undefined {
+  if (!value.clientId || !value.clientSecret) return undefined
+  return { clientId: value.clientId, clientSecret: value.clientSecret }
 }
-const github = credential('GITHUB', 'AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET')
-if (hasOAuthCredentials(github)) providers.push(GitHubProvider(github))
-const google = credential('GOOGLE', 'AUTH_GOOGLE_ID', 'AUTH_GOOGLE_SECRET')
-if (hasOAuthCredentials(google)) providers.push(GoogleProvider(google))
-const microsoft = credential('MICROSOFT', 'AUTH_MICROSOFT_ENTRA_ID_ID', 'AUTH_MICROSOFT_ENTRA_ID_SECRET')
-if (hasOAuthCredentials(microsoft)) providers.push(AzureADProvider({ ...microsoft, tenantId: config.AUTH_OAUTH_MICROSOFT_TENANT_ID || process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common' }))
-const apple = credential('APPLE', 'AUTH_APPLE_ID', 'AUTH_APPLE_SECRET')
-if (hasOAuthCredentials(apple)) providers.push(AppleProvider(apple))
+const github = completeOAuthCredentials(credential('GITHUB', 'AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET'))
+if (github) providers.push(GitHubProvider(github))
+const google = completeOAuthCredentials(credential('GOOGLE', 'AUTH_GOOGLE_ID', 'AUTH_GOOGLE_SECRET'))
+if (google) providers.push(GoogleProvider(google))
+const microsoft = completeOAuthCredentials(credential('MICROSOFT', 'AUTH_MICROSOFT_ENTRA_ID_ID', 'AUTH_MICROSOFT_ENTRA_ID_SECRET'))
+if (microsoft) providers.push(AzureADProvider({ ...microsoft, tenantId: config.AUTH_OAUTH_MICROSOFT_TENANT_ID || process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common' }))
+const apple = completeOAuthCredentials(credential('APPLE', 'AUTH_APPLE_ID', 'AUTH_APPLE_SECRET'))
+if (apple) providers.push(AppleProvider(apple))
 const smtpPassword = decryptSecretSetting(config.MAIL_SECRET_SMTP_PASSWORD)
 const smtpHost = config.MAIL_SMTP_HOST
 const smtpFrom = config.MAIL_FROM || process.env.EMAIL_FROM
