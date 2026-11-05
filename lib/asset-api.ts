@@ -103,11 +103,14 @@ export async function saveAssetFile(input: {
   }
 }
 
-export async function readAssetFile(assetId: string, actorId: string) {
+export async function readAssetFile(assetId: string, actorId: string | null) {
   const asset = await prisma.asset.findFirst({
     where: {
       id: assetId,
-      OR: [{ ownerId: actorId }, { visibility: 'PUBLIC' }],
+      OR: [
+        { visibility: { in: ['PUBLIC', 'UNLISTED'] } },
+        ...(actorId ? [{ ownerId: actorId }] : []),
+      ],
     },
     select: { storageKey: true, mimeType: true, byteSize: true, visibility: true },
   })
