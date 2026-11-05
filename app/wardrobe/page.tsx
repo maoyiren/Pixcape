@@ -1,10 +1,15 @@
-import WardrobeLibrary from './wardrobe-library'
+import { getServerSession } from 'next-auth'
+import { redirect } from 'next/navigation'
+import { authOptions } from '@/auth'
+import { prisma } from '@/lib/prisma'
 
-export const metadata = {
-  title: '我的衣橱 | CDPC',
-  description: '集中管理 Minecraft 皮肤、服装素材、收藏与穿搭。',
-}
-
-export default function WardrobePage() {
-  return <WardrobeLibrary />
+export default async function LegacyWardrobePage() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) redirect('/login?callbackUrl=%2Fwardrobe')
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { username: true },
+  })
+  if (!user?.username) redirect('/account')
+  redirect(`/u/${user.username}/wardrobe`)
 }
