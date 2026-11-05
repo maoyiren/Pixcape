@@ -418,8 +418,8 @@ export async function saveOAuthConfiguration(formData: FormData) {
   }
   const values: Record<string,string> = { [disabledKey]: enabled ? 'false' : 'true' }
   if (clientId) values[idKey] = clientId
-  if (clearClientSecret) values[secretKey] = ''
-  else if (clientSecret) values[secretKey] = encryptSettingSecret(clientSecret)
+  if (clientSecret) values[secretKey] = encryptSettingSecret(clientSecret)
+  else if (clearClientSecret) values[secretKey] = ''
   if (provider === 'MICROSOFT') values.AUTH_OAUTH_MICROSOFT_TENANT_ID = tenantId || 'common'
   await saveModuleSettings(actor.id,'OAUTH_PROVIDER_CONFIGURATION_UPDATED','OAuth:' + provider,values)
   redirect(adminUrl('/auth?oauthSaved=' + provider.toLowerCase()))
