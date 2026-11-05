@@ -2,13 +2,14 @@
 
 Last reviewed: 2026-11-05
 
-This repository uses current stable/LTS releases where compatible with the production architecture. The lockfiles, not version ranges alone, define what CI and Docker actually install.
+This repository uses current stable/LTS releases where compatible with the production architecture. The lockfiles, not version ranges alone, define what CI and Docker actually install. The root production image, standalone Next.js image, and standalone AI API image all use the same Node.js 26.13.0 Debian runtime; native-addon images install `libatomic1` explicitly.
 
 ## Runtime and build
 
 | Area | Baseline |
 | --- | --- |
 | Node.js | 26.13.0 (Active LTS) |
+| npm | 11.19.1 |
 | npm | Bundled with the pinned Node.js release |
 | Web framework | Next.js 16.4.5 |
 | UI runtime | React / React DOM 19.3.1 |
