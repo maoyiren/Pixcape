@@ -46,7 +46,7 @@ function authorization(config: S3Config, method: string, url: URL, payload: Buff
   const regionKey = hmac(dateKey, config.region)
   const serviceKey = hmac(regionKey, 's3')
   const signingKey = hmac(serviceKey, 'aws4_request')
-  const signature = createHmac('sha256', signingKey).update(stringToSign).digest('hex')
+  const signature = createHmac('sha256', new Uint8Array(signingKey)).update(stringToSign).digest('hex')
   return {
     authorization: `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
     amzDate,
@@ -77,10 +77,11 @@ async function loadConfig(): Promise<S3Config | null> {
 export async function getS3AssetStorage(): Promise<S3AssetStorage | null> {
   const config = await loadConfig()
   if (!config) return null
+  const activeConfig: S3Config = config
 
   async function request(method: 'PUT' | 'GET' | 'DELETE', key: string, bytes = Buffer.alloc(0), contentType = 'application/octet-stream') {
-    const url = objectUrl(config, key)
-    const signed = authorization(config, method, url, bytes)
+    const url = objectUrl(activeConfig, key)
+    const signed = authorization(activeConfig, method, url, bytes)
     const response = await fetch(url, {
       method,
       headers: {
