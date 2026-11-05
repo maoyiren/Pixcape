@@ -1,5 +1,5 @@
-# Separate Node.js runtime for the Next.js account/workspace preview.
-# Intentionally separate from the root Dockerfile, which continues serving Vite + Blockbench.
+# Isolated Next.js image used by CI to validate PostgreSQL, MySQL, and SQLite runtime variants.
+# The root Dockerfile remains the canonical production image and also serves the Blockbench sub-app.
 ARG DATABASE_PROVIDER=postgresql
 
 FROM node:26.13.0-bookworm-slim AS build
