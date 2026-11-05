@@ -127,7 +127,7 @@ export async function deleteAssetForActor(assetId: string, actorId: string) {
   })
   if (!asset) return false
 
-  const isS3Asset = asset.storageKey.startsWith('s3/')
+  const isS3Asset = isS3AssetStorageKey(asset.storageKey)
   const s3Storage = isS3Asset ? await getS3AssetStorage() : null
   if (isS3Asset && !s3Storage) throw new Error('S3 storage is not configured for this asset')
   const deleteRecord = async () => {
