@@ -6,13 +6,43 @@ import AzureADProvider from 'next-auth/providers/azure-ad'
 import AppleProvider from 'next-auth/providers/apple'
 import EmailProvider from 'next-auth/providers/email'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { timingSafeEqual, scryptSync } from 'node:crypto'
+import { timingSafeEqual, scryptSync, createDecipheriv, createHash } from 'node:crypto'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 
 const authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
+function decryptSettingSecret(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  try {
+    const [ivText, tagText, encryptedText] = value.split('.')
+    if (!ivText || !tagText || !encryptedText) return undefined
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+    if (!secret) return undefined
+    const key = createHash('sha256').update(secret).digest()
+    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivText, 'base64url'))
+    decipher.setAuthTag(Buffer.from(tagText, 'base64url'))
+    return Buffer.concat([decipher.update(Buffer.from(encryptedText, 'base64url')), decipher.final()]).toString('utf8')
+  } catch { return undefined }
+}
+
+async function buildProviders(): Promise<NextAuthOptions['providers']> {
 const providers: NextAuthOptions['providers'] = []
+const stored = await prisma.appSetting.findMany({
+  where: { key: { in: [
+    'AUTH_OAUTH_GITHUB_CLIENT_ID','AUTH_SECRET_OAUTH_GITHUB_CLIENT_SECRET',
+    'AUTH_OAUTH_GOOGLE_CLIENT_ID','AUTH_SECRET_OAUTH_GOOGLE_CLIENT_SECRET',
+    'AUTH_OAUTH_MICROSOFT_CLIENT_ID','AUTH_SECRET_OAUTH_MICROSOFT_CLIENT_SECRET','AUTH_OAUTH_MICROSOFT_TENANT_ID',
+    'AUTH_OAUTH_APPLE_CLIENT_ID','AUTH_SECRET_OAUTH_APPLE_CLIENT_SECRET',
+    'MAIL_SMTP_HOST','MAIL_SMTP_PORT','MAIL_SMTP_USER','MAIL_SECRET_SMTP_PASSWORD','MAIL_FROM','MAIL_SMTP_SECURE',
+  ] } },
+  select: { key: true, value: true },
+}).catch(() => [])
+const config = Object.fromEntries(stored.map((item) => [item.key, item.value]))
+const credential = (provider: string, envId?: string, envSecret?: string) => ({
+  clientId: config['AUTH_OAUTH_' + provider + '_CLIENT_ID'] || (envId ? process.env[envId] : undefined),
+  clientSecret: decryptSettingSecret(config['AUTH_SECRET_OAUTH_' + provider + '_CLIENT_SECRET']) || (envSecret ? process.env[envSecret] : undefined),
+})
 
 async function allowCredentialAttempt(request: { headers?: unknown }): Promise<boolean> {
   const configuredHeader = (process.env.LOGIN_RATE_LIMIT_IP_HEADER || 'x-real-ip').toLowerCase()
@@ -110,33 +140,28 @@ providers.push(CredentialsProvider({
   },
 }))
 
-if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
-  providers.push(GitHubProvider({ clientId: process.env.AUTH_GITHUB_ID, clientSecret: process.env.AUTH_GITHUB_SECRET }))
+const github = credential('GITHUB', 'AUTH_GITHUB_ID', 'AUTH_GITHUB_SECRET')
+if (github.clientId && github.clientSecret) providers.push(GitHubProvider(github))
+const google = credential('GOOGLE', 'AUTH_GOOGLE_ID', 'AUTH_GOOGLE_SECRET')
+if (google.clientId && google.clientSecret) providers.push(GoogleProvider(google))
+const microsoft = credential('MICROSOFT', 'AUTH_MICROSOFT_ENTRA_ID_ID', 'AUTH_MICROSOFT_ENTRA_ID_SECRET')
+if (microsoft.clientId && microsoft.clientSecret) providers.push(AzureADProvider({ ...microsoft, tenantId: config.AUTH_OAUTH_MICROSOFT_TENANT_ID || process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common' }))
+const apple = credential('APPLE', 'AUTH_APPLE_ID', 'AUTH_APPLE_SECRET')
+if (apple.clientId && apple.clientSecret) providers.push(AppleProvider(apple))
+const smtpPassword = decryptSettingSecret(config.MAIL_SECRET_SMTP_PASSWORD)
+const smtpHost = config.MAIL_SMTP_HOST
+const smtpFrom = config.MAIL_FROM || process.env.EMAIL_FROM
+if ((smtpHost && smtpFrom && smtpPassword) || (process.env.EMAIL_SERVER && process.env.EMAIL_FROM)) {
+  const server = smtpHost && smtpPassword
+    ? { host: smtpHost, port: Number(config.MAIL_SMTP_PORT || 587), secure: config.MAIL_SMTP_SECURE === 'true', auth: { user: config.MAIL_SMTP_USER || '', pass: smtpPassword } }
+    : process.env.EMAIL_SERVER!
+  providers.push(EmailProvider({ server, from: smtpFrom || process.env.EMAIL_FROM!, maxAge: 15 * 60 }))
 }
-if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
-  providers.push(GoogleProvider({ clientId: process.env.AUTH_GOOGLE_ID, clientSecret: process.env.AUTH_GOOGLE_SECRET }))
-}
-if (process.env.AUTH_MICROSOFT_ENTRA_ID_ID && process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET) {
-  providers.push(AzureADProvider({
-    clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
-    clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
-    tenantId: process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID || 'common',
-  }))
-}
-if (process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET) {
-  providers.push(AppleProvider({ clientId: process.env.AUTH_APPLE_ID, clientSecret: process.env.AUTH_APPLE_SECRET }))
-}
-if (process.env.EMAIL_SERVER && process.env.EMAIL_FROM) {
-  providers.push(EmailProvider({
-    server: process.env.EMAIL_SERVER,
-    from: process.env.EMAIL_FROM,
-    maxAge: 15 * 60,
-  }))
+return providers
 }
 
-export const authOptions: NextAuthOptions = {
+const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
   adapter: PrismaAdapter(prisma as never),
-  providers,
   secret: authSecret,
   // Credentials providers require JWT sessions. Role/status are reloaded from DB below.
   session: { strategy: 'jwt', maxAge: 8 * 60 * 60, updateAge: 60 * 60 },
@@ -205,3 +230,9 @@ export const authOptions: NextAuthOptions = {
     },
   },
 }
+
+export async function getAuthOptions(): Promise<NextAuthOptions> {
+  return { ...authOptionsBase, providers: await buildProviders() }
+}
+
+export const authOptions = authOptionsBase as NextAuthOptions
