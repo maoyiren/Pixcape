@@ -57,7 +57,7 @@ export default async function AdminAuthPage({
             <input type="hidden" name="provider" value={provider.id}/>
             <label><input type="checkbox" name="enabled" defaultChecked={provider.enabled}/> 启用此登录方式</label>
             <label htmlFor={provider.id + '-client-id'}>Client ID</label>
-            <input id={provider.id + '-client-id'} name="clientId" maxLength={512} defaultValue={config['AUTH_OAUTH_' + provider.id + '_CLIENT_ID'] ?? ''} placeholder={provider.hasId ? '留空保留现有配置' : '填写 OAuth Client ID'}/>
+            <input id={provider.id + '-client-id'} name="clientId" maxLength={512} defaultValue={config['AUTH_OAUTH_' + provider.id + '_CLIENT_ID'] ?? process.env[provider.envId] ?? ''} placeholder={provider.hasId ? '留空保留现有配置' : '填写 OAuth Client ID'}/>
             <label htmlFor={provider.id + '-client-secret'}>Client Secret（留空保留已保存密钥）</label>
             <input id={provider.id + '-client-secret'} name="clientSecret" type="password" autoComplete="new-password" maxLength={2048} placeholder="仅在新增或更换时填写"/>
             {provider.id === 'MICROSOFT' ? <><label htmlFor="microsoft-tenant">Microsoft Tenant ID</label><input id="microsoft-tenant" name="tenantId" defaultValue={config.AUTH_OAUTH_MICROSOFT_TENANT_ID ?? 'common'} maxLength={128}/></> : null}
