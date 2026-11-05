@@ -217,7 +217,13 @@ export async function setEmailVerificationRequired(formData: FormData) {
   const actor = await requireActiveAdmin()
   const value = String(formData.get('required') ?? '')
   if (!['true', 'false'].includes(value)) redirect(adminUrl('/auth?error=invalid_email_verification_setting'))
-  if (value === 'true' && (!process.env.EMAIL_SERVER || !process.env.EMAIL_FROM || !process.env.NEXTAUTH_URL)) {
+  const smtpSettings = await prisma.appSetting.findMany({
+    where: { key: { in: ['MAIL_SMTP_HOST','MAIL_FROM','MAIL_SECRET_SMTP_PASSWORD'] } },
+    select: { key: true, value: true },
+  })
+  const smtp = Object.fromEntries(smtpSettings.map((item) => [item.key,item.value]))
+  const smtpReady = Boolean((smtp.MAIL_SMTP_HOST && smtp.MAIL_FROM && smtp.MAIL_SECRET_SMTP_PASSWORD) || (process.env.EMAIL_SERVER && process.env.EMAIL_FROM))
+  if (value === 'true' && (!smtpReady || !process.env.NEXTAUTH_URL)) {
     redirect(adminUrl('/auth?error=email_verification_smtp_missing'))
   }
   await prisma.$transaction(async (tx) => {
