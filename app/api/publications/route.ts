@@ -36,7 +36,6 @@ export async function POST(request: Request) {
           select: { id: true },
         })
         if (!asset) return null
-        await tx.asset.update({ where: { id: asset.id }, data: { visibility: 'PUBLIC' } })
         const existing = await tx.publication.findFirst({
           where: { ownerId, assetId: asset.id },
           select: { id: true },
