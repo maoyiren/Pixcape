@@ -4,7 +4,7 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色穿搭' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'Studio' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的衣橱' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
   await page.getByRole('navigation', { name: '主导航' }).getByText('创作工具').click()
@@ -20,7 +20,7 @@ test('primary creation routes render their intended mode entry points', async ({
     { path: '/ai', heading: 'AI 生成', mode: 'ai' },
     { path: '/editor', heading: '单品编辑器', mode: 'editor' },
     { path: '/wardrobe', heading: '我的衣橱', mode: 'wardrobe' },
-    { path: '/dress-up', heading: '角色穿搭', mode: 'dress-up' },
+    { path: '/studio', heading: '角色穿搭', mode: 'dress-up' },
   ]
 
   for (const route of routes) {
@@ -155,7 +155,7 @@ test('workbench nested routes map to their intended workflows', async ({ page })
   const routes = [
     { path: '/workbench/ai', heading: 'AI 生成' },
     { path: '/workbench/edit', heading: '单品编辑器' },
-    { path: '/workbench/dress', heading: '角色穿搭', canonical: '/dress-up' },
+    { path: '/workbench/dress', heading: '角色穿搭', canonical: '/studio' },
   ]
 
   for (const route of routes) {
@@ -387,7 +387,7 @@ test('workbench remains usable at a narrow mobile viewport', async ({ page }) =>
 test('main navigation groups creation tools and keeps wardrobe and dress-up distinct', async ({ page }) => {
   await page.goto('/')
   const navigation = page.getByRole('navigation', { name: '主导航' })
-  await expect(navigation.getByRole('link', { name: '角色穿搭' })).toHaveAttribute('href', '/dress-up')
+  await expect(navigation.getByRole('link', { name: 'Studio' })).toHaveAttribute('href', '/studio')
   await expect(navigation.getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', '/wardrobe')
   await navigation.getByText('创作工具').click()
   const tools = navigation.locator('.site-nav-dropdown')
@@ -399,7 +399,7 @@ test('main navigation groups creation tools and keeps wardrobe and dress-up dist
 
 test('dedicated dress-up route opens the 3D outfit studio, not the asset library', async ({ page }) => {
   await page.goto('/dress-up')
-  await expect(page).toHaveURL(/\/dress-up$/)
+  await expect(page).toHaveURL(/\/studio$/)
   await expect(page.locator('[data-studio-mode="dress-up"]')).toBeVisible()
   await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
@@ -519,7 +519,7 @@ test('wardrobe asset handoff clears a previously active cloud outfit', async ({ 
   await expect.poll(() => savedPointer).toMatchObject({
     activeTool: 'WARDROBE', activeAssetId: 'skin-next', activeOutfitId: null,
   })
-  await expect(page).toHaveURL(new RegExp('/dress-up$'))
+  await expect(page).toHaveURL(/\/studio$/)
 })
 
 test('wardrobe outfit handoff clears a previously active single asset', async ({ page }) => {
@@ -549,7 +549,7 @@ test('wardrobe outfit handoff clears a previously active single asset', async ({
   await expect.poll(() => savedPointer).toMatchObject({
     activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-next',
   })
-  await expect(page).toHaveURL(new RegExp('/dress-up$'))
+  await expect(page).toHaveURL(/\/studio$/)
 })
 
 
