@@ -61,7 +61,7 @@ export function AccountMenu({ name, username, email, role, status }: AccountMenu
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls="site-account-dropdown"
-        onClick={() => setOpen(value => !value)}
+        onClick={() => setOpen(true)}
       >
         <span className="site-nav-avatar" aria-hidden="true">{initials(name)}</span>
         <span className="site-account-trigger-copy">
