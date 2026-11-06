@@ -17,7 +17,7 @@ export async function SiteNav() {
         <div className="site-nav-links">
           <Link href="/" className="site-nav-home">首页</Link>
           <Link href="/studio" className="site-nav-dress">Studio</Link>
-          <Link href="/wardrobe">我的衣橱</Link>
+          <Link href={user?.username ? `/u/${user.username}/wardrobe` : '/wardrobe'}>我的衣橱</Link>
           <details className="site-nav-menu">
             <summary>创作工具</summary>
             <div className="site-nav-dropdown">
@@ -32,6 +32,7 @@ export async function SiteNav() {
           {user ? (
             <AccountMenu
               name={user.name ?? '我的账户'}
+              username={user.username ?? null}
               email={user.email ?? ''}
               role={user.role ?? 'USER'}
               status={user.status ?? 'ACTIVE'}
