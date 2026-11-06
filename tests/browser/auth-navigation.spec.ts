@@ -963,8 +963,6 @@ test('legacy admin route is unavailable and the configured route remains protect
   await page.goto('/control-room')
   await expect(page).toHaveURL(/\/login(?:\?|$)/)
 })
-))
-})
 
 
 
