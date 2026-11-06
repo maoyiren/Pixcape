@@ -46,6 +46,30 @@ async function allowCredentialAttempt(request: { headers?: unknown }): Promise<b
   }
 }
 
+async function ensureUsernameForUser(userId: string): Promise<string | null> {
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.user.findUnique({ where: { id: userId }, select: { id: true, username: true } })
+    if (!current) return null
+    if (current.username) return current.username
+
+    let candidate = `user-${current.id.slice(0, 16).toLowerCase()}`
+    let suffix = 0
+    while (true) {
+      const reservation = await tx.userSlugHistory.upsert({
+        where: { username: candidate },
+        create: { userId: current.id, username: candidate },
+        update: {},
+        select: { userId: true },
+      })
+      if (reservation.userId === current.id) break
+      suffix += 1
+      candidate = `user-${current.id.slice(0, 12).toLowerCase()}-${suffix}`
+    }
+    await tx.user.update({ where: { id: current.id }, data: { username: candidate } })
+    return candidate
+  })
+}
+
 function safeEqual(left: string, right: string): boolean {
   const a = Buffer.from(left)
   const b = Buffer.from(right)
@@ -163,10 +187,20 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
     async jwt({ token, user }) {
       if (user?.id) token.sub = user.id
       if (token.sub) {
-        const record = await prisma.user.findUnique({
+        let record = await prisma.user.findUnique({
           where: { id: token.sub },
           select: { role: true, status: true, email: true, name: true, username: true },
         })
+        // Credentials sign-in and adapter-backed OAuth can reach JWT callbacks through
+        // different paths. Ensure the URL identity exists before copying it into the
+        // token so the account menu and personal-space links never fall back to legacy URLs.
+        if (record && !record.username) {
+          await ensureUsernameForUser(token.sub)
+          record = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { role: true, status: true, email: true, name: true, username: true },
+          })
+        }
         const status = typeof record?.status === 'string' ? record.status.trim().toUpperCase() : ''
         if (!record || status !== 'ACTIVE') {
           token.authDisabled = true
