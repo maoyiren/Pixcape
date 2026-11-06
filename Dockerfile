@@ -33,7 +33,6 @@ COPY ai-api/package*.json ./
 RUN npm ci --omit=dev --include=optional --no-audit --no-fund
 COPY ai-api/ ./
 
-# Debian runtime matches the native Prisma SQLite addon built in next-build.
 FROM node:26.13.0-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends bash nginx ca-certificates wget libatomic1 \
     && rm -f /etc/nginx/sites-enabled/default \
