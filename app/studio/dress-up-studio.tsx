@@ -672,6 +672,8 @@ export default function DressUpStudio() {
         return
       }
       const saved = JSON.parse(raw) as Partial<LocalOutfit>
+      if (typeof saved.name === 'string' && saved.name.trim()) setOutfitName(saved.name.slice(0, 48))
+      if (typeof saved.id === 'string') setSelectedSavedOutfitId(saved.id)
       const savedAssets = Array.isArray(saved.assetItems) ? saved.assetItems : []
       setSelected((saved.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
         const item = savedAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
