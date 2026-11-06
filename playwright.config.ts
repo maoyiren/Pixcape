@@ -4,8 +4,7 @@ const nextEnv = {
   ...process.env,
   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'cdpc-browser-test-secret-not-for-production-0123456789',
   NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://127.0.0.1:3000',
-  DATABASE_PROVIDER: process.env.DATABASE_PROVIDER || 'sqlite',
-  DATABASE_URL: process.env.DATABASE_URL || 'file:/tmp/cdpc-browser-test.db',
+  DATABASE_URL: process.env.DATABASE_URL || 'postgresql://ci:ci@127.0.0.1:5432/pixcape?schema=public',
 }
 
 export default defineConfig({
