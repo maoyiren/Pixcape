@@ -57,8 +57,8 @@
 
 ### 6. Docker 启动与数据库安全
 
-- 当前 `docker-entrypoint-single.sh` 在 `DATABASE_URL` 为空时只输出 warning，然后仍启动应用。
-- PostgreSQL Only PR 合并后必须将生产启动契约改为明确要求 PostgreSQL URL，并确保失败时快速退出；同时保留本地开发和 CI 的明确配置。
+- 审计基线 main 的 `docker-entrypoint-single.sh` 在 `DATABASE_URL` 为空时只输出 warning，然后仍启动应用。
+- PR #61 已将容器启动契约改为必须提供 `postgres://` 或 `postgresql://` URL，否则快速退出；该行为已通过 PostgreSQL Docker smoke test，但尚未进入 main。
 - 容器入口执行 migration 的并发行为、数据库不可用时的重试/失败策略和部署回滚需验证。
 
 ## 本次未验证事项
@@ -82,3 +82,14 @@
 5. 完成皮肤导入、即时试穿、搭配保存 / 恢复、PNG 导出的端到端旅程。
 6. 所有 P0 自动化与 Docker 门禁通过后，才申请将 PR 转为 Ready for review。
 
+
+
+## 最新验证更新（2026-11-06 16:45 UTC）
+
+- PR #61 当前 head：`aa6c4253a04c9a6ef35507e9f904a63d988326e9`。
+- Lock refresh workflow #30 成功，根 `package-lock.json` 已与 PostgreSQL-only `package.json` 同步；`npm ci` 通过。
+- CI #939：PostgreSQL migrate、unit、integration、Playwright、AI API tests、AI API Docker build、完整 Docker image build 全部通过。
+- Next.js Preview/Security #736：PostgreSQL schema/migration、unit/integration、Next.js build、isolated Docker image、security E2E 全部通过。
+- Docker #946：PostgreSQL-only 镜像构建、容器启动、health、首页/login/studio/Blockbench/API 路由 smoke test 全部通过。
+- 首轮 Docker 构建失败原因是 Next.js build 阶段没有 `DATABASE_URL`；已在 build stage 注入仅用于构建的 PostgreSQL placeholder，运行时仍由容器入口强制要求真实 PostgreSQL URL。
+- PR #61 仍为 Draft，等待生产数据库类型、备份和迁移状态确认；没有对生产环境执行迁移或数据删除。
