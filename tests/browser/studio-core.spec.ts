@@ -45,6 +45,11 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(selected).toContainText('眼眸花披肩')
   await expect(selected).toContainText('苦力怕外套')
   await expect(selected).toContainText('眼眸花披风')
+  await page.getByRole('button', { name: '外套', exact: true }).click()
+  await page.getByRole('button', { name: '脱下当前分类' }).click()
+  await expect(selected).not.toContainText('苦力怕外套')
+  await page.getByRole('button', { name: /苦力怕外套/ }).click()
+  await expect(selected).toContainText('苦力怕外套')
 
   // Unimplemented categories must be explicit empty states, never fake products.
   await page.getByRole('button', { name: '裤子', exact: true }).click()
