@@ -3,10 +3,19 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
-import { SkinViewer } from 'skinview3d'
+import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
 const BASE_SKIN = ASSET_ROOT + 'stevea.png'
+const SCENE_BACKGROUNDS: Record<string, string> = {
+  day: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/exploration-mindful.jpg',
+  night: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/MCV_holiday_release_Eyeblossom_NightTrail_1280x720_01.jpg',
+  plains: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/exploration-mindful.jpg',
+  desert: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/exploration-structures.jpg',
+  forest: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/forest-carousel1.jpg',
+  nether: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/waste-carousel1.jpg',
+  end: 'https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/highlands-carousel1.jpg',
+}
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
@@ -28,7 +37,9 @@ const catalog: CatalogItem[] = [
 ]
 const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风'])
 type ModelType = 'steve' | 'alex'
-type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
+type StudioPose = 'idle' | 'wave' | 'walk' | 'fly'
+type StudioView = 'front' | 'back' | 'side'
+type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; backgroundScene?: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
 
 
 function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' {
@@ -69,6 +80,11 @@ export default function DressUpStudio() {
   const [status, setStatus] = useState('正在初始化 3D 预览…')
   const [loadError, setLoadError] = useState('')
   const [background, setBackground] = useState('#182437')
+  const [backgroundScene, setBackgroundScene] = useState('night')
+  const [pose, setPose] = useState<StudioPose>('idle')
+  const [elytraVisible, setElytraVisible] = useState(false)
+  const [autoRotate, setAutoRotate] = useState(false)
+  const [viewAngle, setViewAngle] = useState<StudioView>('front')
   const [isBusy, setIsBusy] = useState(false)
   const [retryVersion, setRetryVersion] = useState(0)
   const [saveNotice, setSaveNotice] = useState('')
@@ -137,6 +153,7 @@ export default function DressUpStudio() {
         setSkinUrl(activeOutfit.skinAssetUrl || BASE_SKIN)
         setSkinName(activeOutfit.skinName || 'Steve 默认皮肤')
         setModel(activeOutfit.model)
+        setBackgroundScene('custom')
         setBackground(activeOutfit.background)
         setOutfitName(activeOutfit.name)
         setSelectedSavedOutfitId(activeOutfit.id)
@@ -167,6 +184,8 @@ export default function DressUpStudio() {
       const raw = window.localStorage.getItem('cdpc:dress-up:local-v1')
       if (!raw) return
       const saved = JSON.parse(raw) as Partial<LocalOutfit>
+      if (typeof saved.name === 'string' && saved.name.trim()) setOutfitName(saved.name.slice(0, 48))
+      if (typeof saved.id === 'string') setSelectedSavedOutfitId(saved.id)
       const savedAssets = Array.isArray(saved.assetItems) ? saved.assetItems : []
       const restored = (saved.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
         const item = savedAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
@@ -176,7 +195,11 @@ export default function DressUpStudio() {
       setSelected(restored)
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
       if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
-      if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
+      if (saved.backgroundScene === 'day' || saved.backgroundScene === 'night' || saved.backgroundScene === 'plains' || saved.backgroundScene === 'desert' || saved.backgroundScene === 'forest' || saved.backgroundScene === 'nether' || saved.backgroundScene === 'end' || saved.backgroundScene === 'custom') setBackgroundScene(saved.backgroundScene)
+      else setBackgroundScene('custom')
+      if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
+      else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
+      else setSkinUrl(BASE_SKIN)
       if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
       setSaveNotice('已恢复上次保存在此设备的穿搭')
     } catch {
@@ -284,6 +307,8 @@ export default function DressUpStudio() {
       viewer.controls.enablePan = false
       viewer.controls.enableRotate = true
       viewer.controls.enableZoom = true
+      viewer.controls.autoRotate = false
+      viewer.controls.autoRotateSpeed = 1.25
       viewer.controls.rotateSpeed = 0.9
       viewer.renderer.setClearColor(0x182437, 1)
       host.replaceChildren(canvas)
@@ -308,6 +333,57 @@ export default function DressUpStudio() {
       viewerRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    viewer.controls.autoRotate = autoRotate
+  }, [autoRotate])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const url = SCENE_BACKGROUNDS[backgroundScene]
+    if (!url) {
+      viewer.background = Number.parseInt(background.replace('#', ''), 16)
+      return
+    }
+    let cancelled = false
+    void viewer.loadBackground(url).catch(() => {
+      if (!cancelled) {
+        viewer.background = Number.parseInt(background.replace('#', ''), 16)
+        setSaveNotice('场景背景加载失败，已切换为纯色背景')
+      }
+    })
+    return () => { cancelled = true }
+  }, [backgroundScene, background])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    const animation = pose === 'fly' ? new FlyingAnimation() : pose === 'walk' ? new WalkingAnimation() : new IdleAnimation()
+    if (pose === 'wave') {
+      animation.addAnimation((player, progress) => {
+        player.skin.rightArm.rotation.z = -2.35 + Math.sin(progress * 5) * 0.22
+        player.skin.rightArm.rotation.x = Math.sin(progress * 3) * 0.12
+      })
+    }
+    if (pose === 'fly' && cape && !elytraVisible) {
+      animation.addAnimation((player, progress) => {
+        player.cape.rotation.x = 0.35 + Math.sin(progress * 2.2) * 0.02
+        player.cape.rotation.z = Math.sin(progress * 1.8) * 0.025
+      })
+    }
+    animation.speed = pose === 'walk' ? 0.72 : 1
+    viewer.animation = animation
+    return () => { if (viewer.animation === animation) viewer.animation = null }
+  }, [pose, cape?.id, elytraVisible])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    viewer.playerObject.backEquipment = elytraVisible ? 'elytra' : cape ? 'cape' : null
+  }, [elytraVisible, cape?.id])
 
   useEffect(() => {
     const viewer = viewerRef.current
@@ -343,12 +419,11 @@ export default function DressUpStudio() {
         if (cape) {
           await viewer.loadCape(cape.fileUrl || ASSET_ROOT + cape.texture, { makeVisible: false })
           if (cancelled) return
-          viewer.playerObject.backEquipment = 'cape'
+          viewer.playerObject.backEquipment = elytraVisible ? 'elytra' : 'cape'
         } else {
-          viewer.playerObject.backEquipment = null
+          viewer.playerObject.backEquipment = elytraVisible ? 'elytra' : null
         }
         if (cancelled) return
-        viewer.background = Number.parseInt(background.replace('#', ''), 16)
         setStatus('预览已更新')
       } catch (error) {
         if (!cancelled) {
@@ -361,7 +436,7 @@ export default function DressUpStudio() {
     }
     void updatePreview()
     return () => { cancelled = true }
-  }, [skinUrl, model, selected, background, retryVersion])
+  }, [skinUrl, model, selected, retryVersion])
 
   function toggleItem(item: CatalogItem) {
     setSelected(current => {
@@ -411,11 +486,15 @@ export default function DressUpStudio() {
       }
 
       let skinAssetId: string | null = null
-      const existingSkin = skinUrl.match(/\/api\/assets\/([^/]+)\/file(?:\?|$)/)
-      if (existingSkin) skinAssetId = existingSkin[1]
-      else if (skinUrl.startsWith('data:image/png')) {
+      let skinAssetUrl: string | undefined
+      const existingSkin = /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)
+      if (existingSkin) {
+        skinAssetId = existingSkin[1]
+        skinAssetUrl = skinUrl
+      } else if (skinUrl.startsWith('data:image/png')) {
         const skin = await uploadAssetFromUrl(skinUrl, 'SKIN', skinName || '换装基础皮肤')
         skinAssetId = skin.id
+        skinAssetUrl = skin.fileUrl
       }
 
       const input: OutfitInput = {
@@ -453,7 +532,7 @@ export default function DressUpStudio() {
       const localCache: LocalOutfit = {
         id: savedId, name, itemIds: persistedItems.map(item => item.id), model, background,
         skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
-        skinAssetId, skinName, savedAt: new Date().toISOString(), cloud: true,
+        skinAssetId, skinAssetUrl, skinName, savedAt: new Date().toISOString(), cloud: true,
         assetItems: persistedItems,
       }
       setSavedOutfits(current => [...current.filter(item => item.id !== savedId), localCache])
@@ -481,7 +560,10 @@ export default function DressUpStudio() {
       itemIds: selectedItems.map(item => item.id),
       model,
       background,
+      backgroundScene,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
+      skinAssetId: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)?.[1] ?? null,
+      skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
       assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
@@ -521,12 +603,15 @@ export default function DressUpStudio() {
         if (item) items[item.category] = item
         return items
       }, {}))
-      if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png')) setSkinUrl(outfit.skinUrl)
+      if (typeof outfit.skinAssetUrl === 'string') setSkinUrl(outfit.skinAssetUrl)
+      else if (typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png')) setSkinUrl(outfit.skinUrl)
       else setSkinUrl(BASE_SKIN)
       if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
     }
     if (outfit.model === 'steve' || outfit.model === 'alex') setModel(outfit.model)
     if (/^#[0-9a-f]{6}$/i.test(outfit.background)) setBackground(outfit.background)
+    if (outfit.backgroundScene === 'day' || outfit.backgroundScene === 'night' || outfit.backgroundScene === 'plains' || outfit.backgroundScene === 'desert' || outfit.backgroundScene === 'forest' || outfit.backgroundScene === 'nether' || outfit.backgroundScene === 'end' || outfit.backgroundScene === 'custom') setBackgroundScene(outfit.backgroundScene)
+    else setBackgroundScene('custom')
     setOutfitName(outfit.name)
     setSaveNotice(outfit.cloud ? `已从账号云端载入“${outfit.name}”` : `已载入本地草稿“${outfit.name}”`)
     if (outfit.cloud) {
@@ -587,6 +672,8 @@ export default function DressUpStudio() {
         return
       }
       const saved = JSON.parse(raw) as Partial<LocalOutfit>
+      if (typeof saved.name === 'string' && saved.name.trim()) setOutfitName(saved.name.slice(0, 48))
+      if (typeof saved.id === 'string') setSelectedSavedOutfitId(saved.id)
       const savedAssets = Array.isArray(saved.assetItems) ? saved.assetItems : []
       setSelected((saved.itemIds ?? []).reduce<Record<string, CatalogItem>>((items, id) => {
         const item = savedAssets.find(entry => entry.id === id) || catalog.find(entry => entry.id === id)
@@ -595,7 +682,10 @@ export default function DressUpStudio() {
       }, {}))
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
       if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
-      if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
+      if (saved.backgroundScene === 'day' || saved.backgroundScene === 'night' || saved.backgroundScene === 'plains' || saved.backgroundScene === 'desert' || saved.backgroundScene === 'forest' || saved.backgroundScene === 'nether' || saved.backgroundScene === 'end' || saved.backgroundScene === 'custom') setBackgroundScene(saved.backgroundScene)
+      else setBackgroundScene('custom')
+      if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
+      else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
       if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
       setSaveNotice('已恢复最近保存的本地穿搭')
     } catch {
@@ -610,7 +700,10 @@ export default function DressUpStudio() {
       itemIds: selectedItems.map(item => item.id),
       model,
       background,
+      backgroundScene,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
+      skinAssetId: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)?.[1] ?? null,
+      skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
       assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
@@ -639,9 +732,16 @@ export default function DressUpStudio() {
       const backupIds = new Set(backupAssets.map(item => item.id))
       const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string' && (catalog.some(item => item.id === id) || backupIds.has(id)))
       const nextSkinUrl = typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png;base64,') ? outfit.skinUrl : undefined
+      let nextSkinAssetUrl = typeof outfit.skinAssetUrl === 'string' && /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(outfit.skinAssetUrl) ? outfit.skinAssetUrl : undefined
+      let skinAssetUnavailable = false
       if (nextSkinUrl) {
         const image = await loadImage(nextSkinUrl)
         if (image.width !== 64 || image.height !== 64) throw new Error('备份中的皮肤不是 64 × 64 PNG')
+      } else if (nextSkinAssetUrl) {
+        try { await loadImage(nextSkinAssetUrl) } catch {
+          nextSkinAssetUrl = undefined
+          skinAssetUnavailable = true
+        }
       }
       const restored: LocalOutfit = {
         id: `outfit-${Date.now()}`,
@@ -649,7 +749,10 @@ export default function DressUpStudio() {
         itemIds,
         model: outfit.model === 'alex' ? 'alex' : 'steve',
         background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
+        backgroundScene: outfit.backgroundScene === 'day' || outfit.backgroundScene === 'night' || outfit.backgroundScene === 'plains' || outfit.backgroundScene === 'desert' || outfit.backgroundScene === 'forest' || outfit.backgroundScene === 'nether' || outfit.backgroundScene === 'end' ? outfit.backgroundScene : 'custom',
         skinUrl: nextSkinUrl,
+        skinAssetId: typeof outfit.skinAssetId === 'string' ? outfit.skinAssetId : null,
+        skinAssetUrl: nextSkinAssetUrl,
         skinName: typeof outfit.skinName === 'string' ? outfit.skinName.slice(0, 160) : '导入的皮肤',
         savedAt: new Date().toISOString(),
         assetItems: backupAssets as CatalogItem[],
@@ -666,12 +769,15 @@ export default function DressUpStudio() {
         return items
       }, {}))
       setModel(restored.model)
+      setBackgroundScene(restored.backgroundScene || 'custom')
       setBackground(restored.background)
-      setSkinUrl(restored.skinUrl || BASE_SKIN)
-      setSkinName(restored.skinUrl ? restored.skinName : 'Steve 默认皮肤')
-      setSaveNotice(restored.skinUrl
+      setSkinUrl(restored.skinAssetUrl || restored.skinUrl || BASE_SKIN)
+      setSkinName(restored.skinAssetUrl || restored.skinUrl ? restored.skinName : 'Steve 默认皮肤')
+      setSaveNotice(restored.skinAssetUrl || restored.skinUrl
         ? `已导入“${restored.name}”，并保存到此设备`
-        : `已导入“${restored.name}”。备份未包含可迁移的皮肤 PNG，已使用默认皮肤；如需保留自定义皮肤，请先导入 64 × 64 PNG 后重新备份。`)
+        : skinAssetUnavailable
+          ? `已导入“${restored.name}”，但备份引用的云端皮肤当前不可访问，已使用默认皮肤。`
+          : `已导入“${restored.name}”。备份未包含可迁移的皮肤 PNG，已使用默认皮肤；如需保留自定义皮肤，请先导入 64 × 64 PNG 后重新备份。`)
     } catch (error) {
       setSaveNotice(error instanceof Error ? `导入失败：${error.message}` : '导入失败，请选择有效的 CDPC JSON 备份')
     }
@@ -722,6 +828,9 @@ export default function DressUpStudio() {
   }
 
   function resetToDefault() {
+    const viewer = viewerRef.current
+    viewer?.playerObject.rotation.set(0, 0, 0)
+    viewer?.controls.reset()
     setSelectedSavedOutfitId('')
     setOutfitName('我的穿搭')
     setSelected({})
@@ -729,6 +838,11 @@ export default function DressUpStudio() {
     setSkinUrl(BASE_SKIN)
     setSkinName('Steve 默认皮肤')
     setBackground('#182437')
+    setBackgroundScene('night')
+    setPose('idle')
+    setElytraVisible(false)
+    setAutoRotate(false)
+    setViewAngle('front')
     setSaveNotice('已恢复默认角色状态；此前保存的本地穿搭不会被删除')
   }
 
@@ -749,14 +863,37 @@ export default function DressUpStudio() {
     }
   }
 
+  function setPreviewView(angle: StudioView) {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    viewer.playerObject.rotation.y = angle === 'back' ? Math.PI : angle === 'side' ? Math.PI / 2 : 0
+    setViewAngle(angle)
+  }
+
   function resetPreviewCamera() {
     const viewer = viewerRef.current
     if (!viewer) {
       setSaveNotice('3D 预览尚未准备好')
       return
     }
+    viewer.playerObject.rotation.set(0, 0, 0)
     viewer.controls.reset()
+    setViewAngle('front')
     setSaveNotice('已重置角色视角')
+  }
+
+  function removeCurrentCategory() {
+    if (category === '全部') return
+    if (!selected[category]) {
+      setSaveNotice(`${category}分类当前没有穿戴素材`)
+      return
+    }
+    setSelected(current => {
+      const next = { ...current }
+      delete next[category]
+      return next
+    })
+    setSaveNotice(`已脱下当前${category}素材`)
   }
 
   function randomOutfit() {
@@ -835,9 +972,21 @@ export default function DressUpStudio() {
               <button type="button" aria-pressed={model === 'steve'} onClick={() => setModel('steve')}>Steve 粗臂</button>
               <button type="button" aria-pressed={model === 'alex'} onClick={() => setModel('alex')}>Alex 细臂</button>
             </div>
-            <label className="dressup-background-control">背景 <input type="color" value={background} onChange={event => setBackground(event.target.value)} aria-label="预览背景颜色" /></label>
+            <label className="dressup-background-control">纯色背景 <input type="color" value={background} onChange={event => { setBackgroundScene('custom'); setBackground(event.target.value) }} aria-label="预览背景颜色" /></label>
+            <select aria-label="Minecraft 场景背景" value={backgroundScene} onChange={event => setBackgroundScene(event.target.value)}><option value="day">白天</option><option value="night">夜晚</option><option value="plains">平原</option><option value="desert">沙漠</option><option value="forest">森林</option><option value="nether">下界</option><option value="end">末地</option><option value="custom">自定义纯色</option></select>
           </div>
           <div className="dressup-preview-stage dressup-real-preview" ref={previewHost} />
+          <div className="dressup-preview-tools dressup-bottom-tools" role="group" aria-label="角色动作与视角">
+            <button type="button" aria-pressed={pose === 'idle'} onClick={() => setPose('idle')}>待机</button>
+            <button type="button" aria-pressed={pose === 'walk'} onClick={() => setPose('walk')}>行走</button>
+            <button type="button" aria-pressed={pose === 'fly'} onClick={() => setPose('fly')}>飞行</button>
+            <button type="button" aria-pressed={pose === 'wave'} onClick={() => setPose('wave')}>挥手</button>
+            <button type="button" aria-pressed={autoRotate} onClick={() => setAutoRotate(value => !value)}>{autoRotate ? '停止自动旋转' : '自动旋转'}</button>
+            <button type="button" aria-pressed={elytraVisible} onClick={() => setElytraVisible(value => !value)}>{elytraVisible ? '切换为披风' : '切换为鞘翅'}</button>
+            <button type="button" aria-pressed={viewAngle === 'front'} onClick={() => setPreviewView('front')}>正面</button>
+            <button type="button" aria-pressed={viewAngle === 'back'} onClick={() => setPreviewView('back')}>背面</button>
+            <button type="button" aria-pressed={viewAngle === 'side'} onClick={() => setPreviewView('side')}>侧面</button>
+          </div>
           <div className="dressup-preview-tools dressup-bottom-tools">
             <span className="dressup-skin-name" title={skinName}>当前皮肤：{skinName}</span>
             <button type="button" onClick={resetPreviewCamera}>重置视角</button>
@@ -855,6 +1004,7 @@ export default function DressUpStudio() {
             {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong></span><button type="button" onClick={() => toggleItem(item)}>移除</button></div>)}
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
           <div className="dressup-actions dressup-primary-actions">
+            <button type="button" onClick={removeCurrentCategory} disabled={category === '全部' || !selected[category]}>脱下当前分类</button>
             <button type="button" onClick={randomOutfit}>随机搭配</button>
             <button type="button" onClick={() => void saveOutfitToCloud()} disabled={savingCloud}>{savingCloud ? '云端保存中…' : '保存搭配'}</button>
             <button type="button" onClick={saveLocalOutfit}>保存本地草稿</button>

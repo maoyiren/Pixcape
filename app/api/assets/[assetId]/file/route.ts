@@ -9,12 +9,13 @@ type Context = { params: Promise<{ assetId: string }> }
 
 export async function GET(_request: Request, context: Context) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: '请先登录。' }, { status: 401 })
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: '请先登录后访问素材文件。' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
+  }
   const actor = await loadAssetActor(session.user.id)
-  if (!actor) return NextResponse.json({ error: '账号不可用。' }, { status: 403 })
   const { assetId } = await context.params
   try {
-    const asset = await readAssetFile(assetId, actor.id)
+    const asset = await readAssetFile(assetId, actor?.id ?? null)
     if (!asset) return NextResponse.json({ error: '素材不存在或无权访问。' }, { status: 404 })
     return new Response(new Uint8Array(asset.bytes), {
       headers: {

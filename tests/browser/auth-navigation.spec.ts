@@ -1,5 +1,31 @@
 import { expect, test } from '@playwright/test'
 
+async function createAuthenticatedUser(page: import('@playwright/test').Page, name = 'CDPC Test User') {
+  const email = `cdpc-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`
+  // Give each test an isolated forwarded IP so the persistent login/register limiter
+  // tests real rate limiting without letting parallel browser cases exhaust one bucket.
+  const testIp = `198.51.100.${Math.floor(Math.random() * 254) + 1}`
+  await page.setExtraHTTPHeaders({ 'x-real-ip': testIp })
+  const registration = await page.request.post('http://127.0.0.1:3000/api/register', {
+    headers: { 'x-real-ip': testIp },
+    data: { email, name, password: 'CDPC-Test-Password-2026!' },
+  })
+  expect(registration.status()).toBe(201)
+  await page.goto('/login')
+  await page.getByLabel('用户名或邮箱地址').fill(email)
+  await page.locator('#login-password').fill('CDPC-Test-Password-2026!')
+  await page.getByRole('button', { name: '登录 CDPC' }).click()
+  const trigger = page.getByRole('button', { name: new RegExp(name) })
+  await expect(trigger).toBeVisible({ timeout: 15_000 })
+  await trigger.click()
+  const session = await page.evaluate(async () => {
+    const response = await fetch('/api/auth/session', { cache: 'no-store' })
+    return response.json()
+  })
+  expect(session.user?.username).toBeTruthy()
+  return session.user.username as string
+}
+
 test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
@@ -19,7 +45,6 @@ test('primary creation routes render their intended mode entry points', async ({
   const routes = [
     { path: '/ai', heading: 'AI 生成', mode: 'ai' },
     { path: '/editor', heading: '单品编辑器', mode: 'editor' },
-    { path: '/wardrobe', heading: '我的衣橱', mode: 'wardrobe' },
     { path: '/studio', heading: '角色穿搭', mode: 'dress-up' },
   ]
 
@@ -28,9 +53,6 @@ test('primary creation routes render their intended mode entry points', async ({
     await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.mode)
     if (route.mode === 'ai') {
       await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible({ timeout: 15_000 })
-    } else if (route.mode === 'wardrobe') {
-      await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
-      await expect(page.getByRole('button', { name: /全部素材/ })).toBeVisible()
     } else if (route.mode === 'dress-up') {
       await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
       await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
@@ -41,6 +63,9 @@ test('primary creation routes render their intended mode entry points', async ({
       await expect(page.getByText('角色预览')).toBeVisible()
     }
   }
+  await page.goto('/wardrobe')
+  await expect(page).toHaveURL(/\/login\?callbackUrl=/)
+  await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
 })
 
 test('native AI studio exposes text and image generation controls', async ({ page }) => {
@@ -287,33 +312,25 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
 })
 
 test('authenticated avatar menu supports hover, click, outside dismissal and Escape focus return', async ({ page }) => {
-  const email = `avatar-${Date.now()}@example.com`
-  await page.goto('/register')
-  const registration = await page.request.post('http://127.0.0.1:3000/api/register', {
-    data: { email, name: 'CDPC Avatar Tester', password: 'CDPC-Avatar-Test-2026!' },
-  })
-  expect(registration.status()).toBe(201)
-
-  await page.goto('/login')
-  await page.getByLabel('用户名或邮箱地址').fill(email)
-  await page.locator('#login-password').fill('CDPC-Avatar-Test-2026!')
-  await page.getByRole('button', { name: '登录 CDPC' }).click()
-
+  const username = await createAuthenticatedUser(page, 'CDPC Avatar Tester')
   const trigger = page.getByRole('button', { name: /CDPC Avatar Tester/ })
   await expect(trigger).toBeVisible({ timeout: 15_000 })
-  await trigger.click()
-  await expect(page.getByText('账户正常')).toBeVisible()
+  await trigger.hover()
   const accountLinks = page.locator('.site-account-links')
-  await expect(accountLinks.getByRole('link', { name: /账户资料/ })).toHaveAttribute('href', '/account')
-  await expect(accountLinks.getByRole('link', { name: /我的衣橱/ })).toHaveAttribute('href', '/wardrobe')
-  await expect(accountLinks.getByRole('link', { name: /创作者中心/ })).toHaveAttribute('href', '/creator')
+  await expect(accountLinks.getByRole('link', { name: '个人主页' })).toBeVisible()
+  await trigger.click()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的衣橱', exact: true })).toHaveAttribute('href', `/u/${username}/wardrobe`)
+  await expect(page.locator('.site-account-status')).toContainText('账户正常')
+  await expect(accountLinks.getByRole('link', { name: '个人主页' })).toHaveAttribute('href', `/u/${username}`)
+  await expect(accountLinks.getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', `/u/${username}/wardrobe`)
+  await expect(accountLinks.getByRole('link', { name: '账户设置' })).toHaveAttribute('href', `/u/${username}/settings`)
+  await expect(accountLinks.getByRole('link', { name: '创作者中心' })).toHaveAttribute('href', '/creator')
 
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('link', { name: /账户资料/ })).toHaveCount(0)
+  await expect(accountLinks).toHaveCount(0)
   await expect(trigger).toBeFocused()
-
   await trigger.click()
-  await expect(page.getByRole('link', { name: /账户资料/ })).toBeVisible()
+  await expect(accountLinks.getByRole('link', { name: '个人主页' })).toBeVisible()
   await page.evaluate(() => {
     const target = document.createElement('div')
     target.id = 'account-menu-outside-test-target'
@@ -321,12 +338,10 @@ test('authenticated avatar menu supports hover, click, outside dismissal and Esc
     document.body.append(target)
   })
   await page.locator('#account-menu-outside-test-target').click()
-  await expect(page.getByRole('link', { name: /账户资料/ })).toHaveCount(0)
-
+  await expect(accountLinks).toHaveCount(0)
   await trigger.click()
-  await page.getByRole('link', { name: /账户资料/ }).click()
-  await expect(page).toHaveURL(/\/account$/)
-  await expect(page.getByRole('heading', { name: '我的账户' })).toBeVisible()
+  await accountLinks.getByRole('link', { name: '个人主页' }).click()
+  await expect(page).toHaveURL(new RegExp(`/u/${username}$`))
 })
 
 test('login page exposes email credentials and account registration', async ({ page }) => {
@@ -514,7 +529,8 @@ test('wardrobe asset handoff clears a previously active cloud outfit', async ({ 
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedPointer }) })
   })
 
-  await page.goto('/wardrobe')
+  const username = await createAuthenticatedUser(page, 'CDPC Wardrobe Asset Tester')
+  await page.goto(`/u/${username}/wardrobe`)
   await page.getByRole('button', { name: '在 3D 换装中使用' }).click()
   await expect.poll(() => savedPointer).toMatchObject({
     activeTool: 'WARDROBE', activeAssetId: 'skin-next', activeOutfitId: null,
@@ -543,7 +559,8 @@ test('wardrobe outfit handoff clears a previously active single asset', async ({
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedPointer }) })
   })
 
-  await page.goto('/wardrobe')
+  const username = await createAuthenticatedUser(page, 'CDPC Wardrobe Outfit Tester')
+  await page.goto(`/u/${username}/wardrobe`)
   await page.getByRole('button', { name: '我的穿搭' }).click()
   await page.getByRole('button', { name: '载入这套穿搭' }).click()
   await expect.poll(() => savedPointer).toMatchObject({
@@ -608,6 +625,8 @@ test('pixel editor saves a private cloud document and restores it on demand', as
   await expect.poll(() => createdDocument).not.toBeNull()
   expect((createdDocument?.document as { width: number }).width).toBe(64)
   await page.getByLabel('选择云端文档').selectOption('cloud-doc-1')
+  // The post-save document-list refresh is asynchronous; wait for its busy state to clear.
+  await expect(page.getByRole('button', { name: '打开云端' })).toBeEnabled()
   await page.getByRole('button', { name: '打开云端' }).click()
   const canvas = page.getByLabel('64 乘 64 像素画布')
   await expect.poll(() => canvas.evaluate(element => Array.from(
