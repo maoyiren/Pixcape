@@ -129,6 +129,7 @@
 | /studio?mode=ai | 生成结果绑定当前项目 |
 | /studio?mode=edit | 单件编辑与纹理数据同步 |
 | /studio?mode=outfit | 完整搭配、冲突检测、槽位规则 |
+| /workbench | 创作入口中心：汇总 AI、单张皮肤编辑和 Studio 入口，不维护第二套编辑器或项目状态 |
 | /creator | 登录用户的创作者中心入口 |
 | /u/[username] | 用户公开主页 |
 | /u/[username]/wardrobe | 用户公开穿搭 |
