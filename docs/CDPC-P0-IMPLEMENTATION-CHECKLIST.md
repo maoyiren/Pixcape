@@ -19,12 +19,12 @@
 ## P0-1：唯一 Next.js 运行入口与数据库
 
 - [ ] Next.js App Router 是所有正式产品页面的唯一运行入口。
-- [ ] `/workbench` 保留为创作入口中心，链接到 `/ai`、`/editor`、`/studio`，不维护第二套编辑器状态（代码已提交，浏览器测试待复验）。
-- [ ] `/studio` 是唯一换装/试穿/搭配工作区；`/workbench/ai`、`/workbench/edit`、`/workbench/dress` 与 `/dress-up`、`/bench` 只做保留查询参数的兼容重定向（代码已提交，浏览器测试待复验）。
+- [x] `/workbench` 保留为创作入口中心，链接到 `/ai`、`/editor`、`/studio`，不维护第二套编辑器状态（PR #64；CI #955 通过）。
+- [x] `/studio` 是唯一换装/试穿/搭配工作区；`/workbench/ai`、`/workbench/edit`、`/workbench/dress` 与 `/dress-up`、`/bench` 只做保留查询参数的兼容重定向（PR #64 `tests/browser/legacy-routes.spec.ts`；CI #955 通过）。
 - [ ] PostgreSQL 是唯一运行时数据库；只保留一份活动 Prisma Schema 和 Migration 路径。
 - [ ] 移除运行时的 MySQL / SQLite provider 分支、驱动和测试矩阵；历史 migration 只有在生产数据库确认、备份与迁移策略通过后才可清理。
-- [ ] `npm ci` 在仓库声明的 npm 版本下通过，package.json 与 package-lock.json 完全同步。
-- [ ] Prisma generate、migration deploy、PostgreSQL 集成测试通过。
+- [x] PR #61 head 上 lock-refresh #30 成功，`npm ci`、Prisma generate/migrate、PostgreSQL integration、unit、browser regression、Next.js build 均通过（CI #939；尚待同步 main 并合入）。
+- [x] PR #61 head 上 Prisma generate、migration deploy、PostgreSQL 集成测试通过（CI #939、Preview/Security #736；尚待同步 main 并合入）。
 
 ## P0-2：认证、会话与权限
 
@@ -88,3 +88,12 @@
 ## PR 更新纪律
 
 每次提交都更新本清单：将任务标记为完成前，必须附上对应代码位置、测试命令 / CI 运行链接或人工验收证据。未执行的测试标记为“未验证”，失败项记录错误与下一步。所有 P0 项通过后，才把本 PR 转为 Ready for review；合并和生产发布仍需单独确认数据安全与部署结果。
+
+
+## 最新进度更新（2026-11-06 16:55 UTC）
+
+- PR #61 head `aa6c4253a04c9a6ef35507e9f904a63d988326e9`：CI #939、Preview/Security #736、Docker smoke #946 均成功；Docker 的 publish / 1Panel deploy job 为 skipped，因此没有发布镜像或部署生产。
+- PR #61 相对当前 main 落后 2 个提交（compare status: diverged），合并前必须同步并重跑检查；PR 仍为 Draft。
+- PR #64 head `4d8d039d833a156a49580a69824eca4d973d0130`：CI #955、Preview/Security #745、Docker smoke #955 均成功。该 PR 当前 workflow 基于 main 的旧多数据库 CI/Docker 流程；不能把这些绿色结果误当成 PostgreSQL-only 集成验收。PR #61 合入后必须在新 main 上重跑。
+- PR #64 仅完成旧路由查询参数保留重定向和工作台入口回归；不代表 Studio 核心换装、保存恢复或 PNG 导出闭环完成。
+- 当前仍未确认生产 DATABASE_URL、生产数据库版本、备份可恢复性；不执行生产迁移、不触发 1Panel 发布。
