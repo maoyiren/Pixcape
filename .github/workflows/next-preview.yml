@@ -124,10 +124,8 @@ jobs:
         run: npm run test:unit
       - name: Run PostgreSQL integration tests
         run: npm run test:integration
-      - name: Build existing Vite app
+      - name: Build Next.js production app
         run: npm run build
-      - name: Build Next.js app
-        run: npm run next:build
       - name: Build isolated Next.js runtime image (PostgreSQL)
         run: docker build --build-arg DATABASE_PROVIDER=postgresql --file Dockerfile.nextjs --tag pixcape-nextjs-preview .
       - name: Build isolated Next.js runtime image (MySQL)
