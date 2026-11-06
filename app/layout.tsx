@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { SiteNav } from './components/site-nav'
+import { ServiceWorkerRegister } from './components/service-worker-register'
 import { CdpcMantineProvider } from './components/mantine-provider'
 import '@mantine/core/styles.css'
 import '../src/tailwind.css'
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN">
       <body>
+        <ServiceWorkerRegister />
         <CdpcMantineProvider>
           <SiteNav />
           {children}
