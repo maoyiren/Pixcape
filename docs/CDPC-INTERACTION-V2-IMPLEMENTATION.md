@@ -330,3 +330,44 @@
 - 先审计仓库和锁文件，再决定新增、保留或删除依赖；锁文件只能由包管理器生成。
 - 本文件是唯一产品交互与技术实施主计划。专题文档只作为本计划的详细规格或操作手册，不得另立冲突路线。
 - 实施 PR 必须引用本计划章节、列出变更范围和测试证据；纯文档合并不代表代码完成。
+
+
+---
+
+## 2026-11-06 实际代码审计记录（新增，非完成声明）
+
+审计对象：`main`，基线 commit `13db34a3aa682833e5f6b6501e35a7ed90b3f280`。
+
+### 数据库单一化差距
+
+已核实 main 仍然维护三套数据库路径，PostgreSQL Only 尚未实施：
+
+- `package.json` 的 `db:generate:all` 同时生成 PostgreSQL/MySQL/SQLite Client；仍有 MySQL、SQLite 限流测试脚本。
+- 依赖仍包含 `@prisma/adapter-mariadb`、`@prisma/adapter-better-sqlite3`、`mariadb`、`better-sqlite3`；SQLite 原生模块仍影响 Docker build/runtime。
+- `prisma/schema.mysql.prisma`、`prisma/schema.sqlite.prisma` 和 `prisma/migrations-mysql`、`prisma/migrations-sqlite` 仍存在。
+- `prisma.config.ts`、`scripts/db-push.mjs`、`lib/prisma.ts` 仍按 `DATABASE_PROVIDER` 选择数据库。
+- `lib/login-rate-limit-store.ts` 同时实现 PostgreSQL、MySQL、SQLite 三种限流 SQL。
+- `docker-compose.yml`、`.env.example`、`.github/workflows/ci.yml`、`.github/workflows/next-preview.yml` 和 `.github/workflows/docker-publish.yml` 仍有多数据库选项/服务/构建验证；浏览器测试当前还配置 SQLite。
+- PostgreSQL 已经有独立的 `prisma/schema.prisma`、`prisma/migrations/` 和 migration lock，因此单一化的目标路径已经存在。
+
+### 安全实施顺序（不可跳步）
+
+1. 查明生产 `DATABASE_URL` 实际指向的数据库类型、版本、数据量和备份状态；确认之前是否有 MySQL/SQLite 部署或用户数据。
+2. 若生产已是 PostgreSQL，先确认实际 migration 历史与数据备份，再移除多数据库运行分支；若生产数据不在 PostgreSQL，先单独制定并演练迁移、校验和回滚方案。
+3. 统一 `lib/prisma.ts`、`prisma.config.ts`、db scripts、限流存储实现与所有测试为 PostgreSQL。
+4. 更新 `package.json` 并使用 npm 正式重算 `package-lock.json`；不得手工猜改 lockfile。
+5. 统一 Dockerfile/Compose、入口脚本、环境变量文档、CI 与 Docker smoke test；删除 MySQL/SQLite 服务、矩阵和原生 SQLite runtime 依赖。
+6. 只有在 PostgreSQL CI、Next.js build、Docker build、浏览器 E2E 全部通过，且数据迁移/备份方案确认后，才删除旧 Schema 与 migration 目录。
+7. 部署前后验证数据库连通、迁移状态、登录/限流/保存/读取/导出及健康检查；不自动清空或重建生产数据库。
+
+### PR #58 回归记录
+
+- 首轮 CI 的单元测试、三种数据库集成测试和 Next.js build 通过，但浏览器回归失败。
+- 失败原因已定位：工作台“恢复默认角色”后的测试仍查找旧的“正面”按钮；PR 将其改成“切换角色视角”下拉选择器，但漏改最后一处断言。
+- 已在 PR #58 分支将该断言改为检查视角选择器值为 `front`；新 CI 正在运行，尚未宣告通过。
+
+### 运行时/页面入口审计提醒
+
+- main 的 `package.json` dev/build 指向 Next.js，未声明 Vite 依赖；Dockerfile 另行构建并静态打包 Blockbench 到 `/blockbench/`。这与 Vite 页面运行时不是同一概念，但仍需核实该子应用是否仍被产品页面链接/依赖，以及用户要求的“所有正式页面 Next.js”边界。
+- `.env.example` 仍声称生产 `/studio/` 使用 Vite studio，属于明显过期文档；需与实际 Next.js 路由和 Docker nginx 配置一起更新。
+- 当前 CI 仍测试三数据库，且 Docker workflow 名称/注释仍以 multi-database 为目标，必须随 PostgreSQL Only 实施同步清理。
