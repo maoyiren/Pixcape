@@ -12,6 +12,30 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
 import { consumeLoginRateLimit } from '@/lib/login-rate-limit'
 
+async function ensureUsernameForUser(userId: string): Promise<string | null> {
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.user.findUnique({ where: { id: userId }, select: { id: true, username: true } })
+    if (!current) return null
+    if (current.username) return current.username
+
+    let candidate = `user-${current.id.slice(0, 16).toLowerCase()}`
+    let suffix = 0
+    while (true) {
+      const reservation = await tx.userSlugHistory.upsert({
+        where: { username: candidate },
+        create: { userId: current.id, username: candidate },
+        update: {},
+        select: { userId: true },
+      })
+      if (reservation.userId === current.id) break
+      suffix += 1
+      candidate = `user-${current.id.slice(0, 12).toLowerCase()}-${suffix}`
+    }
+    await tx.user.update({ where: { id: current.id }, data: { username: candidate } })
+    return candidate
+  })
+}
+
 const authSecret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
 async function buildProviders(): Promise<NextAuthOptions['providers']> {
 const providers: NextAuthOptions['providers'] = []
@@ -44,30 +68,6 @@ async function allowCredentialAttempt(request: { headers?: unknown }): Promise<b
     // Fail closed when the persistent rate-limit store is unavailable.
     return false
   }
-}
-
-async function ensureUsernameForUser(userId: string): Promise<string | null> {
-  return prisma.$transaction(async (tx) => {
-    const current = await tx.user.findUnique({ where: { id: userId }, select: { id: true, username: true } })
-    if (!current) return null
-    if (current.username) return current.username
-
-    let candidate = `user-${current.id.slice(0, 16).toLowerCase()}`
-    let suffix = 0
-    while (true) {
-      const reservation = await tx.userSlugHistory.upsert({
-        where: { username: candidate },
-        create: { userId: current.id, username: candidate },
-        update: {},
-        select: { userId: true },
-      })
-      if (reservation.userId === current.id) break
-      suffix += 1
-      candidate = `user-${current.id.slice(0, 12).toLowerCase()}-${suffix}`
-    }
-    await tx.user.update({ where: { id: current.id }, data: { username: candidate } })
-    return candidate
-  })
 }
 
 function safeEqual(left: string, right: string): boolean {
