@@ -64,16 +64,15 @@ self.addEventListener('fetch', (event) => {
     // Next build assets are content-hashed and safe to cache first.
     if (isNextStatic && cached) return cached
 
-    const refresh = fetch(request).then((response) => {
+    try {
+      const response = await fetch(request)
       if (response.ok && response.type === 'basic') {
-        void cache.put(request, response.clone())
+        await cache.put(request, response.clone())
       }
       return response
-    })
-
-    // For mutable public assets, update the cache in the background.
-    if (!isNextStatic) event.waitUntil(refresh.catch(() => undefined))
-    if (cached) return cached
-    return refresh
+    } catch {
+      if (cached) return cached
+      throw new Error('CDPC asset unavailable offline')
+    }
   })())
 })
