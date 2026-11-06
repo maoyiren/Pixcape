@@ -19,8 +19,8 @@
 ## P0-1：唯一 Next.js 运行入口与数据库
 
 - [ ] Next.js App Router 是所有正式产品页面的唯一运行入口。
-- [ ] `/workbench` 保留为创作入口中心，链接到 `/ai`、`/editor`、`/studio`，不维护第二套编辑器状态。
-- [ ] `/studio` 是唯一换装/试穿/搭配工作区；`/workbench/ai`、`/workbench/edit`、`/workbench/dress` 与 `/dress-up`、`/bench` 只做保留查询参数的兼容重定向。
+- [ ] `/workbench` 保留为创作入口中心，链接到 `/ai`、`/editor`、`/studio`，不维护第二套编辑器状态（代码已提交，浏览器测试待复验）。
+- [ ] `/studio` 是唯一换装/试穿/搭配工作区；`/workbench/ai`、`/workbench/edit`、`/workbench/dress` 与 `/dress-up`、`/bench` 只做保留查询参数的兼容重定向（代码已提交，浏览器测试待复验）。
 - [ ] PostgreSQL 是唯一运行时数据库；只保留一份活动 Prisma Schema 和 Migration 路径。
 - [ ] 移除运行时的 MySQL / SQLite provider 分支、驱动和测试矩阵；历史 migration 只有在生产数据库确认、备份与迁移策略通过后才可清理。
 - [ ] `npm ci` 在仓库声明的 npm 版本下通过，package.json 与 package-lock.json 完全同步。
