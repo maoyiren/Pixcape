@@ -16,6 +16,8 @@ on:
       - 'tests/**'
       - 'next.config.ts'
       - 'tsconfig.next.json'
+      - 'tsconfig.json'
+      - 'package-lock.json'
       - 'package.json'
       - '.env.example'
       - 'docs/NEXTJS-USER-ROLES-MIGRATION.md'

@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
     "build": "npm run next:build",
-    "build:app": "tsc -b && vite build",
     "build:blockbench": "node scripts/build-blockbench.mjs",
     "preview": "next start --hostname 0.0.0.0",
     "next:dev": "next dev --hostname 0.0.0.0",
@@ -55,18 +54,14 @@
     "@hookform/resolvers": "^5.2.2",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4.3.4",
-    "@tailwindcss/vite": "^4.3.4",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
-    "@vitejs/plugin-react": "^6.1.2",
     "prisma": "^7.10.1",
     "tailwindcss": "^4.3.4",
-    "typescript": "^7.0.2",
-    "vite": "^8.3.5",
-    "vite-plugin-pwa": "^2.0.0"
+    "typescript": "^7.0.2"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.2",
