@@ -157,7 +157,8 @@ Workbench 复用 Skin、Asset、Wardrobe 和统一渲染服务，不重复建立
 | `/` | 首页与创作入口 |
 | `/ai` | AI 生成入口 |
 | `/editor` | 单项皮肤/纹理编辑入口 |
-| `/workbench` | 创作入口中心：汇总 AI、单张编辑和 Studio 入口，不承载第二套编辑器状态 |\n| `/studio` | 唯一换装、试穿、搭配和项目工作区，通过 mode/project 参数进入不同工作模式 |
+| `/workbench` | 创作入口中心：汇总 AI、单张编辑和 Studio 入口，不承载第二套编辑器状态 |
+| `/studio` | 唯一换装、试穿、搭配和项目工作区，通过 mode/project 参数进入不同工作模式 |
 | `/studio?mode=wardrobe` | 换装与衣橱模式 |
 | `/studio?mode=edit` | 单件/纹理编辑模式 |
 | `/studio?mode=outfit` | 完整搭配模式 |
