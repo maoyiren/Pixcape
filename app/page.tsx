@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/auth'
 
 const tools = [
   { number: '00', title: 'Studio 换装工作室', tag: '角色搭配', description: '在同一个 3D 工作台切换披肩、外套、披风与其他服装，实时预览并保存穿搭。', href: '/studio', action: '进入 Studio', featured: true },
@@ -8,12 +10,18 @@ const tools = [
   { number: '04', title: '创作者中心', tag: '公开资料', description: '完善创作者展示资料，为发布原创作品与社区功能做好准备。', href: '/creator', action: '进入创作者中心', featured: false },
 ]
 
-const quickLinks = [
-  { label: 'Studio', detail: '进入角色换装与搭配工作台', href: '/studio', symbol: '◉' },
-  { label: '我的账户', detail: '查看账户资料与安全状态', href: '/account', symbol: '↗' },
-]
-
-export default function MigrationHome() {
+export default async function MigrationHome() {
+  const session = await getServerSession(authOptions)
+  const username = session?.user?.username
+  const quickLinks = [
+    { label: 'Studio', detail: '进入角色换装与搭配工作台', href: '/studio', symbol: '◉' },
+    {
+      label: username ? '我的个人主页' : '登录 / 注册',
+      detail: username ? '查看公开主页与个人创作' : '登录后建立你的创作空间',
+      href: username ? `/u/${username}` : '/login',
+      symbol: '↗',
+    },
+  ]
   return (
     <main className="cdpc-home cdpc-page">
       <section className="cdpc-hero">
