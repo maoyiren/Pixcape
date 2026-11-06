@@ -140,7 +140,7 @@
 | /outfit/[id]、/asset/[id]、/skin/[id] | 独立内容详情与分享 |
 | /admin 及子路由 | 服务端授权、用户/素材/审核/统计真实数据 |
 
-> 路由清单是目标契约，不代表所有路由当前都已存在。`/studio` 是唯一创作工作台；`/u/[username]` 是用户公开空间，其 `/favorites` 和 `/settings` 子路由必须执行本人权限检查。旧 `/workbench`、`/wardrobe`、`/dress-up`、`/creator` 等路径仅在确认历史链接和业务语义后做兼容重定向，并保留 mode/project 参数；不得同时维护两套工作台。
+> 路由清单是目标契约，不代表所有路由当前都已存在。`/studio` 是唯一创作工作台；`/u/[username]` 是用户公开空间，其 `/favorites` 和 `/settings` 子路由必须执行本人权限检查。`/workbench` 保留为创作入口中心，不承载第二套编辑器；`/studio` 是唯一换装、试穿和搭配工作区。旧 `/workbench/ai`、`/workbench/edit`、`/workbench/dress` 分别兼容重定向到 `/ai`、`/editor`、`/studio`；旧 `/dress-up` 重定向到 `/studio`，旧 `/wardrobe` 按用户身份转到 `/u/[username]/wardrobe`，旧 `/creator/[id]` 兼容至对应用户空间。重定向必须保留必要的 mode/project/资源参数。
 
 ## 全站统一交互规范
 
