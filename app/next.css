@@ -557,3 +557,10 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
 @media(max-width:720px){.site-nav{position:sticky;align-items:center;flex-wrap:wrap;gap:7px 10px;min-height:0;padding:9px 12px}.site-brand{min-height:36px}.site-nav-account{margin-left:auto}.site-nav-links{order:3;flex:1 0 100%;display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px;overflow:visible;padding:2px 0 1px}.site-nav-links>a,.site-nav-menu>summary{min-height:36px!important;padding:6px 10px!important;font-size:12px!important}.site-nav-dropdown{left:0;top:calc(100% + 5px);width:min(250px,calc(100vw - 24px))}.site-nav .site-nav-account>a{min-height:36px;padding:6px 10px;font-size:12px}.site-nav .site-nav-account .site-nav-admin{display:inline-flex!important}}
 @media(max-width:380px){.site-nav .site-nav-account .site-nav-user span:last-child{display:none}.site-nav-links>a,.site-nav-menu>summary{padding-inline:8px!important}}
 @media(prefers-reduced-motion:reduce){.site-nav a,.site-nav-menu>summary{transition:none}}
+
+/* Compact, single-control selectors for studio action and camera presets. */
+.dressup-preview-select{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 9px;border:1px solid #344258;border-radius:7px;background:#182538;color:#aebbd0;font-size:11px}
+.dressup-preview-select select{max-width:112px;min-width:76px;min-height:32px;border:0;outline:0;background:transparent;color:#e5edf9;font:inherit;font-size:12px;cursor:pointer}
+.dressup-preview-select select option{background:#182538;color:#e5edf9}
+.dressup-preview-select:focus-within{outline:2px solid #9bb8ff;outline-offset:2px}
+@media(max-width:700px){.dressup-preview-select{flex:1 1 calc(50% - 6px);justify-content:space-between}.dressup-preview-select select{max-width:none;min-width:0;flex:1}}
