@@ -2,7 +2,12 @@ import { expect, test } from '@playwright/test'
 
 async function createAuthenticatedUser(page: import('@playwright/test').Page, name = 'CDPC Test User') {
   const email = `cdpc-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`
+  // Give each test an isolated forwarded IP so the persistent login/register limiter
+  // tests real rate limiting without letting parallel browser cases exhaust one bucket.
+  const testIp = `198.51.100.${Math.floor(Math.random() * 254) + 1}`
+  await page.setExtraHTTPHeaders({ 'x-real-ip': testIp })
   const registration = await page.request.post('http://127.0.0.1:3000/api/register', {
+    headers: { 'x-real-ip': testIp },
     data: { email, name, password: 'CDPC-Test-Password-2026!' },
   })
   expect(registration.status()).toBe(201)
@@ -13,9 +18,12 @@ async function createAuthenticatedUser(page: import('@playwright/test').Page, na
   const trigger = page.getByRole('button', { name: new RegExp(name) })
   await expect(trigger).toBeVisible({ timeout: 15_000 })
   await trigger.click()
-  const usernameLabel = page.locator('.site-account-identity small').filter({ hasText: /^@/ })
-  await expect(usernameLabel).toBeVisible()
-  return (await usernameLabel.textContent())!.trim().slice(1)
+  const session = await page.evaluate(async () => {
+    const response = await fetch('/api/auth/session', { cache: 'no-store' })
+    return response.json()
+  })
+  expect(session.user?.username).toBeTruthy()
+  return session.user.username as string
 }
 
 test('main navigation exposes the core CDPC routes', async ({ page }) => {
@@ -307,6 +315,324 @@ test('authenticated avatar menu supports hover, click, outside dismissal and Esc
   const username = await createAuthenticatedUser(page, 'CDPC Avatar Tester')
   const trigger = page.getByRole('button', { name: /CDPC Avatar Tester/ })
   const accountLinks = page.locator('.site-account-links')
+  await expect(page.locator('.site-account-identity small').filter({ hasText: new RegExp(`^@${username}import { expect, test } from '@playwright/test'
+
+async function createAuthenticatedUser(page: import('@playwright/test').Page, name = 'CDPC Test User') {
+  const email = `cdpc-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`
+  // Give each test an isolated forwarded IP so the persistent login/register limiter
+  // tests real rate limiting without letting parallel browser cases exhaust one bucket.
+  const testIp = `198.51.100.${Math.floor(Math.random() * 254) + 1}`
+  await page.setExtraHTTPHeaders({ 'x-real-ip': testIp })
+  const registration = await page.request.post('http://127.0.0.1:3000/api/register', {
+    headers: { 'x-real-ip': testIp },
+    data: { email, name, password: 'CDPC-Test-Password-2026!' },
+  })
+  expect(registration.status()).toBe(201)
+  await page.goto('/login')
+  await page.getByLabel('用户名或邮箱地址').fill(email)
+  await page.locator('#login-password').fill('CDPC-Test-Password-2026!')
+  await page.getByRole('button', { name: '登录 CDPC' }).click()
+  const trigger = page.getByRole('button', { name: new RegExp(name) })
+  await expect(trigger).toBeVisible({ timeout: 15_000 })
+  await trigger.click()
+  const session = await page.evaluate(async () => {
+    const response = await fetch('/api/auth/session', { cache: 'no-store' })
+    return response.json()
+  })
+  expect(session.user?.username).toBeTruthy()
+  return session.user.username as string
+}
+
+test('main navigation exposes the core CDPC routes', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'Studio' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的衣橱' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
+  await page.getByRole('navigation', { name: '主导航' }).getByText('创作工具').click()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: /AI 创作/ })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: /单品编辑器/ })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: /创作工坊/ })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '登录' })).toBeVisible()
+  await expect(page.getByRole('contentinfo')).toContainText('CDPC')
+})
+
+test('primary creation routes render their intended mode entry points', async ({ page }) => {
+  const routes = [
+    { path: '/ai', heading: 'AI 生成', mode: 'ai' },
+    { path: '/editor', heading: '单品编辑器', mode: 'editor' },
+    { path: '/studio', heading: '角色穿搭', mode: 'dress-up' },
+  ]
+
+  for (const route of routes) {
+    await page.goto(route.path)
+    await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.mode)
+    if (route.mode === 'ai') {
+      await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible({ timeout: 15_000 })
+    } else if (route.mode === 'dress-up') {
+      await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
+      await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
+    } else {
+      await expect(page.getByRole('heading', { name: '64 × 64 像素编辑器' })).toBeVisible()
+      await expect(page.getByLabel('64 乘 64 像素画布')).toBeVisible()
+      await page.getByRole('button', { name: '服装预览与搭配' }).click()
+      await expect(page.getByText('角色预览')).toBeVisible()
+    }
+  }
+  await page.goto('/wardrobe')
+  await expect(page).toHaveURL(/\/login\?callbackUrl=/)
+  await expect(page.getByRole('heading', { name: '登录 / 创建账户' })).toBeVisible()
+})
+
+test('native AI studio exposes text and image generation controls', async ({ page }) => {
+  await page.goto('/ai')
+  await expect(page.locator('[data-studio-mode="ai"]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
+  await expect(page.getByLabel('角色描述')).toBeVisible()
+  await expect(page.getByRole('tab', { name: /文字生成/ })).toBeVisible()
+  await page.getByRole('tab', { name: /参考图转换/ }).click()
+  await expect(page.getByRole('button', { name: /选择 PNG \/ JPG \/ WebP/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /生成皮肤 PNG/ })).toBeVisible()
+  await page.getByRole('button', { name: '返回皮肤工作台' }).click()
+  await expect(page).toHaveURL(/\/workbench$/)
+})
+
+
+test('AI-generated skin can be saved into the shared wardrobe and workspace', async ({ page }) => {
+  const pngDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#123456'
+    context.fillRect(0, 0, 64, 64)
+    return canvas.toDataURL('image/png')
+  })
+  let savedAsset: Record<string, unknown> | null = null
+  let savedWorkspace: Record<string, unknown> | null = null
+  await page.route('**/api/ai/models', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ models: [{ id: 'test:model', provider: 'test', model: 'test-model', label: 'Test', textToImage: true, imageToImage: true }], providers: [] }),
+  }))
+  await page.route('**/api/ai/generate', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ imageDataUrl: pngDataUrl, provider: 'test', model: 'test-model', elapsedMs: 100, notice: 'test', outputKind: 'minecraft-skin' }),
+  }))
+  await page.route('**/api/assets', async route => {
+    if (route.request().method() !== 'POST') return route.continue()
+    const form = route.request().postDataBuffer()
+    savedAsset = { received: Boolean(form), category: 'SKIN', visibility: 'PRIVATE' }
+    await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: { id: 'asset-ai-demo' } }) })
+  })
+  await page.route('**/api/assets/asset-ai-demo/file', route => route.fulfill({
+    status: 200, contentType: 'image/png', body: Buffer.from(pngDataUrl.split(',')[1], 'base64'),
+  }))
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedWorkspace ?? {
+        projectId: 'project-demo', activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-demo',
+      } }) })
+      return
+    }
+    savedWorkspace = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedWorkspace }) })
+  })
+  await page.goto('/ai')
+  await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible()
+  await page.getByRole('button', { name: '生成皮肤 PNG' }).click()
+  await expect(page.getByRole('button', { name: '保存到我的衣橱' })).toBeVisible()
+  await page.getByRole('button', { name: '保存到我的衣橱' }).click()
+  await expect(page.getByRole('button', { name: '已保存到衣橱' })).toBeVisible()
+  expect(savedAsset).toEqual({ received: true, category: 'SKIN', visibility: 'PRIVATE' })
+  expect(savedWorkspace).toEqual({
+    projectId: 'project-demo', activeTool: 'AI_GENERATOR', activeAssetId: 'asset-ai-demo', activeOutfitId: null,
+  })
+  await expect(page.getByRole('link', { name: '打开衣橱' })).toHaveAttribute('href', '/wardrobe')
+
+  await page.goto('/editor')
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect.poll(() => canvas.evaluate(element => (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data[2])).toBe(86)
+})
+
+test('AI skin remains saved when workspace synchronization fails', async ({ page }) => {
+  const pngDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#654321'
+    context.fillRect(0, 0, 64, 64)
+    return canvas.toDataURL('image/png')
+  })
+  await page.route('**/api/ai/models', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ models: [{ id: 'test:model', provider: 'test', model: 'test-model', label: 'Test', textToImage: true, imageToImage: true }], providers: [] }),
+  }))
+  await page.route('**/api/ai/generate', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ imageDataUrl: pngDataUrl, provider: 'test', model: 'test-model', elapsedMs: 100, notice: 'test', outputKind: 'minecraft-skin' }),
+  }))
+  await page.route('**/api/assets', route => route.fulfill({
+    status: 201, contentType: 'application/json', body: JSON.stringify({ item: { id: 'asset-ai-partial' } }),
+  }))
+  await page.route('**/api/workspace', route => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+      } }) })
+    }
+    return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'workspace unavailable' }) })
+  })
+
+  await page.goto('/ai')
+  await page.getByRole('button', { name: '生成皮肤 PNG' }).click()
+  await page.getByRole('button', { name: '保存到我的衣橱' }).click()
+  await expect(page.getByRole('button', { name: '已保存到衣橱' })).toBeVisible()
+  await expect(page.getByRole('status')).toContainText('皮肤已保存到衣橱，但工作区同步失败')
+  await expect(page.getByRole('link', { name: '打开衣橱' })).toHaveAttribute('href', '/wardrobe')
+})
+
+test('workbench nested routes map to their intended workflows', async ({ page }) => {
+  const routes = [
+    { path: '/workbench/ai', heading: 'AI 生成' },
+    { path: '/workbench/edit', heading: '单品编辑器' },
+    { path: '/workbench/dress', heading: '角色穿搭', canonical: '/studio' },
+  ]
+
+  for (const route of routes) {
+    await page.goto(route.path)
+    if ('canonical' in route && route.canonical) {
+      await expect(page).toHaveURL(new RegExp(route.canonical.replace('/', '\\/')))
+      await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
+    }
+    await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.path.endsWith('/ai') ? 'ai' : route.path.endsWith('/dress') ? 'dress-up' : 'editor')
+  }
+})
+
+
+test('3D studio saves selected garments as cloud assets and an account outfit', async ({ page }) => {
+  const pngDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#345678'
+    context.fillRect(0, 0, 64, 64)
+    return canvas.toDataURL('image/png')
+  })
+  const pngBytes = Buffer.from(pngDataUrl.split(',')[1], 'base64')
+  let outfitInput: Record<string, unknown> | null = null
+  let savedOutfit: Record<string, any> | null = null
+  let assetUploadCount = 0
+
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
+    status: 200,
+    contentType: 'image/png',
+    headers: { 'Access-Control-Allow-Origin': '*' },
+    body: pngBytes,
+  }))
+  await page.route('**/api/assets*', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'POST' && url.pathname === '/api/assets') {
+      assetUploadCount += 1
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({
+        item: { id: 'asset-shawl-cloud', fileUrl: '/api/assets/asset-shawl-cloud/file' },
+      }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname === '/api/assets') {
+      if (url.searchParams.get('cursor') === 'wardrobe-page-2') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+          id: 'asset-coat-cloud', category: 'COAT', attribution: '我的衣橱外套',
+          fileUrl: '/api/assets/asset-coat-cloud/file', isFavorite: false,
+        }, {
+          id: 'asset-cape-cloud', category: 'CAPE', attribution: '我的衣橱披风',
+          fileUrl: '/api/assets/asset-cape-cloud/file', isFavorite: false,
+        }], nextCursor: null }) })
+        return
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+        id: 'asset-shawl-cloud', category: 'SHAWL', attribution: '我的衣橱披肩',
+        fileUrl: '/api/assets/asset-shawl-cloud/file', isFavorite: false,
+      }], nextCursor: 'wardrobe-page-2' }) })
+      return
+    }
+    await route.continue()
+  })
+  await page.route('**/api/outfits', async route => {
+    if (route.request().method() === 'POST') {
+      outfitInput = route.request().postDataJSON() as Record<string, unknown>
+      savedOutfit = {
+        id: 'outfit-cloud-demo',
+        name: outfitInput.name,
+        skinAssetId: outfitInput.skinAssetId,
+        skinModel: outfitInput.skinModel,
+        background: outfitInput.background,
+        updatedAt: new Date().toISOString(),
+        items: (outfitInput.items as Array<Record<string, unknown>>).map(item => ({
+          assetId: item.assetId, category: item.category, sortOrder: item.sortOrder, equipped: item.equipped,
+        })),
+      }
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: { id: 'outfit-cloud-demo' } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: savedOutfit ? [savedOutfit] : [] }) })
+  })
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: route.request().postDataJSON() }) })
+  })
+
+  await page.goto('/dress-up')
+  await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
+  await page.getByRole('button', { name: '披肩', exact: true }).click()
+  await expect(page.getByRole('button', { name: /我的衣橱披肩/ })).toBeVisible()
+  await expect(page.locator('.dressup-item-thumbnail').first()).toBeVisible()
+  await page.getByRole('button', { name: /我的衣橱披肩/ }).click()
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披肩')
+  await page.getByRole('button', { name: /眼眸花披肩/ }).click()
+  await page.getByLabel('穿搭名称').fill('云端披肩测试')
+  await page.getByRole('button', { name: '保存搭配' }).click()
+  await expect(page.getByText(/已保存到账号云端/)).toBeVisible()
+  expect(assetUploadCount).toBe(1)
+  expect(outfitInput).toMatchObject({
+    name: '云端披肩测试',
+    skinModel: 'CLASSIC',
+    items: [{ assetId: 'asset-shawl-cloud', category: 'SHAWL', sortOrder: 0, equipped: true }],
+  })
+  await expect(page.locator('#dressup-saved-outfit')).toContainText('云端披肩测试')
+
+  await page.getByRole('button', { name: '外套', exact: true }).click()
+  await expect(page.getByRole('button', { name: /我的衣橱外套/ })).toBeVisible()
+  await page.getByRole('button', { name: /我的衣橱外套/ }).click()
+  await page.getByRole('button', { name: '保存本地草稿' }).click()
+  await expect(page.getByText(/已保存到此设备/)).toBeVisible()
+
+  // Cape is a separate back-equipment category, not a coat or shawl overlay.
+  await page.getByRole('button', { name: '披风', exact: true }).click()
+  await expect(page.getByRole('button', { name: /我的衣橱披风/ })).toBeVisible()
+  await page.getByRole('button', { name: /我的衣橱披风/ }).click()
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披风')
+  await page.getByRole('button', { name: '保存本地草稿' }).click()
+  await expect(page.getByText(/已保存到此设备/)).toBeVisible()
+
+  await page.reload()
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱外套')
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披风')
+})
+
+test('authenticated avatar menu supports hover, click, outside dismissal and Escape focus return', async ({ page }) => {
+  const username = await createAuthenticatedUser(page, 'CDPC Avatar Tester')
+  const trigger = page.getByRole('button', { name: /CDPC Avatar Tester/ })
+) })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', `/u/${username}/wardrobe`)
   await expect(page.locator('.site-account-status')).toContainText('账户正常')
   await expect(accountLinks.getByRole('link', { name: '个人主页' })).toHaveAttribute('href', `/u/${username}`)
   await expect(accountLinks.getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', `/u/${username}/wardrobe`)
@@ -390,7 +716,7 @@ test('main navigation groups creation tools and keeps wardrobe and dress-up dist
   await page.goto('/')
   const navigation = page.getByRole('navigation', { name: '主导航' })
   await expect(navigation.getByRole('link', { name: 'Studio' })).toHaveAttribute('href', '/studio')
-  await expect(navigation.getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', /\/u\/[^/]+\/wardrobe$/)
+  await expect(navigation.getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', '/wardrobe')
   await navigation.getByText('创作工具').click()
   const tools = navigation.locator('.site-nav-dropdown')
   await expect(tools.getByRole('link', { name: /AI 创作/ })).toHaveAttribute('href', '/ai')
