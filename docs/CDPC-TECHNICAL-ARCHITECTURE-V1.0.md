@@ -150,24 +150,36 @@ Workbench 复用 Skin、Asset、Wardrobe 和统一渲染服务，不重复建立
 
 ## 5. 路由规划
 
+路由以统一创作工作台和用户空间为准，避免同时维护多套衣橱、工作台和创作者入口。
+
 | 路由 | 职责 |
 |---|---|
-| `/` | 首页 |
-| `/ai` | AI 生成 |
-| `/editor` | 单项编辑器 |
-| `/wardrobe` | 换装工作台 |
-| `/workbench` | 创作工作台 |
-| `/workbench/ai` | 工作台 AI 创作 |
-| `/workbench/edit` | 编辑工作区 |
-| `/workbench/dress` | 服装创作 |
-| `/creator` | 创作者中心 |
-| `/creator/[id]` | 创作者主页 |
+| `/` | 首页与创作入口 |
+| `/ai` | AI 生成入口 |
+| `/editor` | 单项皮肤/纹理编辑入口 |
+| `/studio` | 唯一创作工作台，通过 mode/project 参数进入不同工作模式 |
+| `/studio?mode=wardrobe` | 换装与衣橱模式 |
+| `/studio?mode=edit` | 单件/纹理编辑模式 |
+| `/studio?mode=outfit` | 完整搭配模式 |
+| `/studio?mode=ai` | 当前项目中的 AI 创作模式 |
+| `/u/[username]` | 用户公开主页 |
+| `/u/[username]/wardrobe` | 用户公开穿搭 |
+| `/u/[username]/creations` | 用户公开作品 |
+| `/u/[username]/assets` | 用户公开素材 |
+| `/u/[username]/favorites` | 用户收藏，默认仅本人可见 |
+| `/u/[username]/settings` | 用户设置，仅本人可访问 |
+| `/outfit/[id]` | 穿搭详情 |
+| `/asset/[id]` | 素材详情 |
+| `/skin/[id]` | 皮肤详情 |
+| `/creator` | 创作者中心入口，可兼容重定向至用户创作者空间 |
 | `/admin` | 管理后台 |
 | `/admin/audit` | 审核管理 |
 | `/admin/user` | 用户管理 |
 | `/admin/stat` | 数据统计 |
 
-以上为目标路由规划，实际合并前必须核对当前仓库路由，处理旧路径兼容、重定向和链接引用。所有正式页面由 Next.js App Router 管理，不保留独立 Vite 页面入口。
+旧的 `/workbench`、`/wardrobe`、`/dress-up` 及其他历史路径仅作为兼容重定向入口；迁移时必须保留必要的 mode、project 和资源 ID 参数，不能维护第二套编辑器或工作台。用户空间使用 `/u/[username]`，不得另行创建 `/@username`、`/profile/[username]` 或重复的个人主页路由。
+
+以上为统一目标路由契约，不代表所有路由已经在当前代码中落地。实际迁移前必须核对仓库路由、深链接、旧路径引用和生产入口。所有正式页面由 Next.js App Router 管理，不保留独立 Vite 页面运行时。
 
 ## 6. PostgreSQL 数据模型规划
 
