@@ -37,7 +37,7 @@ CDPC 是面向 Minecraft 皮肤创作的综合平台，围绕皮肤编辑、服�
 | Tailwind CSS v4 | 布局、样式与设计 Token 辅助 | 不替代组件库 |
 | Mantine | 主要业务 UI 组件库 | 默认优先 |
 | shadcn/ui | 补充组件 | 按需使用，不重复建设 |
-| Framer Motion | 常规交互动画 | 页面、弹层、轻量反馈 |
+| Motion for React (`motion/react`) | 常规交互动画 | 页面、弹层、轻量反馈 |
 | GSAP | 复杂时间轴动画 | 特殊动画按需采用 |
 | PWA / Service Worker | 安装能力、缓存与更新 | 独立制定缓存策略 |
 | SWC | 编译与转换 | 使用 Next.js 内置集成能力 |
@@ -150,24 +150,26 @@ Workbench 复用 Skin、Asset、Wardrobe 和统一渲染服务，不重复建立
 
 ## 5. 路由规划
 
-| 路由 | 职责 |
+| 路由 | 唯一职责 |
 |---|---|
-| `/` | 首页 |
-| `/ai` | AI 生成 |
-| `/editor` | 单项编辑器 |
-| `/wardrobe` | 换装工作台 |
-| `/workbench` | 创作工作台 |
-| `/workbench/ai` | 工作台 AI 创作 |
-| `/workbench/edit` | 编辑工作区 |
-| `/workbench/dress` | 服装创作 |
-| `/creator` | 创作者中心 |
-| `/creator/[id]` | 创作者主页 |
-| `/admin` | 管理后台 |
+| `/` | 首页与创作入口 |
+| `/ai` | AI 皮肤生成 |
+| `/editor` | 单张皮肤/纹理编辑 |
+| `/studio` | 唯一换装、试穿、搭配和项目工作台 |
+| `/creator` | 登录用户的创作者中心入口 |
+| `/admin` | 管理后台逻辑入口，必须执行服务端 RBAC |
+| `/u/[username]` | 用户公开主页 |
+| `/u/[username]/wardrobe` | 用户公开穿搭 |
+| `/u/[username]/creations` | 用户公开作品 |
+| `/u/[username]/assets` | 用户公开素材 |
+| `/u/[username]/favorites` | 默认私有收藏，仅本人 |
+| `/u/[username]/settings` | 仅本人可访问的设置 |
+| `/outfit/[id]`、`/asset/[id]`、`/skin/[id]` | 独立内容详情与分享 |
 | `/admin/audit` | 审核管理 |
 | `/admin/user` | 用户管理 |
 | `/admin/stat` | 数据统计 |
 
-以上为目标路由规划，实际合并前必须核对当前仓库路由，处理旧路径兼容、重定向和链接引用。所有正式页面由 Next.js App Router 管理，不保留独立 Vite 页面入口。
+`/studio` 是唯一创作工作台；素材浏览、单件编辑和完整搭配是其内部工作模式，不再维护独立的 `/wardrobe` 或 `/workbench` 页面运行时。旧 `/dress-up`、`/wardrobe`、`/workbench`、`/workbench/dress` 等路径仅作为兼容入口，在核对历史链接和业务语义后服务端重定向至 `/studio`，并保留必要的 mode/project 查询参数。用户公开空间统一使用 `/u/[username]`；资源权限始终依据数据库内部 userId，而不是 URL username。所有正式页面由 Next.js App Router 管理，不保留独立 Vite 页面入口。
 
 ## 6. PostgreSQL 数据模型规划
 
@@ -248,32 +250,34 @@ Framer Motion 用于常规界面动效；GSAP 用于复杂时间轴和精确控�
 建议目录结构（按现有仓库渐进收敛，不为目录整齐而进行无意义大迁移）：
 
 ```text
-src/
-├── app/
-│   ├── (main)/
-│   ├── admin/
-│   ├── api/
-│   └── auth/
-├── components/
-│   ├── ui/
-│   ├── layout/
-│   └── shared/
-├── modules/
-│   ├── auth/
-│   ├── user/
-│   ├── skin/
-│   ├── asset/
-│   ├── wardrobe/
-│   ├── workbench/
-│   ├── ai/
-│   ├── creator/
-│   ├── community/
-│   └── admin/
-├── lib/
-├── server/
-├── hooks/
-├── types/
-└── styles/
+app/
+├── (main)/
+├── admin/
+├── api/
+├── ai/
+├── editor/
+├── studio/
+└── u/
+components/
+├── ui/
+├── layout/
+└── shared/
+modules/
+├── auth/
+├── user/
+├── skin/
+├── asset/
+├── wardrobe/
+├── studio/
+├── ai/
+├── creator/
+├── community/
+└── admin/
+lib/
+server/
+hooks/
+types/
+styles/
 ```
 
 模块内部可按需包含 `components/`、`services/`、`repositories/`、`schemas/`、`types/` 和 `utils/`。
