@@ -2,7 +2,7 @@
 const CACHE_PREFIX = 'cdpc-next-pwa-'
 const CACHE_VERSION = 'v1'
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION
-const PRECACHE_URLS = ['/offline', '/cdpc-icon.svg']
+const PRECACHE_URLS = ['/offline', '/cdpc-icon.svg', '/pwa-192.svg', '/pwa-512.svg']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -57,20 +57,23 @@ self.addEventListener('fetch', (event) => {
   const isPublicAsset = ['style', 'script', 'image', 'font'].includes(request.destination)
   if (!isNextStatic && !isPublicAsset) return
 
-  event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      const cached = await cache.match(request)
-      const networkRequest = fetch(request).then((response) => {
-        if (response.ok && response.type === 'basic') {
-          void cache.put(request, response.clone())
-        }
-        return response
-      })
-      if (cached) {
-        event.waitUntil(networkRequest.catch(() => undefined))
-        return cached
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME)
+    const cached = await cache.match(request)
+
+    // Next build assets are content-hashed and safe to cache first.
+    if (isNextStatic && cached) return cached
+
+    const refresh = fetch(request).then((response) => {
+      if (response.ok && response.type === 'basic') {
+        void cache.put(request, response.clone())
       }
-      return networkRequest
-    }),
-  )
+      return response
+    })
+
+    // For mutable public assets, update the cache in the background.
+    if (!isNextStatic) event.waitUntil(refresh.catch(() => undefined))
+    if (cached) return cached
+    return refresh
+  })())
 })
