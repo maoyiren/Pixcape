@@ -977,15 +977,25 @@ export default function DressUpStudio() {
           </div>
           <div className="dressup-preview-stage dressup-real-preview" ref={previewHost} />
           <div className="dressup-preview-tools dressup-bottom-tools" role="group" aria-label="角色动作与视角">
-            <button type="button" aria-pressed={pose === 'idle'} onClick={() => setPose('idle')}>待机</button>
-            <button type="button" aria-pressed={pose === 'walk'} onClick={() => setPose('walk')}>行走</button>
-            <button type="button" aria-pressed={pose === 'fly'} onClick={() => setPose('fly')}>飞行</button>
-            <button type="button" aria-pressed={pose === 'wave'} onClick={() => setPose('wave')}>挥手</button>
-            <button type="button" aria-pressed={autoRotate} onClick={() => setAutoRotate(value => !value)}>{autoRotate ? '停止自动旋转' : '自动旋转'}</button>
-            <button type="button" aria-pressed={elytraVisible} onClick={() => setElytraVisible(value => !value)}>{elytraVisible ? '切换为披风' : '切换为鞘翅'}</button>
-            <button type="button" aria-pressed={viewAngle === 'front'} onClick={() => setPreviewView('front')}>正面</button>
-            <button type="button" aria-pressed={viewAngle === 'back'} onClick={() => setPreviewView('back')}>背面</button>
-            <button type="button" aria-pressed={viewAngle === 'side'} onClick={() => setPreviewView('side')}>侧面</button>
+            <label className="dressup-preview-select">
+              <span>动作</span>
+              <select aria-label="切换角色动作" value={pose} onChange={event => setPose(event.target.value as StudioPose)}>
+                <option value="idle">待机</option>
+                <option value="walk">行走</option>
+                <option value="fly">飞行</option>
+                <option value="wave">挥手</option>
+              </select>
+            </label>
+            <label className="dressup-preview-select">
+              <span>视角</span>
+              <select aria-label="切换角色视角" value={viewAngle} onChange={event => setPreviewView(event.target.value as StudioView)}>
+                <option value="front">正面</option>
+                <option value="back">背面</option>
+                <option value="side">侧面</option>
+              </select>
+            </label>
+            <button type="button" aria-pressed={autoRotate} onClick={() => setAutoRotate(value => !value)}>{autoRotate ? '停止旋转' : '自动旋转'}</button>
+            <button type="button" aria-pressed={elytraVisible} onClick={() => setElytraVisible(value => !value)}>{elytraVisible ? '显示披风' : '显示鞘翅'}</button>
           </div>
           <div className="dressup-preview-tools dressup-bottom-tools">
             <span className="dressup-skin-name" title={skinName}>当前皮肤：{skinName}</span>
