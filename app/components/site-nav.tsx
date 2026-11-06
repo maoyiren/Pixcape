@@ -17,11 +17,13 @@ export async function SiteNav() {
         <div className="site-nav-links">
           <Link href="/" className="site-nav-home">首页</Link>
           <Link href="/studio" className="site-nav-dress">Studio</Link>
+          <Link href="/wardrobe">我的衣橱</Link>
           <details className="site-nav-menu">
             <summary>创作工具</summary>
             <div className="site-nav-dropdown">
               <Link href="/ai"><strong>AI 创作</strong><small>从文字或参考图生成皮肤</small></Link>
               <Link href="/editor"><strong>单品编辑器</strong><small>编辑与调整 64 × 64 皮肤</small></Link>
+              <Link href="/workbench"><strong>创作工坊</strong><small>管理创作项目与工作流</small></Link>
             </div>
           </details>
           <Link href="/creator">创作者中心</Link>
