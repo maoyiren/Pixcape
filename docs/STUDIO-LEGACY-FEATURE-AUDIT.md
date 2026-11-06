@@ -56,5 +56,6 @@
 - [ ] 补齐完整的动作集（蹲下/受击/游泳）及其披风/鞘翅联动。
 - [ ] 为帽子/裤子/鞋子/其他配饰建立真实素材与 UV/模型适配；在此之前维持未接入提示。
 - [ ] 补齐素材收藏、作者/来源、加载失败和空状态交互。
-- [ ] 为 Studio 交互建立 Playwright 覆盖并完成实际浏览器验收。
-- [ ] 完成 Docker build + PostgreSQL/MySQL/SQLite 启动矩阵。
+- [x] 新增 `tests/browser/studio-core.spec.ts`：覆盖 canonical /studio、披肩/外套/披风组合、未接入分类空状态、Steve/Alex、动作/旋转/背景、刷新恢复与 64×64 PNG 导出；等待 CI 执行。
+- [x] Docker build + PostgreSQL/MySQL/SQLite 启动矩阵（GitHub Actions Run #882 全部步骤成功）。
+- [ ] 等待最新 CI Run #873 执行 Studio 浏览器回归与完整构建。
