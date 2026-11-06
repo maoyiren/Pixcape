@@ -27,7 +27,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-v4-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-postgres-v1-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -50,22 +50,7 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: pixcape
-          MYSQL_USER: ci
-          MYSQL_PASSWORD: ci
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 30
     env:
-      DATABASE_PROVIDER: postgresql
       DATABASE_URL: postgresql://ci:ci@localhost:5432/pixcape?schema=public
       NEXTAUTH_SECRET: ci-only-secret-not-for-production
       NEXTAUTH_URL: http://127.0.0.1:3000
@@ -79,7 +64,7 @@ jobs:
           node-version: 26.13.0
           check-latest: true
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       - name: Report high and critical dependency advisories
         run: |
           npm audit --json > /tmp/npm-audit.json || true
@@ -99,30 +84,10 @@ jobs:
           NODE
       - name: Fail on high or critical dependency advisories
         run: npm audit --audit-level=high
-      - name: Generate Prisma Client
-        run: npm run db:generate
-      - name: Validate Prisma schema
-        run: npx prisma validate
-      - name: Apply migrations to a real PostgreSQL service
+      - name: Generate and validate PostgreSQL Prisma Client
+        run: npm run db:generate && npx prisma validate
+      - name: Apply PostgreSQL migrations
         run: npm run db:migrate
-      - name: Generate and validate the MySQL Prisma Client
-        run: |
-          DATABASE_PROVIDER=mysql DATABASE_URL='mysql://ci:ci@127.0.0.1:3306/pixcape' npm run db:generate
-          DATABASE_PROVIDER=mysql DATABASE_URL='mysql://ci:ci@127.0.0.1:3306/pixcape' npx prisma validate
-      - name: Apply migrations to a real MySQL service
-        run: DATABASE_PROVIDER=mysql DATABASE_URL='mysql://ci:ci@127.0.0.1:3306/pixcape' npm run db:migrate
-      - name: Test atomic MySQL login rate limiting
-        run: DATABASE_PROVIDER=mysql DATABASE_URL='mysql://ci:ci@127.0.0.1:3306/pixcape' npm run test:mysql-rate-limit
-      - name: Generate and validate SQLite Prisma Client
-        run: |
-          DATABASE_PROVIDER=sqlite DATABASE_URL='file:./prisma/ci.sqlite.db' npm run db:generate
-          DATABASE_PROVIDER=sqlite DATABASE_URL='file:./prisma/ci.sqlite.db' npx prisma validate
-      - name: Apply SQLite migrations and test atomic login rate limiting
-        run: |
-          DATABASE_PROVIDER=sqlite DATABASE_URL='file:./prisma/ci.sqlite.db' npm run db:migrate
-          DATABASE_PROVIDER=sqlite DATABASE_URL='file:./prisma/ci.sqlite.db' npm run test:sqlite-rate-limit
-      - name: Restore PostgreSQL Prisma Client for the remaining test suite
-        run: DATABASE_PROVIDER=postgresql npm run db:generate
       - name: Run RBAC and ownership unit tests
         run: npm run test:unit
       - name: Run PostgreSQL integration tests
@@ -130,11 +95,7 @@ jobs:
       - name: Build Next.js production app
         run: npm run build
       - name: Build isolated Next.js runtime image (PostgreSQL)
-        run: docker build --build-arg DATABASE_PROVIDER=postgresql --file Dockerfile.nextjs --tag pixcape-nextjs-preview .
-      - name: Build isolated Next.js runtime image (MySQL)
-        run: docker build --build-arg DATABASE_PROVIDER=mysql --file Dockerfile.nextjs --tag pixcape-nextjs-mysql-preview .
-      - name: Build isolated Next.js runtime image (SQLite)
-        run: docker build --build-arg DATABASE_PROVIDER=sqlite --file Dockerfile.nextjs --tag pixcape-nextjs-sqlite-preview .
+        run: docker build --file Dockerfile.nextjs --tag pixcape-nextjs-preview .
       - name: Start Next.js for security E2E
         run: |
           nohup npm run next:start -- --port 3000 > /tmp/pixcape-next.log 2>&1 &
