@@ -38,7 +38,8 @@ const catalog: CatalogItem[] = [
 const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风'])
 type ModelType = 'steve' | 'alex'
 type StudioPose = 'idle' | 'wave' | 'walk' | 'fly'
-type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
+type StudioView = 'front' | 'back' | 'side'
+type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; backgroundScene?: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
 
 
 function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' {
@@ -83,6 +84,7 @@ export default function DressUpStudio() {
   const [pose, setPose] = useState<StudioPose>('idle')
   const [elytraVisible, setElytraVisible] = useState(false)
   const [autoRotate, setAutoRotate] = useState(false)
+  const [viewAngle, setViewAngle] = useState<StudioView>('front')
   const [isBusy, setIsBusy] = useState(false)
   const [retryVersion, setRetryVersion] = useState(0)
   const [saveNotice, setSaveNotice] = useState('')
@@ -190,7 +192,9 @@ export default function DressUpStudio() {
       }, {})
       setSelected(restored)
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
-      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) { setBackgroundScene('custom'); setBackground(saved.background) }
+      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
+      if (saved.backgroundScene === 'day' || saved.backgroundScene === 'night' || saved.backgroundScene === 'plains' || saved.backgroundScene === 'desert' || saved.backgroundScene === 'forest' || saved.backgroundScene === 'nether' || saved.backgroundScene === 'end' || saved.backgroundScene === 'custom') setBackgroundScene(saved.backgroundScene)
+      else setBackgroundScene('custom')
       if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
       else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
       else setSkinUrl(BASE_SKIN)
@@ -554,6 +558,7 @@ export default function DressUpStudio() {
       itemIds: selectedItems.map(item => item.id),
       model,
       background,
+      backgroundScene,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
       skinAssetId: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)?.[1] ?? null,
       skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
@@ -670,7 +675,9 @@ export default function DressUpStudio() {
         return items
       }, {}))
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
-      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) { setBackgroundScene('custom'); setBackground(saved.background) }
+      if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
+      if (saved.backgroundScene === 'day' || saved.backgroundScene === 'night' || saved.backgroundScene === 'plains' || saved.backgroundScene === 'desert' || saved.backgroundScene === 'forest' || saved.backgroundScene === 'nether' || saved.backgroundScene === 'end' || saved.backgroundScene === 'custom') setBackgroundScene(saved.backgroundScene)
+      else setBackgroundScene('custom')
       if (typeof saved.skinAssetUrl === 'string') setSkinUrl(saved.skinAssetUrl)
       else if (typeof saved.skinUrl === 'string' && saved.skinUrl.startsWith('data:image/png')) setSkinUrl(saved.skinUrl)
       if (typeof saved.skinName === 'string') setSkinName(saved.skinName)
@@ -687,6 +694,7 @@ export default function DressUpStudio() {
       itemIds: selectedItems.map(item => item.id),
       model,
       background,
+      backgroundScene,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
       skinAssetId: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)?.[1] ?? null,
       skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
@@ -735,6 +743,7 @@ export default function DressUpStudio() {
         itemIds,
         model: outfit.model === 'alex' ? 'alex' : 'steve',
         background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
+        backgroundScene: outfit.backgroundScene === 'day' || outfit.backgroundScene === 'night' || outfit.backgroundScene === 'plains' || outfit.backgroundScene === 'desert' || outfit.backgroundScene === 'forest' || outfit.backgroundScene === 'nether' || outfit.backgroundScene === 'end' ? outfit.backgroundScene : 'custom',
         skinUrl: nextSkinUrl,
         skinAssetId: typeof outfit.skinAssetId === 'string' ? outfit.skinAssetId : null,
         skinAssetUrl: nextSkinAssetUrl,
@@ -754,7 +763,7 @@ export default function DressUpStudio() {
         return items
       }, {}))
       setModel(restored.model)
-      setBackgroundScene('custom')
+      setBackgroundScene(restored.backgroundScene || 'custom')
       setBackground(restored.background)
       setSkinUrl(restored.skinAssetUrl || restored.skinUrl || BASE_SKIN)
       setSkinName(restored.skinAssetUrl || restored.skinUrl ? restored.skinName : 'Steve 默认皮肤')
@@ -824,6 +833,7 @@ export default function DressUpStudio() {
     setPose('idle')
     setElytraVisible(false)
     setAutoRotate(false)
+    setViewAngle('front')
     setSaveNotice('已恢复默认角色状态；此前保存的本地穿搭不会被删除')
   }
 
@@ -844,13 +854,22 @@ export default function DressUpStudio() {
     }
   }
 
+  function setPreviewView(angle: StudioView) {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    viewer.playerObject.rotation.y = angle === 'back' ? Math.PI : angle === 'side' ? Math.PI / 2 : 0
+    setViewAngle(angle)
+  }
+
   function resetPreviewCamera() {
     const viewer = viewerRef.current
     if (!viewer) {
       setSaveNotice('3D 预览尚未准备好')
       return
     }
+    viewer.playerObject.rotation.set(0, 0, 0)
     viewer.controls.reset()
+    setViewAngle('front')
     setSaveNotice('已重置角色视角')
   }
 
@@ -941,9 +960,9 @@ export default function DressUpStudio() {
             <button type="button" aria-pressed={pose === 'wave'} onClick={() => setPose('wave')}>挥手</button>
             <button type="button" aria-pressed={autoRotate} onClick={() => setAutoRotate(value => !value)}>{autoRotate ? '停止自动旋转' : '自动旋转'}</button>
             <button type="button" aria-pressed={elytraVisible} onClick={() => setElytraVisible(value => !value)}>{elytraVisible ? '切换为披风' : '切换为鞘翅'}</button>
-            <button type="button" onClick={() => { const viewer = viewerRef.current; if (viewer) viewer.playerObject.rotation.y = 0 }}>正面</button>
-            <button type="button" onClick={() => { const viewer = viewerRef.current; if (viewer) viewer.playerObject.rotation.y = Math.PI }}>背面</button>
-            <button type="button" onClick={() => { const viewer = viewerRef.current; if (viewer) viewer.playerObject.rotation.y = Math.PI / 2 }}>侧面</button>
+            <button type="button" aria-pressed={viewAngle === 'front'} onClick={() => setPreviewView('front')}>正面</button>
+            <button type="button" aria-pressed={viewAngle === 'back'} onClick={() => setPreviewView('back')}>背面</button>
+            <button type="button" aria-pressed={viewAngle === 'side'} onClick={() => setPreviewView('side')}>侧面</button>
           </div>
           <div className="dressup-preview-tools dressup-bottom-tools">
             <span className="dressup-skin-name" title={skinName}>当前皮肤：{skinName}</span>
