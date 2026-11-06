@@ -44,6 +44,8 @@
 
 ## P0-4：素材与即时换装
 
+> 渲染实现契约见 [docs/CDPC-STUDIO-ASSET-RENDER-CONTRACT.md](./CDPC-STUDIO-ASSET-RENDER-CONTRACT.md)。未定义并验证各类别 UV / 纹理契约前，不得把帽子、裤子、鞋子等类别接入现有通用 UV 合成路径。
+
 - [ ] 素材分类区分披肩、帽子、裤子、上衣、外套、鞋子、披风、鞘翅；披肩 / 外套 / 披风不能混为一类。
 - [ ] 素材库卡片预览显示渲染后的单件素材，不强制渲染完整人物。
 - [ ] 在 Studio 中选择一件素材后立即看到人物穿戴效果；未导入皮肤时使用默认人物，导入皮肤后保留穿戴并切换用户皮肤。
@@ -97,3 +99,12 @@
 - PR #64 head `4d8d039d833a156a49580a69824eca4d973d0130`：CI #955、Preview/Security #745、Docker smoke #955 均成功。该 PR 当前 workflow 基于 main 的旧多数据库 CI/Docker 流程；不能把这些绿色结果误当成 PostgreSQL-only 集成验收。PR #61 合入后必须在新 main 上重跑。
 - PR #64 仅完成旧路由查询参数保留重定向和工作台入口回归；不代表 Studio 核心换装、保存恢复或 PNG 导出闭环完成。
 - 当前仍未确认生产 DATABASE_URL、生产数据库版本、备份可恢复性；不执行生产迁移、不触发 1Panel 发布。
+
+
+## 最新进度更新（2026-11-07）
+
+- PR #64 当前 head 的 CI #957、Preview/Security #746、Docker smoke #956 均成功；Docker publish 与 1Panel deploy 均 skipped。该组 workflow 仍基于旧多数据库基线，不构成 PostgreSQL-only 验收。
+- 新增 [docs/CDPC-STUDIO-ASSET-RENDER-CONTRACT.md](./CDPC-STUDIO-ASSET-RENDER-CONTRACT.md)，明确单件预览、人物即时试穿、完整搭配预览 / 导出的边界，以及逐类别纹理契约和 P0 验收条件。
+- Studio 静态审计确认：当前 UI 映射仅覆盖 SHAWL / COAT / CAPE；HAT / PANTS / SHOES 尚未接入；非披风素材共用一组 UV 矩形；素材卡片仍为 PNG 缩略图。上述项目继续保持未完成状态。
+- PR #61 与 main 的差异仅涉及新增技术架构文档，没有与 PostgreSQL 实现文件发生重叠；但 PR #61 仍落后 main 两个提交。当前 GitHub 操作未提供安全的 Update branch 能力，因此没有伪造 merge commit 或强行移动分支。
+- 本轮未合并 PR、未发布镜像、未执行生产迁移或部署。新增提交必须重新获得 CI 结果后才能计入验收。
