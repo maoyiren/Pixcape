@@ -99,4 +99,10 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   expect(bytes.readUInt32BE(16)).toBe(64)
   expect(bytes.readUInt32BE(20)).toBe(64)
   await expect(page.getByRole('status')).toContainText('披风是独立背部装备')
+
+  await page.getByText('更多操作与备份').click()
+  await page.getByRole('button', { name: '恢复默认角色' }).click()
+  await expect(page.locator('.dressup-selected-list')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Steve 粗臂' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: '正面' })).toHaveAttribute('aria-pressed', 'true')
 })
