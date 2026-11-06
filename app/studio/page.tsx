@@ -1,4 +1,4 @@
-import DressUpStudio from '../dress-up/dress-up-studio'
+import DressUpStudio from './dress-up-studio'
 
 export const metadata = {
   title: 'Studio 角色换装工作室 | CDPC',

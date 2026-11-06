@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </div>
               <nav className="cdpc-footer-links" aria-label="页脚导航">
                 <Link href="/workbench">创作工坊</Link>
-                <Link href="/dress-up">衣服选装</Link>
+                <Link href="/studio">角色穿搭</Link>
                 <Link href="/wardrobe">衣橱</Link>
                 <Link href="/editor">单品编辑器</Link>
                 <Link href="/ai">AI 生成</Link>

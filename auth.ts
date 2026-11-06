@@ -165,7 +165,7 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
       if (token.sub) {
         const record = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { role: true, status: true, email: true, name: true },
+          select: { role: true, status: true, email: true, name: true, username: true },
         })
         const status = typeof record?.status === 'string' ? record.status.trim().toUpperCase() : ''
         if (!record || status !== 'ACTIVE') {
@@ -175,6 +175,7 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
           token.status = 'ACTIVE'
           token.email = record.email ?? token.email
           token.name = record.name ?? token.name
+          token.username = record.username
           token.authDisabled = false
         }
       }
@@ -185,8 +186,10 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
         session.user.id = token.sub
         session.user.role = token.role as typeof session.user.role
         session.user.status = token.status as typeof session.user.status
+        session.user.username = typeof token.username === 'string' ? token.username : null
       } else if (session.user && token.authDisabled) {
         session.user.id = ''
+        session.user.username = null
       }
       return session
     },
@@ -204,8 +207,26 @@ const authOptionsBase: Omit<NextAuthOptions, 'providers'> = {
       // Every authenticated account can create immediately. Keep ADMIN privileged, but
       // promote legacy USER accounts to CREATOR and ensure profile creation is idempotent.
       await prisma.$transaction(async (tx) => {
-        const current = await tx.user.findUnique({ where: { id: user.id }, select: { id: true, name: true, email: true, role: true } })
+        const current = await tx.user.findUnique({ where: { id: user.id }, select: { id: true, name: true, email: true, role: true, username: true } })
         if (!current) throw new Error('Authenticated user disappeared')
+        if (!current.username) {
+          // New OAuth, email, and emergency-admin accounts receive a reserved URL slug
+          // before a session is issued. The immutable user ID remains the auth principal.
+          let candidate = `user-${current.id.slice(0, 16).toLowerCase()}`
+          let suffix = 0
+          while (true) {
+            const reservation = await tx.userSlugHistory.upsert({
+              where: { username: candidate },
+              create: { userId: current.id, username: candidate },
+              update: {},
+              select: { userId: true },
+            })
+            if (reservation.userId === current.id) break
+            suffix += 1
+            candidate = `user-${current.id.slice(0, 12).toLowerCase()}-${suffix}`
+          }
+          await tx.user.update({ where: { id: current.id }, data: { username: candidate } })
+        }
         if (current.role === 'USER') {
           await tx.user.update({ where: { id: current.id }, data: { role: 'CREATOR' } })
         }

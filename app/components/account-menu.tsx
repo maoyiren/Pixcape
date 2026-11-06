@@ -6,6 +6,7 @@ import { SignOutButton } from '@/app/account/sign-out-button'
 
 type AccountMenuProps = {
   name: string
+  username: string | null
   email: string
   role: string
   status: string
@@ -23,7 +24,7 @@ function initials(name: string) {
   return Array.from(value).slice(0, 1).join('').toUpperCase()
 }
 
-export function AccountMenu({ name, email, role, status }: AccountMenuProps) {
+export function AccountMenu({ name, username, email, role, status }: AccountMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -77,12 +78,17 @@ export function AccountMenu({ name, email, role, status }: AccountMenuProps) {
             <span className="site-account-identity">
               <strong>{name || 'CDPC 用户'}</strong>
               <small>{email}</small>
+              {username ? <small>@{username}</small> : null}
               <small className="site-account-status">{status === 'ACTIVE' ? '● 账户正常' : '● 账户状态待确认'}</small>
             </span>
           </div>
           <div className="site-account-links">
-            <Link href="/account" onClick={() => setOpen(false)}>账户资料<span>›</span></Link>
-            <Link href="/wardrobe" onClick={() => setOpen(false)}>我的衣橱<span>›</span></Link>
+            <Link href={username ? `/u/${username}` : '/account'} onClick={() => setOpen(false)}>个人主页<span>›</span></Link>
+            <Link href={username ? `/u/${username}/wardrobe` : '/wardrobe'} onClick={() => setOpen(false)}>我的衣橱<span>›</span></Link>
+            <Link href={username ? `/u/${username}/creations` : '/account'} onClick={() => setOpen(false)}>我的创作<span>›</span></Link>
+            <Link href={username ? `/u/${username}/assets` : '/wardrobe'} onClick={() => setOpen(false)}>我的素材<span>›</span></Link>
+            <Link href={username ? `/u/${username}/favorites` : '/wardrobe'} onClick={() => setOpen(false)}>我的收藏<span>›</span></Link>
+            <Link href={username ? `/u/${username}/settings` : '/account'} onClick={() => setOpen(false)}>账户设置<span>›</span></Link>
             <Link href="/creator" onClick={() => setOpen(false)}>创作者中心<span>›</span></Link>
           </div>
           <div className="site-account-logout"><SignOutButton /></div>
