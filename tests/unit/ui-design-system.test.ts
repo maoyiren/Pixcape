@@ -4,10 +4,11 @@ import { readFileSync } from 'node:fs'
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 
-test('Vite app loads one shared CDPC design system after legacy base styles', () => {
-  const entry = read('../../src/main.tsx')
-  assert.match(entry, /import '\.\/styles\.css'/)
-  assert.match(entry, /import '\.\/design-system\.css'/)
+test('Next.js root layout loads the shared CDPC design system', () => {
+  const layout = read('../../app/layout.tsx')
+  assert.match(layout, /import '\.\.\/src\/design-system\.css'/)
+  assert.match(layout, /import '\.\.\/src\/tailwind\.css'/)
+  assert.match(layout, /<CdpcMantineProvider>/)
 })
 
 test('shared design system defines consistent tokens and responsive editor chrome', () => {
