@@ -607,7 +607,9 @@ export default function DressUpStudio() {
       if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
     }
     if (outfit.model === 'steve' || outfit.model === 'alex') setModel(outfit.model)
-    if (/^#[0-9a-f]{6}$/i.test(outfit.background)) { setBackgroundScene('custom'); setBackground(outfit.background) }
+    if (/^#[0-9a-f]{6}$/i.test(outfit.background)) setBackground(outfit.background)
+    if (outfit.backgroundScene === 'day' || outfit.backgroundScene === 'night' || outfit.backgroundScene === 'plains' || outfit.backgroundScene === 'desert' || outfit.backgroundScene === 'forest' || outfit.backgroundScene === 'nether' || outfit.backgroundScene === 'end' || outfit.backgroundScene === 'custom') setBackgroundScene(outfit.backgroundScene)
+    else setBackgroundScene('custom')
     setOutfitName(outfit.name)
     setSaveNotice(outfit.cloud ? `已从账号云端载入“${outfit.name}”` : `已载入本地草稿“${outfit.name}”`)
     if (outfit.cloud) {
