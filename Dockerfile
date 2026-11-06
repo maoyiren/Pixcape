@@ -16,6 +16,8 @@ RUN mkdir -p /runtime \
     && test -s /runtime/LICENSE.MD
 
 FROM node:26.13.0-bookworm-slim AS next-build
+# Build-time placeholder only: Next.js collects route configuration during build; runtime gets DATABASE_URL from Compose.
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/cdpc_build?schema=public
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ libatomic1 \
     && rm -rf /var/lib/apt/lists/*
