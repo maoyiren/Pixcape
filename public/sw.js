@@ -1,8 +1,8 @@
 /* CDPC Next.js service worker. Never cache authenticated pages or API responses. */
 const CACHE_PREFIX = 'cdpc-next-pwa-'
-const CACHE_VERSION = 'v1'
+const CACHE_VERSION = 'v2'
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION
-const PRECACHE_URLS = ['/offline', '/cdpc-icon.svg', '/pwa-192.svg', '/pwa-512.svg']
+const PRECACHE_URLS = ['/offline', '/cdpc-icon.svg', '/pwa-192.svg', '/pwa-512.svg', '/pwa-maskable.svg']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
