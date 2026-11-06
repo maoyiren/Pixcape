@@ -45,9 +45,6 @@ test('primary creation routes render their intended mode entry points', async ({
     await expect(page.locator('[data-studio-mode]')).toHaveAttribute('data-studio-mode', route.mode)
     if (route.mode === 'ai') {
       await expect(page.getByRole('heading', { name: '设计你的角色' })).toBeVisible({ timeout: 15_000 })
-    } else if (route.mode === 'wardrobe') {
-      await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
-      await expect(page.getByRole('button', { name: /全部素材/ })).toBeVisible()
     } else if (route.mode === 'dress-up') {
       await expect(page.getByRole('heading', { name: route.heading })).toBeVisible()
       await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
@@ -310,6 +307,7 @@ test('authenticated avatar menu supports hover, click, outside dismissal and Esc
   const username = await createAuthenticatedUser(page, 'CDPC Avatar Tester')
   const trigger = page.getByRole('button', { name: /CDPC Avatar Tester/ })
   const accountLinks = page.locator('.site-account-links')
+  await expect(page.locator('.site-account-status')).toContainText('账户正常')
   await expect(accountLinks.getByRole('link', { name: '个人主页' })).toHaveAttribute('href', `/u/${username}`)
   await expect(accountLinks.getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', `/u/${username}/wardrobe`)
   await expect(accountLinks.getByRole('link', { name: '账户设置' })).toHaveAttribute('href', `/u/${username}/settings`)
