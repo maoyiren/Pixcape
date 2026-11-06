@@ -135,7 +135,7 @@ export default function WardrobeLibrary() {
         activeAssetId: asset.id,
         activeOutfitId: null,
       })
-      router.push('/dress-up')
+      router.push('/studio')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法将素材交给 3D 换装工作台')
     }
@@ -151,7 +151,7 @@ export default function WardrobeLibrary() {
         activeAssetId: null,
         activeOutfitId: outfit.id,
       })
-      router.push('/dress-up')
+      router.push('/studio')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法载入云端穿搭')
     }
@@ -232,7 +232,7 @@ export default function WardrobeLibrary() {
           </select>
           <button className="action primary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? '上传中…' : '＋ 上传素材'}</button>
           <input ref={fileRef} type="file" accept="image/png" hidden disabled={busy} onChange={(event) => void upload(event.target.files?.[0])} />
-          <Link className="action" href="/dress-up">进入 3D 换装</Link>
+          <Link className="action" href="/studio">进入 3D 换装</Link>
         </div>
       </header>
 
@@ -259,7 +259,7 @@ export default function WardrobeLibrary() {
 
           {filter === 'OUTFITS' ? (
             outfits.length ? <div className="outfit-list">{outfits.map((outfit) => <article className="outfit-card" key={outfit.id}><strong>{outfit.name}</strong><p className="subtitle">{outfit.items.length} 件已保存单品</p><button className="action" type="button" onClick={() => void openOutfit(outfit)}>载入这套穿搭</button></article>)}</div>
-              : <div className="empty"><strong>还没有保存的穿搭</strong>前往 3D 换装工作台组合并保存你的第一套搭配。<p><Link className="action" href="/dress-up">开始换装</Link></p></div>
+              : <div className="empty"><strong>还没有保存的穿搭</strong>前往 3D 换装工作台组合并保存你的第一套搭配。<p><Link className="action" href="/studio">开始换装</Link></p></div>
           ) : visibleAssets.length ? (
             <div className="asset-grid">{visibleAssets.map((asset) => <article className="asset-card" key={asset.id}>
               <div className="thumb"><img src={asset.fileUrl} alt={categoryLabel(asset.category)} loading="lazy" /></div>
