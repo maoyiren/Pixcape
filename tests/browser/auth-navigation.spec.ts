@@ -4,7 +4,7 @@ test('main navigation exposes the core CDPC routes', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'CDPC 首页' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '角色穿搭' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'Studio' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的衣橱' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '创作者中心' })).toBeVisible()
   await page.getByRole('navigation', { name: '主导航' }).getByText('创作工具').click()
@@ -20,7 +20,7 @@ test('primary creation routes render their intended mode entry points', async ({
     { path: '/ai', heading: 'AI 生成', mode: 'ai' },
     { path: '/editor', heading: '单品编辑器', mode: 'editor' },
     { path: '/wardrobe', heading: '我的衣橱', mode: 'wardrobe' },
-    { path: '/dress-up', heading: '角色穿搭', mode: 'dress-up' },
+    { path: '/studio', heading: '角色穿搭', mode: 'dress-up' },
   ]
 
   for (const route of routes) {
@@ -155,7 +155,7 @@ test('workbench nested routes map to their intended workflows', async ({ page })
   const routes = [
     { path: '/workbench/ai', heading: 'AI 生成' },
     { path: '/workbench/edit', heading: '单品编辑器' },
-    { path: '/workbench/dress', heading: '角色穿搭', canonical: '/dress-up' },
+    { path: '/workbench/dress', heading: '角色穿搭', canonical: '/studio' },
   ]
 
   for (const route of routes) {
@@ -387,7 +387,7 @@ test('workbench remains usable at a narrow mobile viewport', async ({ page }) =>
 test('main navigation groups creation tools and keeps wardrobe and dress-up distinct', async ({ page }) => {
   await page.goto('/')
   const navigation = page.getByRole('navigation', { name: '主导航' })
-  await expect(navigation.getByRole('link', { name: '角色穿搭' })).toHaveAttribute('href', '/dress-up')
+  await expect(navigation.getByRole('link', { name: 'Studio' })).toHaveAttribute('href', '/dress-up')
   await expect(navigation.getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', '/wardrobe')
   await navigation.getByText('创作工具').click()
   const tools = navigation.locator('.site-nav-dropdown')
@@ -399,7 +399,7 @@ test('main navigation groups creation tools and keeps wardrobe and dress-up dist
 
 test('dedicated dress-up route opens the 3D outfit studio, not the asset library', async ({ page }) => {
   await page.goto('/dress-up')
-  await expect(page).toHaveURL(/\/dress-up$/)
+  await expect(page).toHaveURL(/\/studio$/)
   await expect(page.locator('[data-studio-mode="dress-up"]')).toBeVisible()
   await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
@@ -519,7 +519,7 @@ test('wardrobe asset handoff clears a previously active cloud outfit', async ({ 
   await expect.poll(() => savedPointer).toMatchObject({
     activeTool: 'WARDROBE', activeAssetId: 'skin-next', activeOutfitId: null,
   })
-  await expect(page).toHaveURL(new RegExp('/dress-up$'))
+  await expect(page).toHaveURL(new RegExp('/studio)
 })
 
 test('wardrobe outfit handoff clears a previously active single asset', async ({ page }) => {
@@ -550,6 +550,454 @@ test('wardrobe outfit handoff clears a previously active single asset', async ({
     activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-next',
   })
   await expect(page).toHaveURL(new RegExp('/dress-up$'))
+})
+
+
+
+test('pixel editor saves a private cloud document and restores it on demand', async ({ page }) => {
+  let createdDocument: Record<string, unknown> | null = null
+  let deletedDocument = false
+  const remoteDocument = {
+    version: 1, width: 64, height: 64, activeId: 'remote-layer',
+    layers: [{
+      id: 'remote-layer', name: '云端图层', visible: true, opacity: 100,
+      pixels: Array.from({ length: 4096 }, (_, index) => index === 0 ? '#00ff00' : ''),
+    }],
+  }
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {} }) })
+  })
+  await page.route('**/api/editor-documents**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'POST') {
+      createdDocument = request.postDataJSON() as Record<string, unknown>
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    if (request.method() === 'DELETE' && url.pathname.endsWith('/cloud-doc-1')) {
+      deletedDocument = true
+      await route.fulfill({ status: 204 })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname.endsWith('/cloud-doc-1')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+        document: remoteDocument,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: createdDocument && !deletedDocument ? [{
+      id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+      createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+    }] : [] }) })
+  })
+
+  await page.goto('/editor')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect.poll(() => createdDocument).not.toBeNull()
+  expect((createdDocument?.document as { width: number }).width).toBe(64)
+  await page.getByLabel('选择云端文档').selectOption('cloud-doc-1')
+  await page.getByRole('button', { name: '打开云端' }).click()
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect.poll(() => canvas.evaluate(element => Array.from(
+    (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data,
+  ))).toEqual([0, 255, 0, 255])
+  await expect(page.getByText('已从云端恢复编辑文档')).toBeVisible()
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: '删除云端', exact: true }).click()
+  await expect.poll(() => deletedDocument).toBe(true)
+  await expect(page.getByText('云端文档已删除；本地草稿仍保留')).toBeVisible()
+})
+
+
+test('pixel editor detects cloud edits and saves a conflict as a separate copy', async ({ page }) => {
+  let updateAttempts = 0
+  const createdCopies: Array<Record<string, unknown>> = []
+  const remoteDocument = {
+    version: 1, width: 64, height: 64, activeId: 'remote-layer',
+    layers: [{ id: 'remote-layer', name: '远端图层', visible: true, opacity: 100, pixels: Array(4096).fill('') }],
+  }
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
+  }))
+  await page.route('**/api/editor-documents**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'GET' && url.pathname === '/api/editor-documents') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+        id: 'cloud-doc-conflict', name: '原始云端作品', revision: 2,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      }] }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname.endsWith('/cloud-doc-conflict')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-conflict', name: '原始云端作品', revision: 2,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+        document: remoteDocument,
+      } }) })
+      return
+    }
+    if (request.method() === 'PUT' && url.pathname.endsWith('/cloud-doc-conflict')) {
+      updateAttempts += 1
+      await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({
+        error: '文档已在其他位置更新，请先重新载入，避免覆盖新版本。', revision: 3,
+      }) })
+      return
+    }
+    if (request.method() === 'POST') {
+      createdCopies.push(request.postDataJSON() as Record<string, unknown>)
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-copy', name: '本地修改作品（副本）', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) })
+  })
+
+  await page.goto('/editor')
+  await expect(page.getByLabel('选择云端文档').locator('option[value="cloud-doc-conflict"]')).toHaveCount(1)
+  await page.getByLabel('选择云端文档').selectOption('cloud-doc-conflict')
+  await page.getByRole('button', { name: '打开云端' }).click()
+  await expect(page.getByRole('status')).toContainText('云端文档已同步')
+  await page.getByLabel('云端文档名称').fill('本地修改作品')
+  await expect(page.getByRole('status')).toContainText('有未保存的云端修改')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect(page.getByRole('status')).toContainText('云端版本冲突')
+  await expect(page.getByRole('button', { name: '保存云端' })).toBeDisabled()
+  await page.getByRole('button', { name: '另存为云端副本' }).click()
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('本地内容已另存为新的云端副本')
+  expect(updateAttempts).toBe(1)
+  expect(createdCopies).toHaveLength(1)
+  expect(createdCopies[0].name).toBe('本地修改作品（副本）')
+})
+
+
+test('a valid local pixel draft takes precedence over automatic wardrobe asset restore', async ({ page }) => {
+  let wardrobeFileRequested = false
+  await page.addInitScript(() => {
+    const pixels = Array(4096).fill('')
+    pixels[0] = '#ff00ff'
+    localStorage.setItem('cdpc-pixel-editor-v1', JSON.stringify({
+      activeId: 'local-draft-layer',
+      layers: [{ id: 'local-draft-layer', name: '本地草稿', visible: true, opacity: 100, pixels }],
+    }))
+  })
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: {
+      projectId: null, activeTool: 'WARDROBE', activeAssetId: 'wardrobe-skin', activeOutfitId: null,
+    } }),
+  }))
+  await page.route('**/api/assets/wardrobe-skin/file', async route => {
+    wardrobeFileRequested = true
+    await route.abort()
+  })
+  await page.goto('/editor')
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect.poll(() => canvas.evaluate(element => Array.from(
+    (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data,
+  ))).toEqual([255, 0, 255, 255])
+  await expect(page.getByText('已恢复上次本地编辑草稿')).toBeVisible()
+  expect(wardrobeFileRequested).toBe(false)
+})
+
+
+test('cloud document save remains successful when the follow-up list refresh fails', async ({ page }) => {
+  let createRequests = 0
+  let listRequests = 0
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
+  }))
+  await page.route('**/api/editor-documents**', async route => {
+    if (route.request().method() === 'POST') {
+      createRequests += 1
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-refresh-failure', name: '我的像素作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    // The editor loads the document list on entry. Keep that initial read healthy,
+    // then fail only the post-save refresh that this test is exercising.
+    listRequests += 1
+    if (listRequests === 1) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) })
+      return
+    }
+    await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: '暂时无法刷新列表' }) })
+  })
+
+  await page.goto('/editor')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect.poll(() => createRequests).toBe(1)
+  await expect.poll(() => listRequests).toBeGreaterThanOrEqual(2)
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('云端文档已保存，但列表刷新失败')
+  await expect(page.locator('.cdpc-pixel-stage small')).not.toContainText('云端保存失败')
+})
+
+
+test('legacy admin route is unavailable and the configured route remains protected', async ({ page }) => {
+  const legacyResponse = await page.goto('/admin')
+  expect(legacyResponse?.status()).toBe(404)
+
+  await page.goto('/control-room')
+  await expect(page).toHaveURL(/\/login(?:\?|$)/)
+})
+))
+})
+
+test('wardrobe outfit handoff clears a previously active single asset', async ({ page }) => {
+  let savedPointer: Record<string, unknown> | null = null
+  await page.route('**/api/assets?limit=60', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], nextCursor: null }),
+  }))
+  await page.route('**/api/outfits', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+      id: 'outfit-next', name: '春日搭配', items: [{ assetId: 'shawl-1' }],
+    }] }),
+  }))
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: 'old-asset', activeOutfitId: null,
+      } }) })
+      return
+    }
+    savedPointer = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedPointer }) })
+  })
+
+  await page.goto('/wardrobe')
+  await page.getByRole('button', { name: '我的穿搭' }).click()
+  await page.getByRole('button', { name: '载入这套穿搭' }).click()
+  await expect.poll(() => savedPointer).toMatchObject({
+    activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-next',
+  })
+  await expect(page).toHaveURL(new RegExp('/studio)
+})
+
+
+
+test('pixel editor saves a private cloud document and restores it on demand', async ({ page }) => {
+  let createdDocument: Record<string, unknown> | null = null
+  let deletedDocument = false
+  const remoteDocument = {
+    version: 1, width: 64, height: 64, activeId: 'remote-layer',
+    layers: [{
+      id: 'remote-layer', name: '云端图层', visible: true, opacity: 100,
+      pixels: Array.from({ length: 4096 }, (_, index) => index === 0 ? '#00ff00' : ''),
+    }],
+  }
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {} }) })
+  })
+  await page.route('**/api/editor-documents**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'POST') {
+      createdDocument = request.postDataJSON() as Record<string, unknown>
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    if (request.method() === 'DELETE' && url.pathname.endsWith('/cloud-doc-1')) {
+      deletedDocument = true
+      await route.fulfill({ status: 204 })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname.endsWith('/cloud-doc-1')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+        document: remoteDocument,
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: createdDocument && !deletedDocument ? [{
+      id: 'cloud-doc-1', name: '跨设备作品', revision: 1,
+      createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+    }] : [] }) })
+  })
+
+  await page.goto('/editor')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect.poll(() => createdDocument).not.toBeNull()
+  expect((createdDocument?.document as { width: number }).width).toBe(64)
+  await page.getByLabel('选择云端文档').selectOption('cloud-doc-1')
+  await page.getByRole('button', { name: '打开云端' }).click()
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect.poll(() => canvas.evaluate(element => Array.from(
+    (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data,
+  ))).toEqual([0, 255, 0, 255])
+  await expect(page.getByText('已从云端恢复编辑文档')).toBeVisible()
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: '删除云端', exact: true }).click()
+  await expect.poll(() => deletedDocument).toBe(true)
+  await expect(page.getByText('云端文档已删除；本地草稿仍保留')).toBeVisible()
+})
+
+
+test('pixel editor detects cloud edits and saves a conflict as a separate copy', async ({ page }) => {
+  let updateAttempts = 0
+  const createdCopies: Array<Record<string, unknown>> = []
+  const remoteDocument = {
+    version: 1, width: 64, height: 64, activeId: 'remote-layer',
+    layers: [{ id: 'remote-layer', name: '远端图层', visible: true, opacity: 100, pixels: Array(4096).fill('') }],
+  }
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
+  }))
+  await page.route('**/api/editor-documents**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'GET' && url.pathname === '/api/editor-documents') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+        id: 'cloud-doc-conflict', name: '原始云端作品', revision: 2,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      }] }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname.endsWith('/cloud-doc-conflict')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-conflict', name: '原始云端作品', revision: 2,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+        document: remoteDocument,
+      } }) })
+      return
+    }
+    if (request.method() === 'PUT' && url.pathname.endsWith('/cloud-doc-conflict')) {
+      updateAttempts += 1
+      await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({
+        error: '文档已在其他位置更新，请先重新载入，避免覆盖新版本。', revision: 3,
+      }) })
+      return
+    }
+    if (request.method() === 'POST') {
+      createdCopies.push(request.postDataJSON() as Record<string, unknown>)
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-copy', name: '本地修改作品（副本）', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) })
+  })
+
+  await page.goto('/editor')
+  await expect(page.getByLabel('选择云端文档').locator('option[value="cloud-doc-conflict"]')).toHaveCount(1)
+  await page.getByLabel('选择云端文档').selectOption('cloud-doc-conflict')
+  await page.getByRole('button', { name: '打开云端' }).click()
+  await expect(page.getByRole('status')).toContainText('云端文档已同步')
+  await page.getByLabel('云端文档名称').fill('本地修改作品')
+  await expect(page.getByRole('status')).toContainText('有未保存的云端修改')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect(page.getByRole('status')).toContainText('云端版本冲突')
+  await expect(page.getByRole('button', { name: '保存云端' })).toBeDisabled()
+  await page.getByRole('button', { name: '另存为云端副本' }).click()
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('本地内容已另存为新的云端副本')
+  expect(updateAttempts).toBe(1)
+  expect(createdCopies).toHaveLength(1)
+  expect(createdCopies[0].name).toBe('本地修改作品（副本）')
+})
+
+
+test('a valid local pixel draft takes precedence over automatic wardrobe asset restore', async ({ page }) => {
+  let wardrobeFileRequested = false
+  await page.addInitScript(() => {
+    const pixels = Array(4096).fill('')
+    pixels[0] = '#ff00ff'
+    localStorage.setItem('cdpc-pixel-editor-v1', JSON.stringify({
+      activeId: 'local-draft-layer',
+      layers: [{ id: 'local-draft-layer', name: '本地草稿', visible: true, opacity: 100, pixels }],
+    }))
+  })
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: {
+      projectId: null, activeTool: 'WARDROBE', activeAssetId: 'wardrobe-skin', activeOutfitId: null,
+    } }),
+  }))
+  await page.route('**/api/assets/wardrobe-skin/file', async route => {
+    wardrobeFileRequested = true
+    await route.abort()
+  })
+  await page.goto('/editor')
+  const canvas = page.getByLabel('64 乘 64 像素画布')
+  await expect.poll(() => canvas.evaluate(element => Array.from(
+    (element as HTMLCanvasElement).getContext('2d')!.getImageData(0, 0, 1, 1).data,
+  ))).toEqual([255, 0, 255, 255])
+  await expect(page.getByText('已恢复上次本地编辑草稿')).toBeVisible()
+  expect(wardrobeFileRequested).toBe(false)
+})
+
+
+test('cloud document save remains successful when the follow-up list refresh fails', async ({ page }) => {
+  let createRequests = 0
+  let listRequests = 0
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
+  }))
+  await page.route('**/api/editor-documents**', async route => {
+    if (route.request().method() === 'POST') {
+      createRequests += 1
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: 'cloud-doc-refresh-failure', name: '我的像素作品', revision: 1,
+        createdAt: '2026-11-03T00:00:00.000Z', updatedAt: '2026-11-03T00:00:00.000Z',
+      } }) })
+      return
+    }
+    // The editor loads the document list on entry. Keep that initial read healthy,
+    // then fail only the post-save refresh that this test is exercising.
+    listRequests += 1
+    if (listRequests === 1) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) })
+      return
+    }
+    await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: '暂时无法刷新列表' }) })
+  })
+
+  await page.goto('/editor')
+  await page.getByRole('button', { name: '保存云端' }).click()
+  await expect.poll(() => createRequests).toBe(1)
+  await expect.poll(() => listRequests).toBeGreaterThanOrEqual(2)
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('云端文档已保存，但列表刷新失败')
+  await expect(page.locator('.cdpc-pixel-stage small')).not.toContainText('云端保存失败')
+})
+
+
+test('legacy admin route is unavailable and the configured route remains protected', async ({ page }) => {
+  const legacyResponse = await page.goto('/admin')
+  expect(legacyResponse?.status()).toBe(404)
+
+  await page.goto('/control-room')
+  await expect(page).toHaveURL(/\/login(?:\?|$)/)
+})
+))
 })
 
 
