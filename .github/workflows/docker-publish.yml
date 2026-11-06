@@ -9,7 +9,6 @@ on:
       - '.env.example'
       - 'doc/**'
       - 'nginx.conf'
-      - 'vite.config.ts'
       - 'package.json'
       - 'package-lock.json'
       - 'prisma/**'
