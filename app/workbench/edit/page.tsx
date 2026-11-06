@@ -1,7 +1,10 @@
-import EditorStudio from '../../editor/editor-studio'
+import { redirect } from 'next/navigation'
+import { legacyRedirectUrl, type LegacySearchParams } from '@/lib/legacy-route'
 
-export const metadata = { title: '单品编辑 | 创作工作台 | CDPC' }
-
-export default function WorkbenchRoute() {
-  return <EditorStudio />
+export default async function LegacyWorkbenchEditRoute({
+  searchParams,
+}: {
+  searchParams?: Promise<LegacySearchParams>
+}) {
+  redirect(legacyRedirectUrl('/editor', searchParams ? await searchParams : {}))
 }
