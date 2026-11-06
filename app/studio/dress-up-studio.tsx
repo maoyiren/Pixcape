@@ -824,6 +824,9 @@ export default function DressUpStudio() {
   }
 
   function resetToDefault() {
+    const viewer = viewerRef.current
+    viewer?.playerObject.rotation.set(0, 0, 0)
+    viewer?.controls.reset()
     setSelectedSavedOutfitId('')
     setOutfitName('我的穿搭')
     setSelected({})
