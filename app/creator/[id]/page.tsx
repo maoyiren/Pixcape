@@ -1,17 +1,18 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { legacyRedirectUrl, type LegacySearchParams } from '@/lib/legacy-route'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-export default async function PublicCreatorPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PublicCreatorPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams?: Promise<LegacySearchParams> }) {
   const { id } = await params
   const profile = await prisma.creatorProfile.findFirst({
     where: { OR: [{ id }, { userId: id }], reviewStatus: 'APPROVED' },
     select: { id: true, userId: true, displayName: true, bio: true, user: { select: { username: true } } },
   })
   if (!profile) notFound()
-  if (profile.user.username) redirect(`/u/${profile.user.username}`)
+  if (profile.user.username) redirect(legacyRedirectUrl(`/u/${profile.user.username}`, searchParams ? await searchParams : {}))
 
   return (
     <main className="inventory-shell cdpc-page">
