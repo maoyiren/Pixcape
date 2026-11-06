@@ -26,7 +26,7 @@
 - `lib/prisma.ts` 仍导入 PostgreSQL、MariaDB、SQLite 三套 Adapter / Client。
 - 运行时仍按 `DATABASE_PROVIDER` 选择数据库，并提供 MySQL / SQLite 默认连接。
 - Dockerfile runtime 注释仍提及 SQLite native addon，复制多数据库构建产物。
-- 这项工作由 PR #61 承担；PR #61 仍为 Draft，最新 head 为 `aa6c4253a04c9a6ef35507e9f904a63d988326e9`。lock-refresh workflow 已重新生成根 `package-lock.json`；最新 Next.js Preview / Security run #736 已通过，CI run #939 与 Docker run #946 仍在运行，尚不能宣告 PostgreSQL Only 验收完成。不要在本 PR 平行改写同一套数据库切换代码。
+- 这项工作由 PR #61 承担；PR #61 仍为 Draft，最新 head 为 `aa6c4253a04c9a6ef35507e9f904a63d988326e9`。lock-refresh #30、CI #939、Next.js Preview/Security #736、Docker smoke #946 均成功，已覆盖 PostgreSQL migrations、unit/integration/browser tests、Next.js build、容器构建启动与 health/route smoke。Docker publish 和 1Panel deploy job 为 skipped；未发布、未部署。PR #61 相对当前 main 落后 2 个提交，需同步并重跑 CI 后再合并。不要在本 PR 平行改写同一套数据库切换代码。
 
 ### 2. Studio 素材分类覆盖不完整
 
@@ -93,3 +93,11 @@
 - Docker #946：PostgreSQL-only 镜像构建、容器启动、health、首页/login/studio/Blockbench/API 路由 smoke test 全部通过。
 - 首轮 Docker 构建失败原因是 Next.js build 阶段没有 `DATABASE_URL`；已在 build stage 注入仅用于构建的 PostgreSQL placeholder，运行时仍由容器入口强制要求真实 PostgreSQL URL。
 - PR #61 仍为 Draft，等待生产数据库类型、备份和迁移状态确认；没有对生产环境执行迁移或数据删除。
+
+
+## 最新 CI 与 PR 状态复核（2026-11-06 16:55 UTC）
+
+- PR #61：CI #939、Preview/Security #736、Docker smoke #946 全部成功；发布与 1Panel 部署步骤跳过。PR 分支落后 main 2 个提交，尚未合并。
+- PR #64：CI #955、Preview/Security #745、Docker smoke #955 全部成功。需要注意 PR #64 运行时采用的仍是 main 上旧版多数据库 workflow：日志明确执行 PostgreSQL / MySQL / SQLite runtime smoke 和多 schema Prisma generate。因此该组绿灯只证明 PR #64 的路由改动没有破坏旧基线构建，不能作为 PostgreSQL-only 结果。PR #61 合并后必须在新 main 基线上重跑。
+- PR #64 新增 `lib/legacy-route.ts` 与 `tests/browser/legacy-routes.spec.ts`，将旧入口的 query string 保留后重定向；该项可标记完成，Studio 的实际业务闭环仍未验收。
+- 构建仍有 Turbopack dynamic filesystem tracing warnings，涉及 `app/api/workspace/route.ts`；虽未阻断 CI，后续应检查 standalone output tracing 范围与镜像体积。
