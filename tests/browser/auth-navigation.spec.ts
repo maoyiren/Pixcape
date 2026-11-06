@@ -314,7 +314,11 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
 test('authenticated avatar menu supports hover, click, outside dismissal and Escape focus return', async ({ page }) => {
   const username = await createAuthenticatedUser(page, 'CDPC Avatar Tester')
   const trigger = page.getByRole('button', { name: /CDPC Avatar Tester/ })
-) })).toBeVisible()
+  await expect(trigger).toBeVisible({ timeout: 15_000 })
+  await trigger.hover()
+  const accountLinks = page.locator('.site-account-links')
+  await expect(accountLinks.getByRole('link', { name: '个人主页' })).toBeVisible()
+  await trigger.click()
   await expect(page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: '我的衣橱' })).toHaveAttribute('href', `/u/${username}/wardrobe`)
   await expect(page.locator('.site-account-status')).toContainText('账户正常')
   await expect(accountLinks.getByRole('link', { name: '个人主页' })).toHaveAttribute('href', `/u/${username}`)
