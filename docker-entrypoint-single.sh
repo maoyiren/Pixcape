@@ -4,7 +4,7 @@ set -eu
 cd /opt/pixcape-next
 
 if [ -n "${DATABASE_URL:-}" ]; then
-  echo "Applying Prisma migrations for ${DATABASE_PROVIDER:-postgresql}..."
+  echo "Applying PostgreSQL Prisma migrations..."
   npm run db:migrate
 else
   echo "WARNING: DATABASE_URL is unset; database-backed account features are unavailable."
