@@ -938,6 +938,8 @@ test('pixel editor saves a private cloud document and restores it on demand', as
   await expect.poll(() => createdDocument).not.toBeNull()
   expect((createdDocument?.document as { width: number }).width).toBe(64)
   await page.getByLabel('选择云端文档').selectOption('cloud-doc-1')
+  // The post-save document-list refresh is asynchronous; wait for its busy state to clear.
+  await expect(page.getByRole('button', { name: '打开云端' })).toBeEnabled()
   await page.getByRole('button', { name: '打开云端' }).click()
   const canvas = page.getByLabel('64 乘 64 像素画布')
   await expect.poll(() => canvas.evaluate(element => Array.from(
