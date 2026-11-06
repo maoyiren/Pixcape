@@ -26,7 +26,7 @@
 - `lib/prisma.ts` 仍导入 PostgreSQL、MariaDB、SQLite 三套 Adapter / Client。
 - 运行时仍按 `DATABASE_PROVIDER` 选择数据库，并提供 MySQL / SQLite 默认连接。
 - Dockerfile runtime 注释仍提及 SQLite native addon，复制多数据库构建产物。
-- 这项工作由 PR #61 承担；PR #61 仍为 Draft。后续 lock-refresh workflow 已重新生成根 `package-lock.json`，并有一次 `npm ci` 通过的记录；随后 Docker build 暴露 build stage 缺少 `DATABASE_URL`，已在两个 Dockerfile 中加入仅用于构建的 PostgreSQL placeholder，最新 CI 仍需确认最终结果。不要在本 PR 平行改写同一套数据库切换代码。
+- 这项工作由 PR #61 承担；PR #61 仍为 Draft，最新 head 为 `aa6c4253a04c9a6ef35507e9f904a63d988326e9`。lock-refresh workflow 已重新生成根 `package-lock.json`；最新 Next.js Preview / Security run #736 已通过，CI run #939 与 Docker run #946 仍在运行，尚不能宣告 PostgreSQL Only 验收完成。不要在本 PR 平行改写同一套数据库切换代码。
 
 ### 2. Studio 素材分类覆盖不完整
 
