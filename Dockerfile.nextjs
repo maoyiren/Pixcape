@@ -1,7 +1,9 @@
 # Isolated Next.js image used by CI to validate the single PostgreSQL runtime.
 # The root Dockerfile remains the canonical production image and also serves the Blockbench sub-app.
 FROM node:26.13.0-bookworm-slim AS build
-ENV NEXT_TELEMETRY_DISABLED=1
+# Build-time placeholder only; runtime must receive its real PostgreSQL URL.
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/cdpc_build?schema=public \
+    NEXT_TELEMETRY_DISABLED=1
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
