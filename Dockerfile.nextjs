@@ -1,34 +1,24 @@
-# Isolated Next.js image used by CI to validate PostgreSQL, MySQL, and SQLite runtime variants.
+# Isolated Next.js image used by CI to validate the single PostgreSQL runtime.
 # The root Dockerfile remains the canonical production image and also serves the Blockbench sub-app.
-ARG DATABASE_PROVIDER=postgresql
-
 FROM node:26.13.0-bookworm-slim AS build
-ARG DATABASE_PROVIDER
-ENV DATABASE_PROVIDER=${DATABASE_PROVIDER} \
-    NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run db:generate && npm run next:build
+RUN npm run next:build
 
 FROM node:26.13.0-bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
     && rm -rf /var/lib/apt/lists/*
-ARG DATABASE_PROVIDER
-ENV DATABASE_PROVIDER=${DATABASE_PROVIDER} \
-    NODE_ENV=production \
+ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     NEXTAUTH_URL=https://cdpc.cc \
     HOSTNAME=0.0.0.0 \
     PORT=3000
 WORKDIR /app
-
-# Copy the build output and the installed dependency tree, including Prisma's generated client.
-# Keeping the dependency tree avoids accidentally omitting runtime adapter modules.
 COPY --from=build --chown=node:node /app/package.json ./package.json
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/.next ./.next
@@ -41,10 +31,6 @@ COPY --from=build --chown=node:node /app/auth.ts ./auth.ts
 COPY --from=build --chown=node:node /app/next.config.ts ./next.config.ts
 COPY --from=build --chown=node:node /app/tsconfig.next.json ./tsconfig.next.json
 COPY --from=build --chown=node:node /app/next-env.d.ts ./next-env.d.ts
-
-# Persistent mount point for the optional single-instance SQLite database.
-RUN mkdir -p /data && chown node:node /data
-
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
