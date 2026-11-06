@@ -875,6 +875,20 @@ export default function DressUpStudio() {
     setSaveNotice('已重置角色视角')
   }
 
+  function removeCurrentCategory() {
+    if (category === '全部') return
+    if (!selected[category]) {
+      setSaveNotice(`${category}分类当前没有穿戴素材`)
+      return
+    }
+    setSelected(current => {
+      const next = { ...current }
+      delete next[category]
+      return next
+    })
+    setSaveNotice(`已脱下当前${category}素材`)
+  }
+
   function randomOutfit() {
     setSelectedSavedOutfitId('')
     setOutfitName('随机搭配 ' + new Date().toLocaleDateString())
@@ -983,6 +997,7 @@ export default function DressUpStudio() {
             {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong></span><button type="button" onClick={() => toggleItem(item)}>移除</button></div>)}
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
           <div className="dressup-actions dressup-primary-actions">
+            <button type="button" onClick={removeCurrentCategory} disabled={category === '全部' || !selected[category]}>脱下当前分类</button>
             <button type="button" onClick={randomOutfit}>随机搭配</button>
             <button type="button" onClick={() => void saveOutfitToCloud()} disabled={savingCloud}>{savingCloud ? '云端保存中…' : '保存搭配'}</button>
             <button type="button" onClick={saveLocalOutfit}>保存本地草稿</button>
