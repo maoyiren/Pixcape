@@ -14,7 +14,7 @@
 - [x] 核对现有 PostgreSQL Only PR #61，记录其 lockfile / npm ci 阻塞。
 - [ ] 更新本 PR 到最新 `main`，每阶段开始前检查上游变更。
 - [ ] 确认生产 `DATABASE_URL` 的数据库类型、版本、备份状态和现存数据；未确认前禁止执行生产迁移或清理旧数据库文件。
-- [ ] 对 PR #60 的产品实施清单与架构 V1.0 做一次路由和验收口径对齐。
+- [ ] 对 PR #63 的产品实施主计划与架构 V1.0 做一次路由和验收口径对齐。
 
 ## P0-1：唯一 Next.js 运行入口与数据库
 
@@ -79,7 +79,7 @@
 
 ## 当前已知阻塞与依赖
 
-- PR #61（PostgreSQL Only）当前为 Draft；此前 CI / Docker 在 `npm ci` 阶段失败，报 `EUSAGE`，提示 lockfile 缺少 `mysql2@3.24.4`。该 PR 需要按仓库声明的 npm 版本重新生成 lockfile 并重跑 CI；本 PR 不重复实现同一数据库切换。
+- PR #61（PostgreSQL Only）当前为 Draft；仓库 lock-refresh workflow 已重新生成根 `package-lock.json`，`npm ci` 已通过。首轮 Docker 检查发现 Next.js build 阶段没有 `DATABASE_URL`，已在两个 Dockerfile 的 build stage 加入仅用于构建的 PostgreSQL placeholder；最新 CI 正在重新验证。此 PR 不重复实现同一数据库切换。
 - PR #60 是产品 / 交互主计划文档 PR；其中清单可作为需求来源，但文档合并不代表代码功能完成。
 - 生产数据库实际类型、备份和现存数据尚未在本次执行中得到独立确认；生产迁移、数据删除和历史 migration 清理均为受保护步骤。
 - OAuth、邮件、对象存储等外部 Provider 需要真实环境变量与回调配置；代码可以验证配置处理，但不能虚构密钥或声称外部服务已联通。
