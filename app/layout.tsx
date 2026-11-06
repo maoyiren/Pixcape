@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { SiteNav } from './components/site-nav'
+import { ServiceWorkerRegister } from './components/service-worker-register'
 import { CdpcMantineProvider } from './components/mantine-provider'
 import '@mantine/core/styles.css'
 import '../src/tailwind.css'
@@ -15,6 +16,10 @@ export const metadata: Metadata = {
   title: { default: 'CDPC｜像素角色创作平台', template: '%s｜CDPC' },
   description: '编辑 Minecraft 皮肤，搭配披肩、披风与服饰配件；预览角色效果，开启你的像素创作。',
   applicationName: 'CDPC',
+  icons: {
+    icon: [{ url: '/pwa-192.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/pwa-192.svg', type: 'image/svg+xml' }],
+  },
   openGraph: { type: 'website', url: 'https://cdpc.cc', siteName: 'CDPC', title: 'CDPC｜像素角色创作平台', description: '从皮肤到配件，搭配、预览并继续创作。', locale: 'zh_CN' },
   twitter: { card: 'summary_large_image', title: 'CDPC｜像素角色创作平台', description: '从皮肤到配件，搭配、预览并继续创作。' },
 }
@@ -25,6 +30,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN">
       <body>
+        <ServiceWorkerRegister />
         <CdpcMantineProvider>
           <SiteNav />
           {children}

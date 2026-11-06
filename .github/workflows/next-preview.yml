@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'app/**'
+      - 'public/**'
       - 'pages/**'
       - 'scripts/**'
       - 'auth.ts'
