@@ -549,7 +549,7 @@ test('wardrobe outfit handoff clears a previously active single asset', async ({
   await expect.poll(() => savedPointer).toMatchObject({
     activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-next',
   })
-  await expect(page).toHaveURL(new RegExp('/dress-up$'))
+  await expect(page).toHaveURL(/\/studio$/)
 })
 
 
@@ -758,40 +758,6 @@ test('legacy admin route is unavailable and the configured route remains protect
   await page.goto('/control-room')
   await expect(page).toHaveURL(/\/login(?:\?|$)/)
 })
-))
-})
-
-test('wardrobe outfit handoff clears a previously active single asset', async ({ page }) => {
-  let savedPointer: Record<string, unknown> | null = null
-  await page.route('**/api/assets?limit=60', route => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], nextCursor: null }),
-  }))
-  await page.route('**/api/outfits', route => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
-      id: 'outfit-next', name: '春日搭配', items: [{ assetId: 'shawl-1' }],
-    }] }),
-  }))
-  await page.route('**/api/workspace', async route => {
-    if (route.request().method() === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
-        projectId: null, activeTool: 'WARDROBE', activeAssetId: 'old-asset', activeOutfitId: null,
-      } }) })
-      return
-    }
-    savedPointer = route.request().postDataJSON() as Record<string, unknown>
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: savedPointer }) })
-  })
-
-  await page.goto('/wardrobe')
-  await page.getByRole('button', { name: '我的穿搭' }).click()
-  await page.getByRole('button', { name: '载入这套穿搭' }).click()
-  await expect.poll(() => savedPointer).toMatchObject({
-    activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: 'outfit-next',
-  })
-  await expect(page).toHaveURL(/\/studio$/)
-})
-
-
 
 test('pixel editor saves a private cloud document and restores it on demand', async ({ page }) => {
   let createdDocument: Record<string, unknown> | null = null
