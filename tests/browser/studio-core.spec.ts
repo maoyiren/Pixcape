@@ -62,8 +62,13 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByRole('button', { name: '切换为鞘翅' }).click()
   await expect(page.getByRole('button', { name: '切换为披风' })).toBeVisible()
   await page.getByRole('button', { name: '正面' }).click()
+  await expect(page.getByRole('button', { name: '正面' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '背面' }).click()
+  await expect(page.getByRole('button', { name: '背面' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '侧面' }).click()
+  await expect(page.getByRole('button', { name: '侧面' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: '重置视角' }).click()
+  await expect(page.getByRole('button', { name: '正面' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByLabel('Minecraft 场景背景').selectOption('forest')
 
   // Local outfit persistence survives a full page reload.
@@ -75,6 +80,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(page.locator('.dressup-selected-list')).toContainText('苦力怕外套')
   await expect(page.locator('.dressup-selected-list')).toContainText('眼眸花披风')
   await expect(page.getByLabel('穿搭名称')).toHaveValue('Studio 浏览器验收搭配')
+  await expect(page.getByLabel('Minecraft 场景背景')).toHaveValue('forest')
 
   // The standard skin download is a 64x64 PNG; cape remains a separate equipment item.
   const downloadPromise = page.waitForEvent('download')
