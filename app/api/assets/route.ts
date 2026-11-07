@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     select: {
       id: true, ownerId: true, kind: true, category: true, mimeType: true,
       byteSize: true, width: true, height: true, source: true, visibility: true,
-      attribution: true, createdAt: true, updatedAt: true,
+      attribution: true, provenance: true, downloadPolicy: true, createdAt: true, updatedAt: true,
       favorites: { where: { userId: actor.id }, select: { id: true } },
     },
   })
@@ -69,6 +69,7 @@ export async function POST(request: Request) {
     const category = AssetCategorySchema.safeParse(form.get('category'))
     const visibility = AssetVisibilitySchema.safeParse(form.get('visibility') || 'PRIVATE')
     const attribution = form.get('attribution')
+    const rightsDeclaration = form.get('rightsDeclaration')
     if (!(file instanceof File)) return NextResponse.json({ error: '请选择 PNG 文件。' }, { status: 400 })
     if (!category.success || !visibility.success) {
       return NextResponse.json({ error: '素材分类、来源或可见性无效。' }, { status: 400 })
@@ -76,9 +77,13 @@ export async function POST(request: Request) {
     if (attribution !== null && typeof attribution !== 'string') {
       return NextResponse.json({ error: '署名格式无效。' }, { status: 400 })
     }
+    if (rightsDeclaration !== null && rightsDeclaration !== 'I_OWN_THE_RIGHTS') {
+      return NextResponse.json({ error: '素材权利声明无效。' }, { status: 400 })
+    }
     const asset = await saveAssetFile({
       actorId: actor.id, file, category: category.data, source: 'UPLOAD',
       visibility: visibility.data, attribution: typeof attribution === 'string' ? attribution : null,
+      rightsDeclaration: rightsDeclaration === 'I_OWN_THE_RIGHTS',
     })
     return NextResponse.json({ item: { ...asset, fileUrl: `/api/assets/${asset.id}/file` } }, { status: 201, headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
