@@ -67,6 +67,7 @@ export const AssetDescriptorSchema = z.object({
   source: AssetSourceSchema,
   visibility: AssetVisibilitySchema,
   licenseId: z.string().min(1).nullable(),
+  name: z.string().max(120).nullable(),
   attribution: z.string().max(500).nullable(),
   provenance: AssetProvenanceSchema,
   downloadPolicy: AssetDownloadPolicySchema,
