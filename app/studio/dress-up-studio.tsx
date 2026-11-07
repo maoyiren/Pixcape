@@ -23,7 +23,7 @@ const SCENE_BACKGROUNDS: Record<string, string> = {
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
-type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; texture128?: string; modelTexture?: string; modelTexture128?: string; note: string; assetId?: string; fileUrl?: string; attribution?: string | null; source?: string; visibility?: string; provenance?: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'; downloadPolicy?: 'DENY' | 'OWNER_ONLY' | 'LICENSED_PUBLIC' }
+type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; texture128?: string; modelTexture?: string; modelTexture128?: string; note: string; assetId?: string; fileUrl?: string; attribution?: string | null; source?: string; visibility?: string; provenance?: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'; downloadPolicy?: 'DENY' | 'OWNER_ONLY' | 'LICENSED_PUBLIC'; canDownload?: boolean }
 const catalog: CatalogItem[] = [
   { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', texture128: 'office_shawl_default_128.png', modelTexture: 'office_shawl_slim_64.png', modelTexture128: 'office_shawl_slim_128.png', note: '正式披肩贴图' },
   { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', texture128: 'MCC_shawl_default_128.png', modelTexture: 'MCC_shawl_slim_64.png', modelTexture128: 'MCC_shawl_slim_128.png', note: '正式披肩贴图' },
@@ -163,6 +163,7 @@ export default function DressUpStudio() {
           visibility: asset.visibility,
           provenance: asset.provenance,
           downloadPolicy: asset.downloadPolicy,
+          canDownload: asset.canDownload === true,
         }]
       })
       const skin = outfit.skinAssetId ? assets.get(outfit.skinAssetId) : null
@@ -278,6 +279,9 @@ export default function DressUpStudio() {
             attribution: asset.attribution,
             source: asset.source,
             visibility: asset.visibility,
+            provenance: asset.provenance,
+            downloadPolicy: asset.downloadPolicy,
+            canDownload: asset.canDownload === true,
           }]
         })
         setWardrobeItems(items)
@@ -334,6 +338,9 @@ export default function DressUpStudio() {
           attribution: asset.attribution,
           source: asset.source,
           visibility: asset.visibility,
+          provenance: asset.provenance,
+          downloadPolicy: asset.downloadPolicy,
+          canDownload: asset.canDownload === true,
         }
         setSelected(current => ({ ...current, [garmentCategory]: item }))
         setSaveNotice(`已从衣橱载入${garmentCategory}素材`)
@@ -1099,6 +1106,18 @@ export default function DressUpStudio() {
     setSaveNotice('已恢复默认角色状态；此前保存的本地穿搭不会被删除')
   }
 
+  function downloadCapeAsset(item: CatalogItem) {
+    if (item.category !== '披风' || !item.assetId || item.canDownload !== true) {
+      setSaveNotice('该披风素材没有可用的下载授权；官方或未授权素材仅可在平台内预览。')
+      return
+    }
+    const link = document.createElement('a')
+    link.href = `/api/assets/${encodeURIComponent(item.assetId)}/download`
+    link.download = `${item.name.replace(/[^\\p{L}\\p{N}_-]+/gu, '-') || 'cdpc-cape'}.png`
+    link.click()
+    setSaveNotice('已请求下载你有权导出的独立披风 PNG。')
+  }
+
   function downloadPreviewScreenshot() {
     const canvas = previewHost.current?.querySelector('canvas')
     if (!canvas) {
@@ -1285,7 +1304,7 @@ export default function DressUpStudio() {
         <aside className="dressup-panel" aria-label="当前穿搭">
           <div className="dressup-panel-heading"><h2>搭配清单</h2><span>{selectedItems.length} 件</span></div>
           {selectedItems.length ? <div className="dressup-selected-list">
-            {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong>{item.attribution && <small>作者/署名：{item.attribution}</small>}</span><div className="dressup-selected-row-actions"><button type="button" onClick={() => setSinglePreviewItem(item)}>独立预览</button><button type="button" onClick={() => toggleItem(item)}>移除</button></div></div>)}
+            {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong>{item.attribution && <small>作者/署名：{item.attribution}</small>}</span><div className="dressup-selected-row-actions"><button type="button" onClick={() => setSinglePreviewItem(item)}>独立预览</button>{item.category === '披风' && item.canDownload === true && <button type="button" onClick={() => downloadCapeAsset(item)}>导出披风 PNG</button>}<button type="button" onClick={() => toggleItem(item)}>移除</button></div></div>)}
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
           <div className="dressup-actions dressup-primary-actions">
             <button type="button" onClick={removeCurrentCategory} disabled={category === '全部' || !selected[category]}>脱下当前分类</button>
