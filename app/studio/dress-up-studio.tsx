@@ -1113,7 +1113,7 @@ export default function DressUpStudio() {
     }
     const link = document.createElement('a')
     link.href = `/api/assets/${encodeURIComponent(item.assetId)}/download`
-    link.download = `${item.name.replace(/[^\\p{L}\\p{N}_-]+/gu, '-') || 'cdpc-cape'}.png`
+    link.download = `${item.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'cdpc-cape'}.png`
     link.click()
     setSaveNotice('已请求下载你有权导出的独立披风 PNG。')
   }

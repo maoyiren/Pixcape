@@ -224,3 +224,65 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(page.getByRole('button', { name: 'Steve 粗臂' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByLabel('切换角色视角')).toHaveValue('front')
 })
+
+test('Studio exports only owner-authorized capes as standalone PNG files', async ({ page }) => {
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 32
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#345678'
+    context.fillRect(0, 0, 64, 32)
+    return canvas.toDataURL('image/png')
+  })
+  const bytes = Buffer.from(png.split(',')[1], 'base64')
+  const assets = [
+    {
+      id: 'official-cape', name: '官方样例披风', category: 'CAPE', fileUrl: '/api/assets/official-cape/file',
+      attribution: '官方素材', provenance: 'OFFICIAL', downloadPolicy: 'DENY', canDownload: false,
+      visibility: 'PUBLIC',
+    },
+    {
+      id: 'owner-cape', name: '我的原创披风', category: 'CAPE', fileUrl: '/api/assets/owner-cape/file',
+      attribution: '创作者本人', provenance: 'USER_CREATED', downloadPolicy: 'OWNER_ONLY', canDownload: true,
+      visibility: 'PRIVATE',
+    },
+  ]
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
+    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: bytes,
+  }))
+  await page.route('https://www.minecraft.net/**', route => route.fulfill({
+    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: bytes,
+  }))
+  await page.route('**/api/assets**', async route => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith('/file')) {
+      await route.fulfill({ status: 200, contentType: 'image/png', body: bytes })
+      return
+    }
+    if (url.pathname.endsWith('/download')) {
+      await route.fulfill({ status: 200, contentType: 'image/png', headers: { 'Content-Disposition': 'attachment; filename="owner-cape.png"' }, body: bytes })
+      return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: assets, nextCursor: null }) })
+  })
+  await page.route('**/api/outfits**', route => route.fulfill({
+    status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Authentication required' }),
+  }))
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Authentication required' }),
+  }))
+  await page.goto('/studio')
+  await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
+  await page.getByRole('button', { name: '披风', exact: true }).click()
+  await page.locator('.dressup-item').filter({ hasText: '官方样例披风' }).click()
+  await expect(page.locator('.dressup-selected-row')).toContainText('官方样例披风')
+  await expect(page.getByRole('button', { name: '导出披风 PNG' })).toHaveCount(0)
+  await page.locator('.dressup-selected-row').getByRole('button', { name: '移除' }).click()
+  await page.locator('.dressup-item').filter({ hasText: '我的原创披风' }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出披风 PNG' }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toContain('我的-原创-披风.png')
+})
+
