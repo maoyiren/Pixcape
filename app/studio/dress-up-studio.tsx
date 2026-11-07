@@ -6,6 +6,7 @@ import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
 import { validateStudioSkinTexture } from '@/src/domain/studio-texture'
 import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
+import { canEquipStudioOverlayTogether, getStudioOverlayUvProfile, type StudioOverlayCategory } from '@/src/domain/studio-uv-layout'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
 const BASE_SKIN = ASSET_ROOT + 'stevea.png'
@@ -483,6 +484,10 @@ export default function DressUpStudio() {
         context.imageSmoothingEnabled = false
         context.drawImage(base, 0, 0, textureSize, textureSize)
         for (const item of selectedItems.filter(item => item.category !== '披风')) {
+          if (item.category !== '披肩' && item.category !== '外套') {
+            throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，已停止合成`)
+          }
+          getStudioOverlayUvProfile(item.category)
           const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
           const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
           if (cancelled) return
@@ -522,11 +527,15 @@ export default function DressUpStudio() {
       const next = { ...current }
       if (next[item.category]?.id === item.id) delete next[item.category]
       else {
-        // The source atlas provides distinct shawl and coat overlays, but they
-        // occupy overlapping skin UV surfaces. Match the source project behavior:
-        // equip one upper-body overlay at a time instead of silently painting over it.
-        if (item.category === '披肩') delete next['外套']
-        if (item.category === '外套') delete next['披肩']
+        // Shawl and coat use separate authored skin atlases, but overlap on the
+        // same Minecraft body surfaces. Enforce the tested compatibility profile.
+        if (item.category === '披肩' || item.category === '外套') {
+          const incoming = item.category as StudioOverlayCategory
+          const equipped = Object.keys(next).filter(key => key === '披肩' || key === '外套') as StudioOverlayCategory[]
+          if (!canEquipStudioOverlayTogether(equipped, incoming)) {
+            delete next[getStudioOverlayUvProfile(incoming).mutuallyExclusiveWith]
+          }
+        }
         next[item.category] = item
       }
       return next
