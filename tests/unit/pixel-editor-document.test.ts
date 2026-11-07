@@ -12,6 +12,12 @@ test('normalizes valid 64x64 and 128x128 editor documents', () => {
   }
 })
 
+test('migrates the previous 64x64 local draft shape', () => {
+  const result = normalizePixelEditorDocument({ activeId: 'base', layers: [layer('base')] })
+  assert.equal(result?.width, 64)
+  assert.equal(result?.activeId, 'base')
+})
+
 test('rejects malformed dimensions, empty layers, and malformed pixel buffers', () => {
   assert.equal(normalizePixelEditorDocument({ version: 1, width: 96, height: 96, activeId: 'x', layers: [layer('x')] }), null)
   assert.equal(normalizePixelEditorDocument({ version: 1, width: 64, height: 64, activeId: 'x', layers: [] }), null)
