@@ -31,6 +31,10 @@ export type ApiAsset = {
   source: string
   visibility: string
   attribution: string | null
+  licenseId: string | null
+  provenance: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'
+  downloadPolicy: 'DENY' | 'OWNER_ONLY' | 'LICENSED_PUBLIC'
+  canDownload: boolean
   createdAt: string
   updatedAt?: string
   isFavorite?: boolean
@@ -144,12 +148,13 @@ export const cdpcApi = {
     return request<AssetList>(`/api/assets${query ? `?${query}` : ''}`)
   },
 
-  uploadAsset: async (file: File, category: AssetCategory, options: { visibility?: string; attribution?: string } = {}) => {
+  uploadAsset: async (file: File, category: AssetCategory, options: { visibility?: string; attribution?: string; rightsDeclaration?: boolean } = {}) => {
     const form = new FormData()
     form.set('file', file)
     form.set('category', category)
     form.set('visibility', options.visibility || 'PRIVATE')
     if (options.attribution) form.set('attribution', options.attribution)
+    if (options.rightsDeclaration) form.set('rightsDeclaration', 'I_OWN_THE_RIGHTS')
     return (await request<{ item: ApiAsset }>('/api/assets', { method: 'POST', body: form })).item
   },
 
@@ -179,6 +184,7 @@ export const cdpcApi = {
     }),
 
   assetFileUrl: (assetId: string) => `/api/assets/${encodeURIComponent(assetId)}/file`,
+  assetDownloadUrl: (assetId: string) => `/api/assets/${encodeURIComponent(assetId)}/download`,
 
   listEditorDocuments: async () =>
     (await request<{ items: ApiEditorDocumentSummary[] }>('/api/editor-documents')).items,
