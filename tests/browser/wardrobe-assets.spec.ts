@@ -16,6 +16,7 @@ async function createAuthenticatedUser(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: '登录 CDPC' }).click()
   const trigger = page.getByRole('button', { name: /CDPC Wardrobe Browser Tester/ })
   await expect(trigger).toBeVisible({ timeout: 15_000 })
+  await trigger.click()
   const session = await page.evaluate(async () => {
     const response = await fetch('/api/auth/session', { cache: 'no-store' })
     return response.json()
@@ -104,6 +105,7 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
 })
 
 test('Studio restores a cloud outfit from server state with an empty local device cache', async ({ page }) => {
+  await createAuthenticatedUser(page, 'CDPC Studio Browser Tester')
   const png = await makePng(page)
   const assets = [
     {
