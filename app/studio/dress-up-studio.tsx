@@ -462,6 +462,16 @@ export default function DressUpStudio() {
     if (!imageResponse.ok) throw new Error(`无法读取素材：${attribution}`)
     const blob = await imageResponse.blob()
     if (blob.type !== 'image/png') throw new Error(`素材“${attribution}”不是 PNG 格式`)
+    if (category !== 'CAPE') {
+      const bitmap = await createImageBitmap(blob)
+      try {
+        const role = category === 'SKIN' ? 'base-skin' : 'clothing-overlay'
+        const textureError = validateStudioSkinTexture({ width: bitmap.width, height: bitmap.height }, role)
+        if (textureError) throw new Error(`素材“${attribution}”：${textureError}`)
+      } finally {
+        bitmap.close()
+      }
+    }
     const file = new File([blob], `${category.toLowerCase()}-${Date.now()}.png`, { type: 'image/png' })
     const asset = await cdpcApi.uploadAsset(file, category, {
       visibility: 'PRIVATE',
