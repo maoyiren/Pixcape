@@ -6,7 +6,7 @@ import { loadAssetActor } from '@/lib/asset-api'
 import { readRequestBodyWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
-const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
+const MAX_DOCUMENT_BYTES = 8 * 1024 * 1024
 const MAX_REQUEST_BYTES = MAX_DOCUMENT_BYTES + 4096
 
 type RouteContext = { params: Promise<{ documentId: string }> }
@@ -69,7 +69,7 @@ export async function PUT(request: Request, context: RouteContext) {
     const raw = await readRequestBodyWithLimit(request.body, MAX_REQUEST_BYTES)
     body = JSON.parse(raw.toString('utf8'))
   } catch (error) {
-    if (error instanceof RequestBodyTooLargeError) return NextResponse.json({ error: '编辑文档请求不能超过 2 MB。' }, { status: 413 })
+    if (error instanceof RequestBodyTooLargeError) return NextResponse.json({ error: '编辑文档请求不能超过 8 MB。' }, { status: 413 })
     return NextResponse.json({ error: '请求 JSON 格式无效。' }, { status: 400 })
   }
   if (!body || typeof body !== 'object') return NextResponse.json({ error: '编辑文档内容无效。' }, { status: 400 })
@@ -81,7 +81,7 @@ export async function PUT(request: Request, context: RouteContext) {
   if (!validateDocument(input.document)) return NextResponse.json({ error: '编辑文档结构无效。' }, { status: 400 })
   const serialized = JSON.stringify(input.document)
   if (new TextEncoder().encode(serialized).byteLength > MAX_DOCUMENT_BYTES) {
-    return NextResponse.json({ error: '编辑文档超过 2 MB 限制。' }, { status: 413 })
+    return NextResponse.json({ error: '编辑文档超过 8 MB 限制。' }, { status: 413 })
   }
   const name = typeof input.name === 'string' ? input.name.trim().slice(0, 80) : '未命名作品'
   const result = await prisma.editorDocument.updateMany({
