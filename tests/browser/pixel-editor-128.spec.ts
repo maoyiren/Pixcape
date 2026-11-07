@@ -16,7 +16,7 @@ test('128×128 editor import, undo/redo, cloud restore, wardrobe save and PNG ex
   let cloudSummary: any = null
   let wardrobeUpload = false
 
-  await page.route('**/api/editor-documents*', async route => {
+  await page.route('**/api/editor-documents**', async route => {
     const request = route.request()
     const url = new URL(request.url())
     if (url.pathname === '/api/editor-documents' && request.method() === 'POST') {
