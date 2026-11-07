@@ -20,7 +20,9 @@ function validateDocument(value: unknown): value is {
 } {
   if (!value || typeof value !== 'object') return false
   const document = value as Record<string, unknown>
-  if (document.version !== 1 || (document.width !== 64 && document.width !== 128) || document.height !== document.width) return false
+  const width = document.width
+  const height = document.height
+  if (document.version !== 1 || typeof width !== 'number' || (width !== 64 && width !== 128) || typeof height !== 'number' || height !== width) return false
   if (!Array.isArray(document.layers) || document.layers.length < 1 || document.layers.length > 24) return false
   if (document.activeId !== undefined && document.activeId !== null && typeof document.activeId !== 'string') return false
   return document.layers.every((entry) => {
@@ -30,7 +32,7 @@ function validateDocument(value: unknown): value is {
       && typeof layer.name === 'string' && layer.name.length <= 80
       && typeof layer.visible === 'boolean'
       && typeof layer.opacity === 'number' && Number.isInteger(layer.opacity) && layer.opacity >= 0 && layer.opacity <= 100
-      && Array.isArray(layer.pixels) && layer.pixels.length === document.width * document.height
+      && Array.isArray(layer.pixels) && layer.pixels.length === width * height
       && layer.pixels.every((pixel) => typeof pixel === 'string' && (pixel === '' || /^#[0-9a-f]{6}$/i.test(pixel)))
   })
 }
