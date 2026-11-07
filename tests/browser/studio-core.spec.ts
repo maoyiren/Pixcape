@@ -283,6 +283,6 @@ test('Studio exports only owner-authorized capes as standalone PNG files', async
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出披风 PNG' }).click()
   const download = await downloadPromise
-  expect(download.suggestedFilename()).toContain('我的-原创-披风.png')
+  expect(download.suggestedFilename()).toBe('我的原创披风.png')
 })
 
