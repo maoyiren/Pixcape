@@ -49,10 +49,18 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByRole('button', { name: '披肩', exact: true }).click()
   await page.getByRole('button', { name: /眼眸花披肩/ }).click()
   const selected = page.locator('.dressup-selected-list')
-  // Preview the shawl while it is still equipped. Selecting a coat replaces it
-  // because shawl and coat intentionally share mutually exclusive body surfaces.
+  // Catalog selection must immediately show an isolated 3D asset preview and
+  // update the character try-on; no second action in the outfit list is needed.
+  const assetPreview = page.getByRole('region', { name: '单件素材独立渲染预览' })
+  await expect(assetPreview).toBeVisible()
+  await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('region', { name: '服装素材' }).locator('.dressup-single-item-card')).toContainText('眼眸花披肩')
+  await expect(selected).toContainText('眼眸花披肩')
+  await page.getByRole('button', { name: '关闭' }).click()
+
+  // The outfit-list shortcut remains available as a secondary way to reopen it.
   await page.locator('.dressup-selected-row').filter({ hasText: '眼眸花披肩' }).getByRole('button', { name: '独立预览' }).click()
-  await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).toBeVisible()
+  await expect(assetPreview).toBeVisible()
   await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: '关闭' }).click()
 
