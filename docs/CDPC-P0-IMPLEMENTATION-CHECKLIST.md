@@ -133,3 +133,14 @@
 - 本轮 CI 曾发现 128×128 PNG 导出浏览器测试在导入后立即点击导出按钮失败。证据显示按钮当时处于 disabled（Studio 正在异步刷新 3D 皮肤预览），属于测试未等待异步状态完成；提交 `9ee7930` 增加按钮 enabled 等待后，完整 browser regression 通过。没有移除产品侧禁用保护，也没有降低 PNG 文件名和像素尺寸断言。
 - 当前渲染能力边界仍为：SHAWL / COAT 使用各自完整 Minecraft skin alpha atlas；CAPE 是独立背部装备；HAT / PANTS / SHOES 仍未启用。实际源素材 Classic / Slim、64 / 128px 的视觉检查与像素级 fixture/hash 审核仍未完成，不能据此标记完整 UV 验收通过。
 - PR 继续保持 Draft。CI 成功不等于真实 OAuth / 邮件配置、生产账号、移动端视觉验收、生产 PostgreSQL 数据库确认、备份恢复演练或回滚方案已通过。Docker publish 与 1Panel deploy 未执行；没有发布镜像、生产迁移或生产部署。
+
+
+## 最新验证更新（2026-11-07 14:28 UTC）
+
+- PR #64 提交 `91fda2806dae2ba32c8f897a03f62b7df5e29d63`：新增目录卡片独立、懒加载 3D 预览组件 `app/studio/catalog-garment-preview.tsx`，目录卡片不再显示平面 PNG 缩略图；披肩 / 外套使用透明皮肤 UV 图集，披风使用独立背部装备渲染。
+- 为避免目录重构后浏览器回归仍定位旧 PNG 缩略图，`tests/browser/auth-navigation.spec.ts` 已改为检查 `.dressup-item-render`。
+- PNG 导出改为 `canvas.toBlob()` + object URL 下载，避免大尺寸 canvas 使用 data URL 的内存峰值；下载后延迟回收 object URL。
+- 提交 `c23ec891` 首次 CI 发现新预览组件未进入 Git tree（构建报 module not found）；随后提交 `91fda28` 补回组件文件并重跑完整 workflow。不得把该次失败隐藏或算作通过。
+- 最终 head `91fda28` 的 CI #1044（run `42381456139`）成功，包含 Playwright browser regression；Preview / Security #833（run `42381456158`）成功；PostgreSQL Docker smoke #1042（run `42381456137`）成功；Lockfile refresh #39（run `42381456162`）成功。
+- 目录 3D 预览当前只支持已验证的披肩、外套、披风。帽子 / 裤子 / 鞋子仍显示未接入状态；没有为其虚构 UV。实际素材 Classic / Slim、64 / 128px 的像素级视觉验收仍未完成。
+- 以上 CI 只证明构建和自动化回归通过，不代表真实素材视觉验收、移动端体验、生产 OAuth / 邮件配置、生产 PostgreSQL 备份恢复或回滚演练完成。PR 继续保持 Draft；publish 与 1Panel deploy 均 skipped，未发布镜像、未迁移或部署生产。
