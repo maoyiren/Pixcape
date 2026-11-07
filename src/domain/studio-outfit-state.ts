@@ -1,4 +1,4 @@
-export const STUDIO_POSES = ['idle', 'wave', 'walk', 'fly'] as const
+export const STUDIO_POSES = ['idle', 'wave', 'walk', 'run', 'fly', 'crouch', 'hit', 'swim'] as const
 export type StudioPose = typeof STUDIO_POSES[number]
 
 export type StudioWorkspaceState = {

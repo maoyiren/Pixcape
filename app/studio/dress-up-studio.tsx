@@ -498,11 +498,43 @@ export default function DressUpStudio() {
   useEffect(() => {
     const viewer = viewerRef.current
     if (!viewer) return
-    const animation = pose === 'fly' ? new FlyingAnimation() : pose === 'walk' ? new WalkingAnimation() : new IdleAnimation()
+    const animation = pose === 'fly' ? new FlyingAnimation() : pose === 'walk' || pose === 'run' ? new WalkingAnimation() : new IdleAnimation()
     if (pose === 'wave') {
       animation.addAnimation((player, progress) => {
         player.skin.rightArm.rotation.z = -2.35 + Math.sin(progress * 5) * 0.22
         player.skin.rightArm.rotation.x = Math.sin(progress * 3) * 0.12
+      })
+    }
+    if (pose === 'crouch') {
+      animation.addAnimation((player, progress) => {
+        player.skin.body.rotation.x = 0.32
+        player.skin.head.rotation.x = -0.22
+        player.skin.leftArm.rotation.x = -0.48 + Math.sin(progress * 2) * 0.035
+        player.skin.rightArm.rotation.x = -0.48 - Math.sin(progress * 2) * 0.035
+        player.skin.leftLeg.rotation.x = -0.62
+        player.skin.rightLeg.rotation.x = -0.62
+      })
+    }
+    if (pose === 'hit') {
+      animation.addAnimation((player, progress) => {
+        const recoil = Math.sin(progress * 8) * 0.12
+        player.skin.body.rotation.z = recoil
+        player.skin.head.rotation.z = -recoil * 0.6
+        player.skin.leftArm.rotation.x = -1.15 + recoil
+        player.skin.rightArm.rotation.x = -1.15 - recoil
+        player.skin.leftLeg.rotation.x = 0.24
+        player.skin.rightLeg.rotation.x = -0.18
+      })
+    }
+    if (pose === 'swim') {
+      animation.addAnimation((player, progress) => {
+        const stroke = Math.sin(progress * 5)
+        player.skin.body.rotation.x = -0.72
+        player.skin.head.rotation.x = 0.48
+        player.skin.leftArm.rotation.x = -1.2 + stroke * 0.75
+        player.skin.rightArm.rotation.x = -1.2 - stroke * 0.75
+        player.skin.leftLeg.rotation.x = Math.sin(progress * 5 + Math.PI) * 0.55
+        player.skin.rightLeg.rotation.x = Math.sin(progress * 5) * 0.55
       })
     }
     if (pose === 'fly' && cape && !elytraVisible) {
@@ -511,7 +543,7 @@ export default function DressUpStudio() {
         player.cape.rotation.z = Math.sin(progress * 1.8) * 0.025
       })
     }
-    animation.speed = pose === 'walk' ? 0.72 : 1
+    animation.speed = pose === 'walk' ? 0.72 : pose === 'run' ? 1.45 : 1
     viewer.animation = animation
     return () => { if (viewer.animation === animation) viewer.animation = null }
   }, [pose, cape?.id, elytraVisible])
@@ -1208,8 +1240,12 @@ export default function DressUpStudio() {
               <select aria-label="切换角色动作" value={pose} onChange={event => setPose(event.target.value as StudioPose)}>
                 <option value="idle">待机</option>
                 <option value="walk">行走</option>
+                <option value="run">奔跑</option>
                 <option value="fly">飞行</option>
                 <option value="wave">挥手</option>
+                <option value="crouch">蹲下</option>
+                <option value="hit">受击</option>
+                <option value="swim">游泳</option>
               </select>
             </label>
             <label className="dressup-preview-select">
