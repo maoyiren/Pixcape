@@ -228,16 +228,16 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
     if (request.method() === 'GET' && url.pathname === '/api/assets') {
       if (url.searchParams.get('cursor') === 'wardrobe-page-2') {
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
-          id: 'asset-coat-cloud', category: 'COAT', name: '我的衣橱外套', attribution: '外套作者署名',
+          id: 'asset-coat-cloud', category: 'COAT', attribution: '我的衣橱外套',
           fileUrl: '/api/assets/asset-coat-cloud/file', isFavorite: false,
         }, {
-          id: 'asset-cape-cloud', category: 'CAPE', name: '我的衣橱披风', attribution: '披风作者署名',
+          id: 'asset-cape-cloud', category: 'CAPE', attribution: '我的衣橱披风',
           fileUrl: '/api/assets/asset-cape-cloud/file', isFavorite: false,
         }], nextCursor: null }) })
         return
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
-        id: 'asset-shawl-cloud', category: 'SHAWL', name: '我的衣橱披肩', attribution: '披肩作者署名',
+        id: 'asset-shawl-cloud', category: 'SHAWL', attribution: '我的衣橱披肩',
         fileUrl: '/api/assets/asset-shawl-cloud/file', isFavorite: false,
       }], nextCursor: 'wardrobe-page-2' }) })
       return
@@ -279,7 +279,8 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   await expect(page.getByRole('button', { name: /我的衣橱披肩/ })).toBeVisible()
   await expect(page.locator('.dressup-item-render').first()).toBeVisible()
   await page.getByRole('button', { name: /我的衣橱披肩/ }).click()
-  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披肩')
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的披肩素材')
+  await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：我的衣橱披肩')
   await page.getByRole('button', { name: /眼眸花披肩/ }).click()
   await page.getByLabel('穿搭名称').fill('云端披肩测试')
   await page.getByRole('button', { name: '保存搭配' }).click()
@@ -302,12 +303,14 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   await page.getByRole('button', { name: '披风', exact: true }).click()
   await expect(page.getByRole('button', { name: /我的衣橱披风/ })).toBeVisible()
   await page.getByRole('button', { name: /我的衣橱披风/ }).click()
-  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披风')
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的披风素材')
+  await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：我的衣橱披风')
   await page.getByRole('button', { name: '保存本地草稿' }).click()
   await expect(page.getByText(/已保存到此设备/)).toBeVisible()
 
   await page.reload()
-  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱外套')
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的外套素材')
+  await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：我的衣橱外套')
   await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披风')
 })
 
