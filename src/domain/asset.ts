@@ -43,6 +43,12 @@ export type AssetSource = z.infer<typeof AssetSourceSchema>
 export const AssetVisibilitySchema = z.enum(['PRIVATE', 'UNLISTED', 'PUBLIC'])
 export type AssetVisibility = z.infer<typeof AssetVisibilitySchema>
 
+export const AssetProvenanceSchema = z.enum(['USER_CREATED', 'OFFICIAL', 'LICENSED', 'THIRD_PARTY', 'UNKNOWN'])
+export type AssetProvenance = z.infer<typeof AssetProvenanceSchema>
+
+export const AssetDownloadPolicySchema = z.enum(['DENY', 'OWNER_ONLY', 'LICENSED_PUBLIC'])
+export type AssetDownloadPolicy = z.infer<typeof AssetDownloadPolicySchema>
+
 /**
  * Metadata only. Binary files belong in controlled file/object storage;
  * database records must never use base64 as their durable storage format.
@@ -62,6 +68,8 @@ export const AssetDescriptorSchema = z.object({
   visibility: AssetVisibilitySchema,
   licenseId: z.string().min(1).nullable(),
   attribution: z.string().max(500).nullable(),
+  provenance: AssetProvenanceSchema,
+  downloadPolicy: AssetDownloadPolicySchema,
   createdAt: z.string().datetime(),
 })
 export type AssetDescriptor = z.infer<typeof AssetDescriptorSchema>
