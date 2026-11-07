@@ -110,6 +110,7 @@ for (const [method, path, body, headers] of [
   ['GET', '/api/assets'],
   ['POST', '/api/assets', new FormData()],
   ['GET', '/api/assets/test-asset/file'],
+  ['GET', '/api/assets/test-asset/download'],
   ['DELETE', '/api/assets/test-asset'],
   ['GET', '/api/outfits'],
   ['POST', '/api/outfits', JSON.stringify({ name: 'unauthenticated' }), { 'content-type': 'application/json' }],
@@ -218,6 +219,9 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     })
     assert.equal(otherFavoritePrivate.status, 404, 'another user cannot favorite a private asset')
 
+    const ownerUnknownDownload = await fetch(new URL(`/api/assets/${asset.id}/download`, base), { headers: { cookie: ownerSession } })
+    assert.equal(ownerUnknownDownload.status, 404, 'unknown provenance is not downloadable even by the uploader')
+
     const ownerFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
     assert.equal(ownerFile.status, 200, 'owner can read uploaded PNG')
     const ownerFileBytes = Buffer.from(await ownerFile.arrayBuffer())
@@ -230,6 +234,28 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     assert.equal(otherFile.status, 404)
     const otherAssetDelete = await fetch(new URL(`/api/assets/${asset.id}`, base), { method: 'DELETE', headers: { cookie: otherSession } })
     assert.equal(otherAssetDelete.status, 404)
+
+    const originalCapeForm = new FormData()
+    originalCapeForm.set('file', new File([createTinyPng()], 'original-cape.png', { type: 'image/png' }))
+    originalCapeForm.set('category', 'CAPE')
+    originalCapeForm.set('visibility', 'PRIVATE')
+    originalCapeForm.set('rightsDeclaration', 'I_OWN_THE_RIGHTS')
+    const originalCapeUpload = await fetch(new URL('/api/assets', base), { method: 'POST', headers: { cookie: ownerSession }, body: originalCapeForm })
+    assert.equal(originalCapeUpload.status, 201, 'owner can upload an explicitly declared original cape')
+    const { item: originalCape } = await originalCapeUpload.json()
+    assert.equal(originalCape.provenance, 'USER_CREATED')
+    assert.equal(originalCape.downloadPolicy, 'OWNER_ONLY')
+    const ownerCapeDownload = await fetch(new URL(`/api/assets/${originalCape.id}/download`, base), { headers: { cookie: ownerSession } })
+    assert.equal(ownerCapeDownload.status, 200, 'original cape owner can download their own asset')
+    assert.match(ownerCapeDownload.headers.get('content-disposition') || '', /attachment/)
+    const otherCapeDownload = await fetch(new URL(`/api/assets/${originalCape.id}/download`, base), { headers: { cookie: otherSession } })
+    assert.equal(otherCapeDownload.status, 404, 'another user cannot download a private original cape')
+
+    await prisma.asset.update({ where: { id: originalCape.id }, data: { provenance: 'OFFICIAL', downloadPolicy: 'DENY' } })
+    const officialCapeDownload = await fetch(new URL(`/api/assets/${originalCape.id}/download`, base), { headers: { cookie: ownerSession } })
+    assert.equal(officialCapeDownload.status, 404, 'official cape bytes are never downloadable')
+    const officialCapeFile = await fetch(new URL(`/api/assets/${originalCape.id}/file`, base), { headers: { cookie: ownerSession } })
+    assert.equal(officialCapeFile.status, 404, 'official cape bytes are not served from the asset file endpoint')
 
     const create = await fetch(new URL('/api/outfits', base), {
       method: 'POST',
