@@ -48,18 +48,21 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   // Three separate garment types must remain independently selectable.
   await page.getByRole('button', { name: '披肩', exact: true }).click()
   await page.getByRole('button', { name: /眼眸花披肩/ }).click()
-  await page.getByRole('button', { name: '外套', exact: true }).click()
-  await page.getByRole('button', { name: /苦力怕外套/ }).click()
-  await page.getByRole('button', { name: '披风', exact: true }).click()
-  await page.getByRole('button', { name: /眼眸花披风/ }).click()
   const selected = page.locator('.dressup-selected-list')
-  await expect(selected).not.toContainText('眼眸花披肩')
-  await expect(selected).toContainText('苦力怕外套')
-  await expect(selected).toContainText('眼眸花披风')
+  // Preview the shawl while it is still equipped. Selecting a coat replaces it
+  // because shawl and coat intentionally share mutually exclusive body surfaces.
   await page.locator('.dressup-selected-row').filter({ hasText: '眼眸花披肩' }).getByRole('button', { name: '独立预览' }).click()
   await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).toBeVisible()
   await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: '关闭' }).click()
+
+  await page.getByRole('button', { name: '外套', exact: true }).click()
+  await page.getByRole('button', { name: /苦力怕外套/ }).click()
+  await page.getByRole('button', { name: '披风', exact: true }).click()
+  await page.getByRole('button', { name: /眼眸花披风/ }).click()
+  await expect(selected).not.toContainText('眼眸花披肩')
+  await expect(selected).toContainText('苦力怕外套')
+  await expect(selected).toContainText('眼眸花披风')
   await page.getByRole('button', { name: '外套', exact: true }).click()
   await page.getByRole('button', { name: '脱下当前分类' }).click()
   await expect(selected).not.toContainText('苦力怕外套')
