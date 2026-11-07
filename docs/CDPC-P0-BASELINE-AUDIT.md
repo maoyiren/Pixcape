@@ -113,3 +113,14 @@
 - `tests/browser/auth-navigation.spec.ts` 中已登录头像菜单到 `/u/[username]` 的端到端测试本轮通过，验证了个人主页链接 href、点击后 URL，以及菜单悬停、Escape 和外部点击关闭行为。此项有本轮 Playwright 通过证据；真实生产账号与生产域名仍未人工验收。
 - 注意：以上 #1029/#818/#1028 仍使用当前 main 的多数据库测试矩阵，不是 PostgreSQL-only 最终基线。PR #61 仍为 Draft 且未合并；其 PostgreSQL-only 变更需在同步 main 后重跑并完成生产数据库/备份确认。
 - 本轮未合并 PR、未发布镜像、未触发 1Panel 部署、未执行生产迁移。Studio 的单件真实渲染、完整分类 UV、皮肤导入/编辑/保存恢复/导出完整旅程仍未完成验收，不能因 CI 绿灯标记为完成。
+
+
+## 发布前复核（2026-11-07 12:05 UTC）
+
+- PR #64 最新 head：`1bf9851b12a691e399581368bd909065edf69a03`。该 head 的 CI #1032（unit、数据库集成、Playwright、Next.js build、AI API）、Preview/Security #821（Prisma schema/migrations、RBAC/ownership、PostgreSQL integration、security E2E、Next.js build）以及 Docker smoke #1031 均为 success。
+- Docker smoke #1031 只构建并启动容器进行 smoke test；`publish` 与 `Deploy to 1Panel V2` job 均为 skipped。不能把构建成功描述为镜像已推送或生产已更新。
+- PR #64 的上述 workflow 仍来自 main 上的旧多数据库版本：CI / Preview 仍执行 MySQL、SQLite 测试矩阵，Docker smoke 仍测试三种数据库。因此这组绿灯不是 PostgreSQL-only 最终基线。
+- PR #61 最新 head：`aa6c4253a04c9a6ef35507e9f904a63d988326e9`。lock refresh #30、CI #939、Preview/Security #736、Docker smoke #946 均成功；其分支仍比当前 main 落后 2 个提交（compare 状态 diverged，ahead 29 / behind 2），需同步 main 并重新跑全套检查。PR #61 仍为 Draft，尚未合并。
+- PR #61 的 Docker workflow 已切换为 PostgreSQL-only：PR 检查阶段验证单数据库镜像和 PostgreSQL 启动；只有 push main / tag / 手动触发才会运行 publish。1Panel 自动部署还要求 main push 且仓库变量 `CDPC_DEPLOY_ENABLED=true`。
+- Studio 单件素材预览已从“素材卡片仅显示 PNG 缩略图、需到搭配清单另点预览”改为点击目录卡片即打开单件 SkinViewer，并同步即时试穿；Playwright 增加 canvas / 素材名 / 搭配清单断言。该交互已进入 CI，但尚未完成真实设备上的视觉验收（披肩、外套、披风，Steve/Alex，64/128 分辨率和导入皮肤组合）。
+- 发布安全门：尚未取得生产 `DATABASE_URL` 确认、可恢复备份证明及回滚方案。不得执行生产数据库迁移或 1Panel 部署；可以继续做 PR 同步、代码审查和非生产 CI。
