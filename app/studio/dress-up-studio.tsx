@@ -98,6 +98,36 @@ export default function DressUpStudio() {
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
   const [savingCloud, setSavingCloud] = useState(false)
   const [wardrobeItems, setWardrobeItems] = useState<CatalogItem[]>([])
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([])
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('cdpc:studio:favorites:v1')
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored)
+        if (Array.isArray(parsed)) setFavoriteIds(parsed.filter((value): value is string => typeof value === 'string').slice(0, 1000))
+      }
+    } catch {
+      setSaveNotice('本地收藏记录无法读取；你仍可继续使用换装功能')
+    } finally {
+      setFavoritesLoaded(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!favoritesLoaded) return
+    try {
+      window.localStorage.setItem('cdpc:studio:favorites:v1', JSON.stringify(favoriteIds))
+    } catch {
+      setSaveNotice('收藏保存失败：浏览器本地存储空间可能不足')
+    }
+  }, [favoriteIds, favoritesLoaded])
+
+  const toggleFavorite = useCallback((itemId: string) => {
+    setFavoriteIds(current => current.includes(itemId) ? current.filter(id => id !== itemId) : [...current, itemId].slice(-1000))
+  }, [])
 
   const refreshCloudOutfits = useCallback(async () => {
     let outfits
@@ -262,8 +292,9 @@ export default function DressUpStudio() {
 
   const filtered = useMemo(() => availableItems.filter(item =>
     (category === '全部' || item.category === category) &&
+    (!showFavoritesOnly || favoriteIds.includes(item.id)) &&
     (item.name.toLowerCase().includes(query.trim().toLowerCase()) || item.category.includes(query.trim())),
-  ), [availableItems, category, query])
+  ), [availableItems, category, query, favoriteIds, showFavoritesOnly])
   const selectedItems = Object.values(selected)
   const cape = selected['披风']
 
@@ -1134,7 +1165,7 @@ export default function DressUpStudio() {
       <div className="dressup-layout">
         <section className="dressup-panel" aria-label="服装素材">
           <div className="dressup-panel-heading"><h2>挑选服装</h2><span>{filtered.length} 项</span></div>
-          <input className="dressup-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索服装名称…" aria-label="搜索服装" />
+          <div className="dressup-catalog-tools"><input className="dressup-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索服装名称…" aria-label="搜索服装" /><button type="button" className="dressup-favorites-filter" aria-pressed={showFavoritesOnly} onClick={() => setShowFavoritesOnly(value => !value)}>{showFavoritesOnly ? '显示全部素材' : `只看收藏 (${favoriteIds.length})`}</button></div>
           <div className="dressup-categories" aria-label="服装分类">
             {categories.map(item => <button type="button" className="dressup-category" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}
           </div>
@@ -1145,12 +1176,15 @@ export default function DressUpStudio() {
             <div ref={singleItemPreviewHost} className="dressup-single-item-preview" />
           </section>}
           <div className="dressup-items">
-            {filtered.map(item => <button type="button" key={item.id} className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => { setSinglePreviewItem(item); toggleItem(item) }}>
-              <CatalogGarmentPreview item={item} model={model} skinUrl={skinUrl} />
-              <strong>{item.name}</strong>
-              <small>{item.category} · {item.note}</small>
-              <span className="dressup-item-state">{selected[item.category]?.id === item.id ? '已选择' : '点击试穿'}</span>
-            </button>)}
+            {filtered.map(item => <div className="dressup-item-wrap" key={item.id}>
+              <button type="button" className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => { setSinglePreviewItem(item); toggleItem(item) }}>
+                <CatalogGarmentPreview item={item} model={model} skinUrl={skinUrl} />
+                <strong>{item.name}</strong>
+                <small>{item.category} · {item.note}</small>
+                <span className="dressup-item-state">{selected[item.category]?.id === item.id ? '已选择' : '点击试穿'}</span>
+              </button>
+              <button type="button" className="dressup-favorite-toggle" aria-label={favoriteIds.includes(item.id) ? '取消收藏 ' + item.name : '收藏 ' + item.name} aria-pressed={favoriteIds.includes(item.id)} onClick={() => toggleFavorite(item.id)}>{favoriteIds.includes(item.id) ? '★' : '☆'}</button>
+            </div>)}
           </div>
           {filtered.length === 0 && category !== '全部' && availableCategories.has(category) && <p className="dressup-empty">该分类暂无匹配素材，请更换关键词。</p>}
           {filtered.length === 0 && category === '全部' && <p className="dressup-empty">没有找到匹配的素材。试试其他关键词。</p>}
