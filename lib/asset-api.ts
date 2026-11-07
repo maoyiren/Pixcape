@@ -39,6 +39,7 @@ export async function saveAssetFile(input: {
   source: AssetSource
   visibility: AssetVisibility
   attribution?: string | null
+  rightsDeclaration?: boolean
 }) {
   if (!input.file || input.file.size < 1 || input.file.size > MAX_ASSET_BYTES) {
     throw new AssetInputError('图片大小必须在 1 B 至 8 MB 之间。')
@@ -90,6 +91,8 @@ export async function saveAssetFile(input: {
         source: input.source,
         visibility: input.visibility,
         attribution: input.attribution?.trim().slice(0, 500) || null,
+        provenance: input.rightsDeclaration ? 'USER_CREATED' : 'UNKNOWN',
+        downloadPolicy: input.rightsDeclaration ? 'OWNER_ONLY' : 'DENY',
       },
       select: {
         id: true, ownerId: true, kind: true, category: true, mimeType: true,
@@ -117,15 +120,29 @@ export async function readAssetFile(assetId: string, actorId: string | null) {
         { outfitItems: { some: { outfit: { publications: { some: { status: 'PUBLISHED', publishedAt: { not: null } } } } } } },
       ],
     },
-    select: { storageKey: true, mimeType: true, byteSize: true, visibility: true },
+    select: { storageKey: true, mimeType: true, byteSize: true, visibility: true, provenance: true },
   })
-  if (!asset) return null
+  if (!asset || asset.provenance === 'OFFICIAL') return null
   const isS3Asset = isS3AssetStorageKey(asset.storageKey)
   const s3Storage = isS3Asset ? await getS3AssetStorage() : null
   if (isS3Asset && !s3Storage) throw new Error('S3 storage is not configured for this asset')
   const bytes = s3Storage ? await s3Storage.get(asset.storageKey) : await readFile(storagePath(asset.storageKey))
   if (bytes.length !== asset.byteSize) throw new Error('Stored asset integrity check failed')
   return { bytes, mimeType: asset.mimeType, visibility: asset.visibility }
+}
+
+/** Downloads are separate from preview delivery; unverified provenance is denied by default. */
+export async function readAssetDownload(assetId: string, actorId: string | null) {
+  if (!actorId) return null
+  const asset = await prisma.asset.findUnique({
+    where: { id: assetId },
+    select: { ownerId: true, provenance: true, downloadPolicy: true, visibility: true, licenseId: true },
+  })
+  if (!asset) return null
+  const ownerDownload = asset.provenance === 'USER_CREATED' && asset.downloadPolicy === 'OWNER_ONLY' && asset.ownerId === actorId
+  const licensedDownload = asset.provenance === 'LICENSED' && asset.downloadPolicy === 'LICENSED_PUBLIC' && asset.visibility === 'PUBLIC' && Boolean(asset.licenseId)
+  if (!ownerDownload && !licensedDownload) return null
+  return readAssetFile(assetId, actorId)
 }
 
 export async function deleteAssetForActor(assetId: string, actorId: string) {
