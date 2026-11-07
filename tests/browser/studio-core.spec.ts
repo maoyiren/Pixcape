@@ -70,7 +70,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByRole('button', { name: '收藏 眼眸花披肩' }).click()
   await expect(page.getByRole('button', { name: '取消收藏 眼眸花披肩' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: /只看收藏/ }).click()
-  await expect(page.getByRole('button', { name: /眼眸花披肩/ })).toBeVisible()
+  await expect(page.locator('.dressup-item').filter({ hasText: '眼眸花披肩' })).toBeVisible()
   await expect(page.getByRole('button', { name: /苦力怕外套/ })).toHaveCount(0)
   await page.getByRole('button', { name: '显示全部素材' }).click()
   const selected = page.locator('.dressup-selected-list')
