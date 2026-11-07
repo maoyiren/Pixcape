@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
 import { validateStudioSkinTexture } from '@/src/domain/studio-texture'
-import { normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
+import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
 const BASE_SKIN = ASSET_ROOT + 'stevea.png'
@@ -530,12 +530,7 @@ export default function DressUpStudio() {
       let workspaceSyncFailed = false
       try {
         const workspace = await cdpcApi.getWorkspace()
-        await cdpcApi.updateWorkspace({
-          projectId: workspace.projectId ?? null,
-          activeTool: 'WARDROBE',
-          activeAssetId: skinAssetId ?? workspace.activeAssetId ?? null,
-          activeOutfitId: savedId,
-        })
+        await cdpcApi.updateWorkspace(buildStudioWorkspaceState(workspace, savedId, skinAssetId))
       } catch {
         workspaceSyncFailed = true
       }
