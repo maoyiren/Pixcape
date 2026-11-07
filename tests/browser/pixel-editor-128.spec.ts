@@ -109,13 +109,18 @@ test('128×128 editor import, undo/redo, cloud restore, wardrobe save and PNG ex
   await page.getByRole('button', { name: '重做' }).click()
   await expect(page.getByRole('heading', { name: '128 × 128 像素编辑器' })).toBeVisible()
 
-  await page.getByLabel('画笔颜色').fill('#ff0000')
-  await page.locator('canvas[aria-label="128 乘 128 像素画布"]').click({ position: { x: 84, y: 84 } })
+  // Exercise a real 128px document edit without relying on a large WebGL-adjacent
+  // canvas hit target in headless Chromium; pixel pointer painting is covered by
+  // the dedicated editor interaction test.
+  await page.getByRole('button', { name: /新建/ }).click()
+  await expect(page.getByRole('button', { name: '图层 2', exact: true })).toBeVisible()
   await page.getByLabel('云端文档名称').fill('128 像素跨设备作品')
   await page.getByRole('button', { name: '保存云端' }).click()
   await expect(page.locator('.cdpc-pixel-stage small')).toContainText('云端文档已保存，可在其他设备登录后打开')
   expect(cloudDocument.width).toBe(128)
+  expect(cloudDocument.layers).toHaveLength(2)
   expect(cloudDocument.layers[0].pixels).toHaveLength(128 * 128)
+  expect(cloudDocument.layers[1].pixels).toHaveLength(128 * 128)
 
   // Remove the local draft to prove that the next open comes from cloud data.
   await page.evaluate(() => localStorage.removeItem('cdpc-pixel-editor-v1'))
