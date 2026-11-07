@@ -317,8 +317,8 @@ export default function PixelCanvasEditor() {
       const layer = { ...newLayer(file.name.replace(/\.png$/i, '') || '导入皮肤', image.width), pixels }
       setLayers([layer])
       setActiveId(layer.id)
-      setHistory([])
-      setFuture([])
+      // checkpoint() above keeps the previous document as the undo target.
+      // Do not clear history here: importing a new-sized canvas is reversible.
       setStatus('已导入 PNG，可在新画布中继续编辑')
     } catch { setStatus('无法读取 PNG 文件') }
     finally { URL.revokeObjectURL(url) }
