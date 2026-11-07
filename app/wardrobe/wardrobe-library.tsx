@@ -157,6 +157,30 @@ export default function WardrobeLibrary() {
     }
   }
 
+  const downloadAsset = async (asset: Asset) => {
+    setError('')
+    try {
+      const response = await fetch(cdpcApi.assetFileUrl(asset.id), {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      })
+      if (!response.ok) throw new Error(response.status === 401 ? '登录状态已失效，请重新登录后下载' : '素材下载失败，请稍后重试')
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const category = asset.category?.toLowerCase() || 'asset'
+      link.href = objectUrl
+      link.download = `cdpc-${category}-${asset.id}.png`
+      document.body.append(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+      setNotice(`已开始下载“${asset.attribution || categoryLabel(asset.category)}”`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '素材下载失败')
+    }
+  }
+
   const upload = async (file?: File) => {
     if (!file) return
     setBusy(true)
@@ -270,7 +294,10 @@ export default function WardrobeLibrary() {
                   <span className="asset-date">{asset.width && asset.height ? `${asset.width} × ${asset.height}` : 'PNG 素材'}</span>
                   <button className="favorite" type="button" aria-label={asset.isFavorite ? '取消收藏' : '收藏素材'} aria-pressed={asset.isFavorite} onClick={() => void toggleFavorite(asset)}>{asset.isFavorite ? '★' : '☆'}</button>
                 </div>
-                {asset.category && ['SKIN', 'SHAWL', 'COAT', 'CAPE'].includes(asset.category) && <button className="action" type="button" onClick={() => void openInDressUp(asset)}>在 3D 换装中使用</button>}
+                <div className="asset-bottom">
+                  <button className="action" type="button" onClick={() => void downloadAsset(asset)}>下载 PNG</button>
+                  {asset.category && ['SKIN', 'SHAWL', 'COAT', 'CAPE'].includes(asset.category) && <button className="action" type="button" onClick={() => void openInDressUp(asset)}>在 3D 换装中使用</button>}
+                </div>
               </div>
             </article>)}</div>
           ) : (
