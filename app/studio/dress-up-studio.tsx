@@ -655,26 +655,40 @@ export default function DressUpStudio() {
       setSaveNotice('请选择要删除的穿搭')
       return
     }
+    if (!window.confirm(`确定删除“${outfit.name}”吗？此操作无法撤销。`)) return
     if (outfit.cloud) {
       try {
         await cdpcApi.deleteOutfit(outfit.id)
       } catch (error) {
-        setSaveNotice(error instanceof Error ? error.message : '云端穿搭删除失败')
+        setSaveNotice(error instanceof Error ? `云端删除失败：${error.message}` : '云端穿搭删除失败；当前记录未从列表移除')
         return
       }
       setSavedOutfits(current => current.filter(item => item.id !== outfit.id))
       setSelectedSavedOutfitId('')
       setOutfitName('我的穿搭')
-      void cdpcApi.getWorkspace().then(async workspace => {
-        if (workspace.activeOutfitId !== outfit.id) return
-        await cdpcApi.updateWorkspace({
-          projectId: workspace.projectId ?? null,
-          activeTool: 'WARDROBE',
-          activeAssetId: workspace.activeAssetId ?? null,
-          activeOutfitId: null,
-        })
-      }).catch(() => undefined)
-      setSaveNotice(`已从账号云端删除“${outfit.name}”`)
+      let workspaceSyncFailed = false
+      try {
+        const workspace = await cdpcApi.getWorkspace()
+        if (workspace.activeOutfitId === outfit.id) {
+          await cdpcApi.updateWorkspace({
+            projectId: workspace.projectId ?? null,
+            activeTool: 'WARDROBE',
+            activeAssetId: workspace.activeAssetId ?? null,
+            activeOutfitId: null,
+          })
+        }
+      } catch {
+        workspaceSyncFailed = true
+      }
+      try {
+        const raw = window.localStorage.getItem('cdpc:dress-up:local-v1')
+        if (raw && (JSON.parse(raw) as Partial<LocalOutfit>).id === outfit.id) {
+          window.localStorage.removeItem('cdpc:dress-up:local-v1')
+        }
+      } catch { /* Cloud deletion succeeded; a stale local cache is non-authoritative. */ }
+      setSaveNotice(workspaceSyncFailed
+        ? `“${outfit.name}”已从云端删除，但工作区指针同步失败；请重新载入衣橱状态`
+        : `已从账号云端删除“${outfit.name}”`)
       return
     }
     const next = savedOutfits.filter(item => item.id !== selectedSavedOutfitId)
