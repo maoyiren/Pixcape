@@ -144,7 +144,7 @@ test('Studio restores a cloud outfit from server state with an empty local devic
   await page.route('**/api/outfits', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ items: [outfit] }),
   }))
-  await page.route('**/api/assets*', async route => {
+  await page.route('**/api/assets**', async route => {
     const url = new URL(route.request().url())
     if (url.pathname.endsWith('/file')) {
       await route.fulfill({ status: 200, contentType: 'image/png', body: png })
