@@ -41,14 +41,20 @@ export async function GET(request: Request) {
     select: {
       id: true, ownerId: true, kind: true, category: true, mimeType: true,
       byteSize: true, width: true, height: true, source: true, visibility: true,
-      attribution: true, provenance: true, downloadPolicy: true, createdAt: true, updatedAt: true,
+      attribution: true, licenseId: true, provenance: true, downloadPolicy: true, createdAt: true, updatedAt: true,
       favorites: { where: { userId: actor.id }, select: { id: true } },
     },
   })
   const hasMore = !ids && assets.length > limit
   const data = hasMore ? assets.slice(0, limit) : assets
   return NextResponse.json({
-    items: data.map(({ favorites, ...asset }) => ({ ...asset, isFavorite: favorites.length > 0, fileUrl: `/api/assets/${asset.id}/file` })),
+    items: data.map(({ favorites, ...asset }) => ({
+      ...asset,
+      isFavorite: favorites.length > 0,
+      canDownload: (asset.provenance === 'USER_CREATED' && asset.downloadPolicy === 'OWNER_ONLY' && asset.ownerId === actor.id)
+        || (asset.provenance === 'LICENSED' && asset.downloadPolicy === 'LICENSED_PUBLIC' && asset.visibility === 'PUBLIC' && Boolean(asset.licenseId)),
+      fileUrl: `/api/assets/${asset.id}/file`,
+    })),
     nextCursor: hasMore ? data[data.length - 1]?.id ?? null : null,
   }, { headers: { 'Cache-Control': 'private, no-store' } })
 }
