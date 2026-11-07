@@ -567,3 +567,5 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
 
 /* Catalog WebGL is display-only; keep pointer input on the surrounding item button. */
 .dressup-item-render,.dressup-item-render canvas{pointer-events:none}
+
+.dressup-item-render-placeholder{padding:8px 10px;border:1px dashed #536174;border-radius:6px;color:var(--cdpc-muted,#a4adba);font-size:10px;text-align:center}

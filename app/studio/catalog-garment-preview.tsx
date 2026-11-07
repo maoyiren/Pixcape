@@ -15,16 +15,17 @@ export default function CatalogGarmentPreview({ item, model, skinUrl }: Props) {
   const hostRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   const [error, setError] = useState('')
+  const supported = item.category === '披肩' || item.category === '外套' || item.category === '披风'
   useEffect(() => {
     const host = hostRef.current
-    if (!host || visible) return
+    if (!host || visible || !supported) return
     if (typeof IntersectionObserver === 'undefined') { setVisible(true); return }
     const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) { setVisible(true); observer.disconnect() } }, { rootMargin: '160px' })
     observer.observe(host); return () => observer.disconnect()
-  }, [visible])
+  }, [visible, supported])
   useEffect(() => {
     const host = hostRef.current
-    if (!host || !visible) return
+    if (!host || !visible || !supported) return
     let cancelled = false
     let viewer: SkinViewer
     setError('')
@@ -65,6 +66,6 @@ export default function CatalogGarmentPreview({ item, model, skinUrl }: Props) {
       } catch (cause) { if (!cancelled) setError(cause instanceof Error ? cause.message : '预览加载失败') }
     })()
     return () => { cancelled = true; resizeObserver?.disconnect(); viewer.dispose() }
-  }, [item, model, skinUrl, visible])
-  return <div className="dressup-item-render" ref={hostRef} aria-label={(typeof item.name === 'string' ? item.name : '服装素材') + ' 3D 单件预览'}>{!visible && <span>3D 预览</span>}{error && <span role="status">{error}</span>}</div>
+  }, [item, model, skinUrl, visible, supported])
+  return <div className="dressup-item-render" ref={hostRef} aria-label={(typeof item.name === 'string' ? item.name : '服装素材') + ' 3D 单件预览'}>{!supported ? <span className="dressup-item-render-placeholder">3D 渲染开发中</span> : !visible ? <span>3D 预览</span> : null}{error && <span role="status">{error}</span>}</div>
 }
