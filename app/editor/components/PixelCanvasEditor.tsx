@@ -546,11 +546,14 @@ export default function PixelCanvasEditor() {
           {[...layers].reverse().map(layer => (
             <div key={layer.id} className={layer.id === activeId ? 'cdpc-pixel-layer active' : 'cdpc-pixel-layer'}>
               <button type="button" onClick={() => setActiveId(layer.id)}>{layer.name}</button>
-              <button type="button" aria-label={layer.visible ? '隐藏' + layer.name : '显示' + layer.name} onClick={() => setLayers(current => current.map(item => item.id === layer.id ? { ...item, visible: !item.visible } : item))}>{layer.visible ? '显示' : '隐藏'}</button>
+              <button type="button" aria-label={layer.visible ? '隐藏' + layer.name : '显示' + layer.name} onClick={() => { checkpoint(); setLayers(current => current.map(item => item.id === layer.id ? { ...item, visible: !item.visible } : item)) }}>{layer.visible ? '显示' : '隐藏'}</button>
               <button type="button" aria-label={'删除' + layer.name} onClick={() => removeLayer(layer.id)}>×</button>
             </div>
           ))}
-          {active && <label>图层不透明度<input type="range" min="0" max="100" value={active.opacity} onChange={event => setLayers(current => current.map(item => item.id === activeId ? { ...item, opacity: Number(event.target.value) } : item))} /></label>}
+          {active && <label>图层不透明度<input type="range" min="0" max="100" value={active.opacity}
+            onPointerDown={() => checkpoint()}
+            onKeyDown={event => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) checkpoint() }}
+            onChange={event => setLayers(current => current.map(item => item.id === activeId ? { ...item, opacity: Number(event.target.value) } : item))} /></label>}
           <p>草稿自动保存在本机浏览器；保存到衣橱需要登录。</p>
         </aside>
       </div>
