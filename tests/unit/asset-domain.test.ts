@@ -29,6 +29,8 @@ test('asset descriptor validates storage metadata and rejects oversized files', 
     visibility: 'PRIVATE',
     licenseId: null,
     attribution: 'Original work',
+    provenance: 'USER_CREATED',
+    downloadPolicy: 'OWNER_ONLY',
     createdAt: '2026-11-01T12:00:00.000Z',
   }
   assert.equal(AssetDescriptorSchema.parse(valid).category, 'SHAWL')
