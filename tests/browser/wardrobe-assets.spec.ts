@@ -59,7 +59,7 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
     fileUrl: '/api/assets/browser-asset-1/file',
   }
 
-  await page.route('**/api/assets*', async route => {
+  await page.route('**/api/assets**', async route => {
     const request = route.request()
     const url = new URL(request.url())
     if (url.pathname.endsWith('/file')) {
