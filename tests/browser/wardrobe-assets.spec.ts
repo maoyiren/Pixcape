@@ -112,6 +112,9 @@ test('Studio restores a cloud outfit from server state with an empty local devic
   await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
     status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: png,
   }))
+  await page.route('https://www.minecraft.net/**', route => route.fulfill({
+    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: png,
+  }))
   await page.route('**/api/outfits', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ items: [outfit] }),
   }))
@@ -146,6 +149,7 @@ test('Studio restores a cloud outfit from server state with an empty local devic
     })
   })
 
+  await page.addInitScript(() => localStorage.clear())
   await page.goto('/studio')
   await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await expect(page.getByRole('status')).toContainText('已从衣橱恢复云端穿搭“跨设备云端搭配”', { timeout: 15_000 })
@@ -153,4 +157,5 @@ test('Studio restores a cloud outfit from server state with an empty local devic
   await expect(page.getByLabel('穿搭名称')).toHaveValue('跨设备云端搭配')
   await expect(page.getByLabel('切换角色动作')).toHaveValue('walk')
   await expect(page.getByRole('button', { name: 'Alex 细臂' })).toHaveAttribute('aria-pressed', 'true')
+  expect(await page.evaluate(() => localStorage.getItem('cdpc:dress-up:outfits-v1'))).toBeNull()
 })
