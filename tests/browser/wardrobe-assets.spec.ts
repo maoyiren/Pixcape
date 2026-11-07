@@ -221,8 +221,8 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
   await page.route('**/api/assets**', async route => {
     const request = route.request()
     const url = new URL(request.url())
-    if (url.pathname.endsWith('/file')) {
-      await route.fulfill({ status: 200, contentType: 'image/png', body: png })
+    if (url.pathname.endsWith('/file') || url.pathname.endsWith('/download')) {
+      await route.fulfill({ status: 200, contentType: 'image/png', headers: { 'Content-Disposition': 'attachment; filename="asset.png"' }, body: png })
       return
     }
     if (request.method() === 'POST') {
@@ -244,6 +244,7 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
   await page.goto(`/u/${username}/wardrobe`)
   await expect(page.getByRole('heading', { name: '我的衣橱' })).toBeVisible()
   await page.getByLabel('上传素材类型').selectOption('SKIN')
+  await page.getByLabel('我确认素材为本人原创并拥有下载权').check()
   await page.getByRole('button', { name: '＋ 上传素材' }).click()
   await page.locator('input[type="file"]').first().setInputFiles({
     name: 'browser-skin-128.png', mimeType: 'image/png', buffer: png,
