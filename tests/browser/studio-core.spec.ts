@@ -133,13 +133,13 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   // A 128px base skin must select and render the matching native-resolution garment atlas.
   await page.getByRole('button', { name: '披肩', exact: true }).click()
   await page.getByRole('button', { name: /眼眸花披肩/ }).click()
-  await page.getByRole('button', { name: '独立预览' }).click()
+  await page.getByRole('button', { name: '独立预览' }).first().click()
   await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).not.toContainText('单件预览失败')
   await page.getByRole('button', { name: '关闭' }).click()
   // Repeat against the classic Steve model to cover both 128px atlas variants.
   await page.getByRole('button', { name: 'Steve 粗臂' }).click()
-  await page.getByRole('button', { name: '独立预览' }).click()
+  await page.getByRole('button', { name: '独立预览' }).first().click()
   await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).not.toContainText('单件预览失败')
   await page.getByRole('button', { name: '关闭' }).click()
