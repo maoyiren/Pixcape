@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
-import { validateStudioSkinTexture } from '@/src/domain/studio-texture'
+import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
 import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
 import { canEquipStudioOverlayTogether, getStudioOverlayUvProfile, type StudioOverlayCategory } from '@/src/domain/studio-uv-layout'
 
@@ -22,16 +22,16 @@ const SCENE_BACKGROUNDS: Record<string, string> = {
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
-type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; modelTexture?: string; note: string; assetId?: string; fileUrl?: string }
+type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; texture128?: string; modelTexture?: string; modelTexture128?: string; note: string; assetId?: string; fileUrl?: string }
 const catalog: CatalogItem[] = [
-  { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', modelTexture: 'office_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', modelTexture: 'MCC_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'creeper-shawl', name: '苦力怕披肩', category: '披肩', texture: 'creeper_shawl_default_64.png', modelTexture: 'creeper_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'tiktok-shawl', name: 'TikTok 披肩', category: '披肩', texture: 'tiktok_shawl_default_64.png', modelTexture: 'tiktok_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'twitch-shawl', name: 'Twitch 披肩', category: '披肩', texture: 'twitch_shawl_default_64.png', modelTexture: 'twitch_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'creeper-coat', name: '苦力怕外套', category: '外套', texture: 'creeper_coat_default_64.png', modelTexture: 'creeper_coat_slim_64.png', note: '正式外套贴图' },
-  { id: 'tiktok-coat', name: 'TikTok 外套', category: '外套', texture: 'tiktok_coat_default_64.png', modelTexture: 'tiktok_coat_slim_64.png', note: '正式外套贴图' },
-  { id: 'twitch-coat', name: 'Twitch 外套', category: '外套', texture: 'twitch_coat_default_64.png', modelTexture: 'twitch_coat_slim_64.png', note: '正式外套贴图' },
+  { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', texture128: 'office_shawl_default_128.png', modelTexture: 'office_shawl_slim_64.png', modelTexture128: 'office_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', texture128: 'MCC_shawl_default_128.png', modelTexture: 'MCC_shawl_slim_64.png', modelTexture128: 'MCC_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'creeper-shawl', name: '苦力怕披肩', category: '披肩', texture: 'creeper_shawl_default_64.png', texture128: 'creeper_shawl_default_128.png', modelTexture: 'creeper_shawl_slim_64.png', modelTexture128: 'creeper_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'tiktok-shawl', name: 'TikTok 披肩', category: '披肩', texture: 'tiktok_shawl_default_64.png', texture128: 'tiktok_shawl_default_128.png', modelTexture: 'tiktok_shawl_slim_64.png', modelTexture128: 'tiktok_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'twitch-shawl', name: 'Twitch 披肩', category: '披肩', texture: 'twitch_shawl_default_64.png', texture128: 'twitch_shawl_default_128.png', modelTexture: 'twitch_shawl_slim_64.png', modelTexture128: 'twitch_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'creeper-coat', name: '苦力怕外套', category: '外套', texture: 'creeper_coat_default_64.png', texture128: 'creeper_coat_default_128.png', modelTexture: 'creeper_coat_slim_64.png', modelTexture128: 'creeper_coat_slim_128.png', note: '正式外套贴图' },
+  { id: 'tiktok-coat', name: 'TikTok 外套', category: '外套', texture: 'tiktok_coat_default_64.png', texture128: 'tiktok_coat_default_128.png', modelTexture: 'tiktok_coat_slim_64.png', modelTexture128: 'tiktok_coat_slim_128.png', note: '正式外套贴图' },
+  { id: 'twitch-coat', name: 'Twitch 外套', category: '外套', texture: 'twitch_coat_default_64.png', texture128: 'twitch_coat_default_128.png', modelTexture: 'twitch_coat_slim_64.png', modelTexture128: 'twitch_coat_slim_128.png', note: '正式外套贴图' },
   { id: 'office-cape', name: '眼眸花披风', category: '披风', texture: 'cape_office.png', note: '背部披风纹理' },
   { id: 'mcc-cape', name: 'MCC 披风', category: '披风', texture: 'cape_MCC.png', note: '背部披风纹理' },
   { id: 'creeper-cape', name: '苦力怕披风', category: '披风', texture: 'cape_creeper.png', note: '背部披风纹理' },
@@ -400,16 +400,23 @@ export default function DressUpStudio() {
           makeTransparentSkinSurface()
           await viewer.loadCape(item.fileUrl || ASSET_ROOT + item.texture, { backEquipment: 'cape' })
         } else {
-          const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
-          const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
-          if (cancelled) return
-          const textureError = validateStudioSkinTexture({ width: overlay.naturalWidth, height: overlay.naturalHeight }, 'clothing-overlay')
-          if (textureError) throw new Error(textureError)
           if (item.category !== '披肩' && item.category !== '外套') {
             throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，无法进行单件预览`)
           }
           const uvProfile = getStudioOverlayUvProfile(item.category)
           if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的单件服装 UV 预览方式')
+          const base = await loadImage(skinUrl)
+          if (cancelled) return
+          const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
+          if (baseError) throw new Error(baseError)
+          const textureName = item.fileUrl || ASSET_ROOT + selectStudioOverlayTexture(item, model, base.naturalWidth as 64 | 128)
+          const overlay = await loadImage(textureName)
+          if (cancelled) return
+          const textureError = validateStudioOverlayMatchesBase(
+            { width: base.naturalWidth, height: base.naturalHeight },
+            { width: overlay.naturalWidth, height: overlay.naturalHeight },
+          )
+          if (textureError) throw new Error(textureError)
           // Render the source atlas directly on the 3D skin geometry with no
           // character skin underneath. Transparent pixels stay invisible, so
           // the user sees only the selected garment's mapped surfaces.
@@ -510,10 +517,13 @@ export default function DressUpStudio() {
           }
           const uvProfile = getStudioOverlayUvProfile(item.category)
           if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的服装 UV 合成方式')
-          const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
-          const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
+          const textureName = item.fileUrl || ASSET_ROOT + selectStudioOverlayTexture(item, model, textureSize as 64 | 128)
+          const overlay = await loadImage(textureName)
           if (cancelled) return
-          const overlayError = validateStudioSkinTexture({ width: overlay.naturalWidth, height: overlay.naturalHeight }, 'clothing-overlay')
+          const overlayError = validateStudioOverlayMatchesBase(
+            { width: base.naturalWidth, height: base.naturalHeight },
+            { width: overlay.naturalWidth, height: overlay.naturalHeight },
+          )
           if (overlayError) throw new Error(`${item.name}：${overlayError}`)
           // These source PNGs are already authored as complete Minecraft skin UV
           // atlases. Composite the full alpha map; clipping every category to the
@@ -933,7 +943,9 @@ export default function DressUpStudio() {
     try {
       setIsBusy(true)
       const base = await loadImage(skinUrl)
-      const textureSize = base.naturalWidth
+      const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
+      if (baseError) throw new Error(baseError)
+      const textureSize = base.naturalWidth as 64 | 128
       setSaveNotice(`正在合成 ${textureSize} × ${textureSize} 皮肤 PNG…`)
       const canvas = document.createElement('canvas')
       canvas.width = textureSize
@@ -943,10 +955,20 @@ export default function DressUpStudio() {
       context.imageSmoothingEnabled = false
       context.drawImage(base, 0, 0, textureSize, textureSize)
       for (const item of selectedItems.filter(entry => entry.category !== '披风')) {
-        const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
-        const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
+        if (item.category !== '披肩' && item.category !== '外套') {
+          throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，无法导出`)
+        }
+        const uvProfile = getStudioOverlayUvProfile(item.category)
+        if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的服装 UV 导出方式')
+        const textureName = item.fileUrl || ASSET_ROOT + selectStudioOverlayTexture(item, model, textureSize)
+        const overlay = await loadImage(textureName)
+        const overlayError = validateStudioOverlayMatchesBase(
+          { width: base.naturalWidth, height: base.naturalHeight },
+          { width: overlay.naturalWidth, height: overlay.naturalHeight },
+        )
+        if (overlayError) throw new Error(`${item.name}：${overlayError}`)
         // Export the complete, pre-mapped category UV atlas with its alpha channel.
-        context.drawImage(overlay, 0, 0, textureSize, textureSize)
+        context.drawImage(overlay, 0, 0)
       }
       const link = document.createElement('a')
       link.download = `cdpc-skin-${textureSize}x${textureSize}.png`
