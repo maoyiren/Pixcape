@@ -149,6 +149,7 @@ model Asset {
   source      AssetSource
   visibility  AssetVisibility @default(PRIVATE)
   licenseId   String?
+  name        String?
   attribution String?
   provenance  AssetProvenance     @default(UNKNOWN)
   downloadPolicy AssetDownloadPolicy @default(DENY)
