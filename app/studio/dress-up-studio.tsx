@@ -405,6 +405,8 @@ export default function DressUpStudio() {
           if (cancelled) return
           const textureError = validateStudioSkinTexture({ width: overlay.naturalWidth, height: overlay.naturalHeight }, 'clothing-overlay')
           if (textureError) throw new Error(textureError)
+          const uvProfile = getStudioOverlayUvProfile(item.category as StudioOverlayCategory)
+          if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的单件服装 UV 预览方式')
           // Render the source atlas directly on the 3D skin geometry with no
           // character skin underneath. Transparent pixels stay invisible, so
           // the user sees only the selected garment's mapped surfaces.
@@ -503,7 +505,8 @@ export default function DressUpStudio() {
           if (item.category !== '披肩' && item.category !== '外套') {
             throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，已停止合成`)
           }
-          getStudioOverlayUvProfile(item.category)
+          const uvProfile = getStudioOverlayUvProfile(item.category)
+          if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的服装 UV 合成方式')
           const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
           const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
           if (cancelled) return
