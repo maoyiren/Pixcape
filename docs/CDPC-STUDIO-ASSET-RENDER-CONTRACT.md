@@ -117,3 +117,28 @@ A second SkinViewer surface now renders a selected item in isolation by applying
 Playwright coverage has been added for isolated preview canvas creation, category exclusivity, 128×128 editor import/undo/redo/cloud restore/export, server-backed Studio outfit restore from an empty local cache, and wardrobe PNG upload/download. These tests use controlled API and texture fixtures. They do not replace visual review of every real upstream texture file, real-account cross-device testing, or a production object-storage check.
 
 The current atlas approach preserves the UV layout encoded in each source PNG; it does not claim a pixel-by-pixel source-asset fixture audit. Before marking the full rendering acceptance complete, visually inspect the actual SHAWL/COAT Classic and Slim textures at 64px and 128px and record expected screenshots/fixture hashes. Hat, pants, shoes, and other accessories remain disabled until their own UV/geometry fixtures are reviewed.
+
+## 9. Asset provenance and download rights
+
+Preview permission and download / redistribution permission are separate capabilities. A texture being visible in Studio or usable for try-on does not grant permission to export, download, include in a backup, or redistribute its bytes.
+
+Required policy:
+
+- **Official Mojang/Microsoft cape assets** may be shown for preview or try-on only where the applicable terms allow it. CDPC must not offer an app download/export path or include the original texture bytes in outfit JSON backups.
+- **User-created original cape assets** may be downloaded by their owner. Other users may download them only when the owner has explicitly granted a compatible license / download permission; PRIVATE assets remain owner-only.
+- **Licensed community assets** follow their recorded license scope. Attribution must be preserved wherever the license requires it.
+- **Third-party or unknown-provenance assets** default to no download / redistribution until rights are verified.
+- A UI-hidden button is not an authorization boundary. Every download endpoint, bulk export, outfit backup, and asset-file response intended for download must enforce the policy on the server. Preview delivery must be a separately authorized capability and must not be mistaken for a downloadable original.
+- Outfit JSON may preserve an allowed asset reference and provenance metadata, but must not embed or expose protected official texture bytes or bypass a private asset's ownership boundary.
+
+The current Asset record has source, visibility, licenseId, and attribution; this is not yet a complete rights model. Before enabling downloadable cape assets, add an explicit provenance / download-policy representation (or an equivalently strict normalized policy), persist it on the server, and test authorization against the acting user and asset owner. Do not infer permission from source=UPLOAD alone.
+
+Required automated cases:
+
+1. Official cape: preview path follows allowed display scope; download endpoint rejects.
+2. Official cape: outfit JSON backup does not contain texture bytes or a reusable unrestricted download URL.
+3. Alternate asset APIs and bulk export cannot bypass the restriction.
+4. Original user-created cape: owner can download and back up the asset.
+5. PRIVATE original cape: another user cannot download it.
+6. Licensed community cape: download is allowed only within the recorded license scope.
+7. Unknown provenance: download is denied by default.
