@@ -281,7 +281,7 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   await page.getByRole('button', { name: /我的衣橱披肩/ }).click()
   await expect(page.locator('.dressup-selected-list')).toContainText('我的披肩素材')
   await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：我的衣橱披肩')
-  await page.getByRole('button', { name: /眼眸花披肩/ }).click()
+  await page.locator('.dressup-item').filter({ hasText: '眼眸花披肩' }).click()
   await page.getByLabel('穿搭名称').fill('云端披肩测试')
   await page.getByRole('button', { name: '保存搭配' }).click()
   await expect(page.getByText(/已保存到账号云端/)).toBeVisible()
