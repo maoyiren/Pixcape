@@ -44,6 +44,24 @@ Do not infer that every 64×64 PNG can be composited with the same set of rectan
 
 A category without this contract must remain visibly unavailable rather than being routed through another category's UV mapping.
 
+### 3.1 Current verified SHAWL / COAT atlas profile
+
+The currently integrated CapeSkinImage asset set provides category-specific full skin-atlas PNGs (for example, `*_shawl_default_64.png`, `*_coat_default_64.png`, and their Slim / 128px variants). Its example renderer composites the selected category PNG over the skin canvas as a complete alpha atlas; it does not crop both categories through a shared six-rectangle mask.
+
+Therefore the current supported profile is:
+
+| Category | Source asset namespace | Atlas contract | Runtime composition | Coexistence |
+|---|---|---|---|---|
+| `SHAWL` | Shawl-specific PNGs | Full 64×64 or 128×128 Minecraft skin atlas; Classic/Slim source variant | Draw the complete alpha atlas at native dimensions | Exclusive with `COAT` |
+| `COAT` | Coat-specific PNGs | Full 64×64 or 128×128 Minecraft skin atlas; Classic/Slim source variant | Draw the complete alpha atlas at native dimensions | Exclusive with `SHAWL` |
+| `CAPE` | Cape-specific PNGs | Separate cape texture / back-equipment renderer | Never composite into the skin atlas | Separate equipment slot |
+
+The per-category UV coordinates are authored into the corresponding source PNG. CDPC must preserve those coordinates by compositing the full image with nearest-neighbor sampling and alpha; it must not guess a shared rectangular crop. Shawl and coat both affect overlapping upper-body skin surfaces, so they cannot be stacked without an explicit layered texture contract. The Studio currently replaces one with the other.
+
+Reference implementation and source asset catalogue: https://github.com/lonelyang/CapeSkinImage
+
+This profile does **not** authorize hats, pants, shoes, or arbitrary user PNGs to be treated as a shawl/coat atlas. Those categories remain disabled until independent geometry/UV fixtures exist.
+
 ## 4. Runtime architecture
 
 Keep the rendering responsibilities separate:
@@ -89,6 +107,12 @@ The same normalized descriptor must be consumed by preview and export. Do not ma
 
 ## 8. Current source audit (2026-11-07)
 
-The current P0 branch source maps only `SHAWL`, `COAT`, and `CAPE` to Studio categories. Hat, pants, and shoes exist in the shared domain/Prisma vocabulary but are not mapped into the Studio catalog. The current non-cape preview/export path applies one shared set of UV rectangles to all supported non-cape items. Catalog cards currently display PNG thumbnails; a dedicated single-item rendered preview has not been demonstrated.
+The current P0 branch maps only `SHAWL`, `COAT`, and `CAPE` to the Studio renderer. Hat, pants, and shoes remain unavailable.
 
-These observations are a static source audit, not a live browser acceptance. Do not mark the P0 checklist items above complete until implementation and automated tests provide evidence.
+The non-cape preview and export paths now composite the full category-authored skin atlas with alpha; the former shared six-rectangle crop has been removed. SHAWL and COAT have separate category profiles and are mutually exclusive because their source atlases overlap on upper-body surfaces. Cape remains a separate back-equipment texture.
+
+A second SkinViewer surface now renders a selected item in isolation by applying its own texture to the 3D skin geometry with transparent skin materials; the base character skin is not composited into this preview. The catalogue thumbnail remains a fast-scan image only.
+
+Playwright coverage has been added for isolated preview canvas creation, category exclusivity, 128×128 editor import/undo/redo/cloud restore/export, server-backed Studio outfit restore from an empty local cache, and wardrobe PNG upload/download. These tests use controlled API and texture fixtures. They do not replace visual review of every real upstream texture file, real-account cross-device testing, or a production object-storage check.
+
+The current atlas approach preserves the UV layout encoded in each source PNG; it does not claim a pixel-by-pixel source-asset fixture audit. Before marking the full rendering acceptance complete, visually inspect the actual SHAWL/COAT Classic and Slim textures at 64px and 128px and record expected screenshots/fixture hashes. Hat, pants, shoes, and other accessories remain disabled until their own UV/geometry fixtures are reviewed.
