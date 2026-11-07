@@ -90,9 +90,9 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByRole('button', { name: '关闭' }).click()
 
   await page.getByRole('button', { name: '外套', exact: true }).click()
-  await page.getByRole('button', { name: /苦力怕外套/ }).click()
+  await page.locator('.dressup-item').filter({ hasText: '苦力怕外套' }).click()
   await page.getByRole('button', { name: '披风', exact: true }).click()
-  await page.getByRole('button', { name: /眼眸花披风/ }).click()
+  await page.locator('.dressup-item').filter({ hasText: '眼眸花披风' }).click()
   await expect(selected).not.toContainText('眼眸花披肩')
   await expect(selected).toContainText('苦力怕外套')
   await expect(selected).toContainText('眼眸花披风')
@@ -206,7 +206,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
 
   // A 128px base skin must select and render the matching native-resolution garment atlas.
   await page.getByRole('button', { name: '披肩', exact: true }).click()
-  await page.getByRole('button', { name: /眼眸花披肩/ }).click()
+  await page.locator('.dressup-item').filter({ hasText: '眼眸花披肩' }).click()
   await page.locator('.dressup-selected-row').filter({ hasText: '眼眸花披肩' }).getByRole('button', { name: '独立预览' }).click()
   await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).not.toContainText('单件预览失败')
