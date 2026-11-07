@@ -1122,8 +1122,13 @@ export default function DressUpStudio() {
             {categories.map(item => <button type="button" className="dressup-category" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}
           </div>
           {category !== '全部' && !availableCategories.has(category) && <div className="dressup-unavailable"><strong>{category}素材尚未接入</strong><p>目前正式素材目录尚未提供该分类的可用贴图，因此不会展示虚构素材。素材接入后会在这里出现。</p></div>}
+          {singlePreviewItem && <section className="dressup-single-item-card" aria-label="单件素材独立渲染预览">
+            <div className="dressup-panel-heading"><h3>单件 3D 预览</h3><button type="button" onClick={() => setSinglePreviewItem(null)}>关闭</button></div>
+            <p className="dressup-preview-note">{singlePreviewItem.name} · 仅渲染该素材贴图对应的模型表面，不叠加基础皮肤</p>
+            <div ref={singleItemPreviewHost} className="dressup-single-item-preview" />
+          </section>}
           <div className="dressup-items">
-            {filtered.map(item => <button type="button" key={item.id} className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => toggleItem(item)}>
+            {filtered.map(item => <button type="button" key={item.id} className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => { setSinglePreviewItem(item); toggleItem(item) }}>
               <img className="dressup-item-thumbnail" src={item.fileUrl || ASSET_ROOT + (item.category === '披风' ? item.texture : selectStudioOverlayTexture(item, model, 64))} alt="" aria-hidden="true" loading="lazy" draggable={false} />
               <strong>{item.name}</strong>
               <small>{item.category} · {item.note}</small>
@@ -1183,11 +1188,6 @@ export default function DressUpStudio() {
           {selectedItems.length ? <div className="dressup-selected-list">
             {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong></span><div className="dressup-selected-row-actions"><button type="button" onClick={() => setSinglePreviewItem(item)}>独立预览</button><button type="button" onClick={() => toggleItem(item)}>移除</button></div></div>)}
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
-          {singlePreviewItem && <section className="dressup-single-item-card" aria-label="单件素材独立渲染预览">
-            <div className="dressup-panel-heading"><h3>单件 3D 预览</h3><button type="button" onClick={() => setSinglePreviewItem(null)}>关闭</button></div>
-            <p className="dressup-preview-note">{singlePreviewItem.name} · 仅渲染该素材贴图对应的模型表面，不叠加基础皮肤</p>
-            <div ref={singleItemPreviewHost} className="dressup-single-item-preview" />
-          </section>}
           <div className="dressup-actions dressup-primary-actions">
             <button type="button" onClick={removeCurrentCategory} disabled={category === '全部' || !selected[category]}>脱下当前分类</button>
             <button type="button" onClick={randomOutfit}>随机搭配</button>
