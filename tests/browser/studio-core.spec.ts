@@ -12,9 +12,20 @@ test('canonical Studio supports live outfit selection, controls, local restore a
     return canvas.toDataURL('image/png')
   })
   const pngBytes = Buffer.from(pngDataUrl.split(',')[1], 'base64')
+  const png128DataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 128
+    canvas.height = 128
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#789abc'
+    context.fillRect(0, 0, 128, 128)
+    return canvas.toDataURL('image/png')
+  })
+  const png128Bytes = Buffer.from(png128DataUrl.split(',')[1], 'base64')
 
   await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
-    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: pngBytes,
+    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' },
+    body: /_(?:default|slim)_128\\.png$/.test(new URL(route.request().url()).pathname) ? png128Bytes : pngBytes,
   }))
   await page.route('https://www.minecraft.net/**', route => route.fulfill({
     status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: pngBytes,
@@ -103,15 +114,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(page.getByRole('status')).toContainText('披风是独立背部装备')
 
   // 128×128 skins are imported and exported without downscaling.
-  const skin128DataUrl = await page.evaluate(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 128
-    canvas.height = 128
-    const context = canvas.getContext('2d')!
-    context.fillStyle = '#789abc'
-    context.fillRect(0, 0, 128, 128)
-    return canvas.toDataURL('image/png')
-  })
+  const skin128DataUrl = png128DataUrl
   await page.locator('input[type="file"]').first().setInputFiles({
     name: 'browser-128-skin.png',
     mimeType: 'image/png',
@@ -126,6 +129,14 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   const bytes128 = await readFile(path128!)
   expect(bytes128.readUInt32BE(16)).toBe(128)
   expect(bytes128.readUInt32BE(20)).toBe(128)
+
+  // A 128px base skin must select and render the matching native-resolution garment atlas.
+  await page.getByRole('button', { name: '披肩', exact: true }).click()
+  await page.getByRole('button', { name: /眼眸花披肩/ }).click()
+  await page.getByRole('button', { name: '独立预览' }).click()
+  await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).not.toContainText('单件预览失败')
+  await page.getByRole('button', { name: '关闭' }).click()
 
   await page.getByText('更多操作与备份').click()
   await page.getByRole('button', { name: '恢复默认角色' }).click()
