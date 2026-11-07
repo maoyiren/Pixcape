@@ -59,7 +59,7 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
     fileUrl: '/api/assets/browser-asset-1/file',
   }
 
-  await page.route('**/api/assets**', async route => {
+  await page.route('**/api/assets***', async route => {
     const request = route.request()
     const url = new URL(request.url())
     if (url.pathname.endsWith('/file')) {
@@ -144,7 +144,7 @@ test('Studio restores a cloud outfit from server state with an empty local devic
   await page.route('**/api/outfits', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ items: [outfit] }),
   }))
-  await page.route('**/api/assets**', async route => {
+  await page.route('**/api/assets***', async route => {
     const url = new URL(route.request().url())
     if (url.pathname.endsWith('/file')) {
       await route.fulfill({ status: 200, contentType: 'image/png', body: png })
@@ -208,7 +208,7 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
     fileUrl: '/api/assets/browser-skin-128/file',
   }
 
-  await page.route('**/api/assets*', async route => {
+  await page.route('**/api/assets**', async route => {
     const request = route.request()
     const url = new URL(request.url())
     if (url.pathname.endsWith('/file')) {
