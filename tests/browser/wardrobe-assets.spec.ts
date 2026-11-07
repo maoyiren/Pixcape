@@ -118,7 +118,7 @@ test('Studio restores a cloud outfit from server state with an empty local devic
     {
       id: 'cloud-coat-1', ownerId: 'browser-user', kind: 'IMAGE', category: 'COAT',
       mimeType: 'image/png', byteSize: png.length, width: 64, height: 64,
-      source: 'UPLOAD', visibility: 'PRIVATE', attribution: '跨设备外套',
+      name: '跨设备外套', source: 'UPLOAD', visibility: 'PRIVATE', attribution: '跨设备外套作者',
       createdAt: '2026-11-07T00:00:00.000Z', isFavorite: false,
       fileUrl: '/api/assets/cloud-coat-1/file',
     },
