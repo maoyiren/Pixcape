@@ -38,6 +38,7 @@ export async function saveAssetFile(input: {
   category: AssetCategory
   source: AssetSource
   visibility: AssetVisibility
+  name?: string | null
   attribution?: string | null
   rightsDeclaration?: boolean
 }) {
@@ -90,6 +91,7 @@ export async function saveAssetFile(input: {
         sha256: createHash('sha256').update(bytes).digest('hex'),
         source: input.source,
         visibility: input.visibility,
+        name: input.name?.trim().slice(0, 120) || null,
         attribution: input.attribution?.trim().slice(0, 500) || null,
         provenance: input.rightsDeclaration ? 'USER_CREATED' : 'UNKNOWN',
         downloadPolicy: input.rightsDeclaration ? 'OWNER_ONLY' : 'DENY',
@@ -97,7 +99,7 @@ export async function saveAssetFile(input: {
       select: {
         id: true, ownerId: true, kind: true, category: true, mimeType: true,
         byteSize: true, width: true, height: true, source: true, visibility: true,
-        attribution: true, provenance: true, downloadPolicy: true, createdAt: true, updatedAt: true,
+        name: true, attribution: true, provenance: true, downloadPolicy: true, createdAt: true, updatedAt: true,
       },
     })
   } catch (error) {
