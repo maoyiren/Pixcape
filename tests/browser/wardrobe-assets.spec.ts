@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 
 async function makePng(page: import('@playwright/test').Page, size = 64) {
   const dataUrl = await page.evaluate((dimension) => {
@@ -72,6 +73,10 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
   expect(download.suggestedFilename()).toBe('cdpc-coat-browser-asset-1.png')
   const downloadedPath = await download.path()
   expect(downloadedPath).toBeTruthy()
+  const downloaded = await readFile(downloadedPath!)
+  expect(downloaded.subarray(1, 4).toString()).toBe('PNG')
+  expect(downloaded.readUInt32BE(16)).toBe(64)
+  expect(downloaded.readUInt32BE(20)).toBe(64)
 })
 
 test('Studio restores a cloud outfit from server state with an empty local device cache', async ({ page }) => {
