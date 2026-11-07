@@ -525,14 +525,19 @@ export default function DressUpStudio() {
         : await cdpcApi.createOutfit(input)
       const savedId = saved.id
 
-      const workspace = await cdpcApi.getWorkspace().catch(() => null)
-      if (workspace) {
+      // The outfit record is authoritative. A workspace-pointer failure must not
+      // turn a successful cloud save into a reported save failure.
+      let workspaceSyncFailed = false
+      try {
+        const workspace = await cdpcApi.getWorkspace()
         await cdpcApi.updateWorkspace({
           projectId: workspace.projectId ?? null,
           activeTool: 'WARDROBE',
-          activeAssetId: skinAssetId,
+          activeAssetId: skinAssetId ?? workspace.activeAssetId ?? null,
           activeOutfitId: savedId,
         })
+      } catch {
+        workspaceSyncFailed = true
       }
 
       setSelectedSavedOutfitId(savedId)
@@ -546,7 +551,9 @@ export default function DressUpStudio() {
       }
       setSavedOutfits(current => [...current.filter(item => item.id !== savedId), localCache])
       try { window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify(localCache)) } catch { /* Cloud save remains authoritative. */ }
-      setSaveNotice(`“${name}”已保存到账号云端，衣橱可在其他设备读取`)
+      setSaveNotice(workspaceSyncFailed
+        ? `“${name}”已保存到账号云端，但工作区指针同步失败；可在已保存穿搭中重新载入`
+        : `“${name}”已保存到账号云端，衣橱可在其他设备读取`)
       void refreshCloudOutfits().catch(() => undefined)
     } catch (error) {
       setSaveNotice(error instanceof Error ? error.message : '云端保存失败，请登录后重试')
