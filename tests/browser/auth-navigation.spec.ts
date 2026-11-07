@@ -277,7 +277,7 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await page.getByRole('button', { name: '披肩', exact: true }).click()
   await expect(page.getByRole('button', { name: /我的衣橱披肩/ })).toBeVisible()
-  await expect(page.locator('.dressup-item-thumbnail').first()).toBeVisible()
+  await expect(page.locator('.dressup-item-render').first()).toBeVisible()
   await page.getByRole('button', { name: /我的衣橱披肩/ }).click()
   await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披肩')
   await page.getByRole('button', { name: /眼眸花披肩/ }).click()

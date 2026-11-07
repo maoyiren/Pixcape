@@ -980,10 +980,21 @@ export default function DressUpStudio() {
         // Export the complete, pre-mapped category UV atlas with its alpha channel.
         context.drawImage(overlay, 0, 0)
       }
+      const pngBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob)
+          else reject(new Error('无法生成 PNG 文件'))
+        }, 'image/png')
+      })
+      const objectUrl = URL.createObjectURL(pngBlob)
       const link = document.createElement('a')
       link.download = `cdpc-skin-${textureSize}x${textureSize}.png`
-      link.href = canvas.toDataURL('image/png')
+      link.href = objectUrl
+      link.style.display = 'none'
+      document.body.appendChild(link)
       link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000)
       setSaveNotice(cape
         ? '标准皮肤 PNG 已导出。注意：披风是独立背部装备，不包含在标准皮肤 PNG 中。'
         : `标准皮肤 PNG 已导出（${textureSize} × ${textureSize}）。`)

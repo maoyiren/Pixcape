@@ -564,10 +564,3 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
 .dressup-preview-select select option{background:#182538;color:#e5edf9}
 .dressup-preview-select:focus-within{outline:2px solid #9bb8ff;outline-offset:2px}
 @media(max-width:700px){.dressup-preview-select{flex:1 1 calc(50% - 6px);justify-content:space-between}.dressup-preview-select select{max-width:none;min-width:0;flex:1}}
-
-/* Each catalog entry uses a lazy isolated 3D render, not a flat PNG atlas. */
-.dressup-item-render{display:grid;place-items:center;width:100%;height:116px;overflow:hidden;border-radius:7px;background:var(--cdpc-elevated,#202833);color:var(--cdpc-muted,#a4adba);font-size:10px}
-.dressup-item-render canvas{display:block;width:100%;height:116px;image-rendering:pixelated}
-.dressup-item-render [role=status]{padding:8px;text-align:center;line-height:1.4}
-.dressup-item[aria-pressed=true] .dressup-item-render{background:#31425a}
-@media(max-width:700px){.dressup-item-render,.dressup-item-render canvas{height:112px}}
