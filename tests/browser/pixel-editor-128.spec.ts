@@ -129,7 +129,7 @@ test('128×128 editor import, undo/redo, cloud restore, wardrobe save and PNG ex
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出 PNG' }).click()
   const download = await downloadPromise
-  expect(download.suggestedFilename()).toBe('cdpc-skin-128x128.png')
+  expect(download.suggestedFilename()).toBe('cdpc-pixel-skin-128x128.png')
   const downloadPath = await download.path()
   const downloaded = await readFile(downloadPath!)
   expect(downloaded.subarray(1, 4).toString()).toBe('PNG')
