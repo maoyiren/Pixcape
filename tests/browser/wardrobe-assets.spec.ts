@@ -53,7 +53,8 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
     height: 64,
     source: 'UPLOAD',
     visibility: 'PRIVATE',
-    attribution: '浏览器上传外套',
+    name: '浏览器外套素材',
+    attribution: '外套作者',
     licenseId: null,
     provenance: 'USER_CREATED',
     downloadPolicy: 'OWNER_ONLY',
@@ -89,12 +90,14 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
   await page.goto(`/u/${username}/wardrobe`)
   await expect(page.getByRole('heading', { name: '我的衣橱' })).toBeVisible()
   await page.getByLabel('上传素材类型').selectOption('COAT')
+  await page.getByLabel('素材名称').fill('浏览器外套素材')
   await page.getByLabel('我确认素材为本人原创并拥有下载权').check()
   await page.getByRole('button', { name: '＋ 上传素材' }).click()
   await page.locator('input[type="file"]').first().setInputFiles({
     name: 'browser-coat.png', mimeType: 'image/png', buffer: png,
   })
-  await expect(page.getByText('浏览器上传外套')).toBeVisible()
+  await expect(page.getByText('浏览器外套素材')).toBeVisible()
+  await expect(page.getByText('作者/署名：外套作者')).toBeVisible()
   expect(uploaded).toBe(true)
 
   const downloadPromise = page.waitForEvent('download')
@@ -208,7 +211,8 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
     height: 128,
     source: 'UPLOAD',
     visibility: 'PRIVATE',
-    attribution: '128 像素皮肤',
+    name: '128 像素皮肤',
+    attribution: '皮肤作者',
     licenseId: null,
     provenance: 'USER_CREATED',
     downloadPolicy: 'OWNER_ONLY',
@@ -244,6 +248,7 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
   await page.goto(`/u/${username}/wardrobe`)
   await expect(page.getByRole('heading', { name: '我的衣橱' })).toBeVisible()
   await page.getByLabel('上传素材类型').selectOption('SKIN')
+  await page.getByLabel('素材名称').fill('128 像素皮肤')
   await page.getByLabel('我确认素材为本人原创并拥有下载权').check()
   await page.getByRole('button', { name: '＋ 上传素材' }).click()
   await page.locator('input[type="file"]').first().setInputFiles({
