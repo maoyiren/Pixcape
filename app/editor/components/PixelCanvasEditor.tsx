@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { bresenhamLine } from '@/src/domain/skin-paint'
 import { CdpcApiError, cdpcApi } from '@/src/client/cdpc-api'
+import { normalizePixelEditorDocument } from '@/src/domain/pixel-editor-document'
 
 type Layer = { id: string; name: string; visible: boolean; opacity: number; pixels: string[] }
 type Tool = 'pencil' | 'eraser' | 'fill' | 'eyedropper'
@@ -58,16 +59,17 @@ export default function PixelCanvasEditor() {
   const lastIndex = useRef(-1)
   const hasLocalDraft = useRef(false)
   const workspaceActionStarted = useRef(false)
+  const opacityGesture = useRef(false)
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem('cdpc-pixel-editor-v1')
       if (raw) {
-        const value = JSON.parse(raw)
-        if (Array.isArray(value.layers) && value.layers.length && value.layers.every((layer: Layer) => Array.isArray(layer.pixels) && layer.pixels.length === SIZE * SIZE)) {
+        const value = normalizePixelEditorDocument(JSON.parse(raw))
+        if (value) {
           hasLocalDraft.current = true
           setLayers(value.layers)
-          setActiveId(value.activeId || value.layers[0].id)
+          setActiveId(value.activeId)
           setStatus('已恢复上次本地编辑草稿')
         }
       }
@@ -551,9 +553,11 @@ export default function PixelCanvasEditor() {
             </div>
           ))}
           {active && <label>图层不透明度<input type="range" min="0" max="100" value={active.opacity}
-            onPointerDown={() => checkpoint()}
-            onKeyDown={event => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) checkpoint() }}
-            onChange={event => setLayers(current => current.map(item => item.id === activeId ? { ...item, opacity: Number(event.target.value) } : item))} /></label>}
+            onPointerDown={() => { if (!opacityGesture.current) { checkpoint(); opacityGesture.current = true } }}
+            onPointerUp={() => { opacityGesture.current = false }} onPointerCancel={() => { opacityGesture.current = false }} onBlur={() => { opacityGesture.current = false }}
+            onKeyDown={event => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key) && !opacityGesture.current) { checkpoint(); opacityGesture.current = true } }}
+            onKeyUp={() => { opacityGesture.current = false }}
+            onChange={event => { if (!opacityGesture.current) { checkpoint(); opacityGesture.current = true } setLayers(current => current.map(item => item.id === activeId ? { ...item, opacity: Number(event.target.value) } : item)) }} /></label>}
           <p>草稿自动保存在本机浏览器；保存到衣橱需要登录。</p>
         </aside>
       </div>
