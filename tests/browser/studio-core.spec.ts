@@ -132,6 +132,10 @@ test('canonical Studio supports live outfit selection, controls, local restore a
     buffer: Buffer.from(skin128DataUrl.split(',')[1], 'base64'),
   })
   await expect(page.getByText('当前皮肤：browser-128-skin.png')).toBeVisible()
+  // Skin import triggers an asynchronous 3D texture refresh; wait for the
+  // shared busy state to clear before asserting that export is actionable.
+  const exportButton128 = page.getByRole('button', { name: '导出皮肤 PNG' })
+  await expect(exportButton128).toBeEnabled({ timeout: 15_000 })
   const download128Promise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出皮肤 PNG' }).click()
   const download128 = await download128Promise
