@@ -77,6 +77,7 @@ The same normalized descriptor must be consumed by preview and export. Do not ma
 ## 5. Interaction requirements
 
 - Selecting an item updates the character preview without requiring a second confirmation.
+- Selecting an item in the catalog also opens its isolated 3D asset preview in the catalog area; the outfit-list preview action is only a secondary shortcut.
 - Selecting a different item in the same exclusive slot replaces the previous item.
 - Selecting the active item again removes it.
 - Removing an item updates both the character preview and selected-item list.
