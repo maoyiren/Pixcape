@@ -200,6 +200,7 @@ export default function WardrobeLibrary() {
     } finally {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
+      setRightsDeclared(false)
     }
   }
 
