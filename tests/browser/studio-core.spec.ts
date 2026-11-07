@@ -118,8 +118,9 @@ test('canonical Studio supports live outfit selection, controls, local restore a
     await expect(page.getByLabel('切换角色动作')).toHaveValue(pose)
   }
   // Repeating the action switch must not leave a stale pose animation attached.
-  await page.getByRole('button', { name: '自动旋转' }).click()
-  await expect(page.getByRole('button', { name: '停止旋转' })).toBeVisible()
+  const autoRotateControl = page.locator('.dressup-preview-select button').first()
+  await autoRotateControl.click()
+  await expect(autoRotateControl).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '显示鞘翅' }).click()
   await expect(page.getByRole('button', { name: '显示披风' })).toBeVisible()
   await page.getByLabel('切换角色视角').selectOption('back')
@@ -146,6 +147,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await outfitSelect.selectOption({ label: 'Studio 浏览器验收搭配（已重命名）' })
   await page.getByRole('button', { name: '载入选择' }).click()
   await expect(page.getByLabel('穿搭名称')).toHaveValue('Studio 浏览器验收搭配（已重命名）')
+  await page.locator('.dressup-more-actions > summary').click()
   const backupDownloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出穿搭备份 JSON' }).click()
   const backupDownload = await backupDownloadPromise
