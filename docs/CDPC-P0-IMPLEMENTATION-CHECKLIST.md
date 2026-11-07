@@ -120,3 +120,16 @@
 - `tests/browser/auth-navigation.spec.ts` 中已登录头像菜单到 `/u/[username]` 的端到端测试本轮通过，验证了个人主页链接 href、点击后 URL，以及菜单悬停、Escape 和外部点击关闭行为。此项有本轮 Playwright 通过证据；真实生产账号与生产域名仍未人工验收。
 - 注意：以上 #1029/#818/#1028 仍使用当前 main 的多数据库测试矩阵，不是 PostgreSQL-only 最终基线。PR #61 仍为 Draft 且未合并；其 PostgreSQL-only 变更需在同步 main 后重跑并完成生产数据库/备份确认。
 - 本轮未合并 PR、未发布镜像、未触发 1Panel 部署、未执行生产迁移。Studio 的单件真实渲染、完整分类 UV、皮肤导入/编辑/保存恢复/导出完整旅程仍未完成验收，不能因 CI 绿灯标记为完成。
+
+
+## 最新验证更新（2026-11-07 13:30 UTC）
+
+- PR #64 已将 PR #61 的 PostgreSQL-only 基线同步进 `feat/p0-core-completion`，当前分支提交为 `9ee7930bf5237dd9b589c914dd76acd35ac7c8bd`；相对 main 的同步关系与分支状态以 PR 当前 compare 为准。该变更尚未合并 main。
+- PostgreSQL-only 基线变更包括：单一 PostgreSQL Prisma schema / migration 路径、移除 MySQL / SQLite 专用 schema 与集成测试、更新 CI 和 Docker 构建流程；`playwright.config.ts` 保留 PostgreSQL 测试连接与下载测试支持。
+- 新 head 的 CI #1036（run `42376966382`）成功：PostgreSQL migration、unit / integration、依赖安全检查、Next.js production build、Playwright browser regression、AI API tests、AI API container build、完整 Pixcape + Blockbench Docker image build 均通过。
+- Preview/Security #825（run `42376966431`）成功：PostgreSQL migration、RBAC / ownership、PostgreSQL integration、Next.js build、安全 E2E 与 PostgreSQL runtime image 均通过。
+- PostgreSQL Docker smoke #1035（run `42376966372`）成功：PostgreSQL-only image build、容器启动、health / route smoke 均通过。
+- Lockfile refresh #33（run `42376966379`）成功。
+- 本轮 CI 曾发现 128×128 PNG 导出浏览器测试在导入后立即点击导出按钮失败。证据显示按钮当时处于 disabled（Studio 正在异步刷新 3D 皮肤预览），属于测试未等待异步状态完成；提交 `9ee7930` 增加按钮 enabled 等待后，完整 browser regression 通过。没有移除产品侧禁用保护，也没有降低 PNG 文件名和像素尺寸断言。
+- 当前渲染能力边界仍为：SHAWL / COAT 使用各自完整 Minecraft skin alpha atlas；CAPE 是独立背部装备；HAT / PANTS / SHOES 仍未启用。实际源素材 Classic / Slim、64 / 128px 的视觉检查与像素级 fixture/hash 审核仍未完成，不能据此标记完整 UV 验收通过。
+- PR 继续保持 Draft。CI 成功不等于真实 OAuth / 邮件配置、生产账号、移动端视觉验收、生产 PostgreSQL 数据库确认、备份恢复演练或回滚方案已通过。Docker publish 与 1Panel deploy 未执行；没有发布镜像、生产迁移或生产部署。
