@@ -42,9 +42,13 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByRole('button', { name: '披风', exact: true }).click()
   await page.getByRole('button', { name: /眼眸花披风/ }).click()
   const selected = page.locator('.dressup-selected-list')
-  await expect(selected).toContainText('眼眸花披肩')
+  await expect(selected).not.toContainText('眼眸花披肩')
   await expect(selected).toContainText('苦力怕外套')
   await expect(selected).toContainText('眼眸花披风')
+  await page.getByRole('button', { name: '独立预览' }).first().click()
+  await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).toBeVisible()
+  await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: '关闭' }).click()
   await page.getByRole('button', { name: '外套', exact: true }).click()
   await page.getByRole('button', { name: '脱下当前分类' }).click()
   await expect(selected).not.toContainText('苦力怕外套')
@@ -79,7 +83,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByRole('button', { name: '保存本地草稿' }).click()
   await expect(page.getByRole('status')).toContainText('Studio 浏览器验收搭配')
   await page.reload()
-  await expect(page.locator('.dressup-selected-list')).toContainText('眼眸花披肩')
+  await expect(page.locator('.dressup-selected-list')).not.toContainText('眼眸花披肩')
   await expect(page.locator('.dressup-selected-list')).toContainText('苦力怕外套')
   await expect(page.locator('.dressup-selected-list')).toContainText('眼眸花披风')
   await expect(page.getByLabel('穿搭名称')).toHaveValue('Studio 浏览器验收搭配')
@@ -97,6 +101,31 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   expect(bytes.readUInt32BE(16)).toBe(64)
   expect(bytes.readUInt32BE(20)).toBe(64)
   await expect(page.getByRole('status')).toContainText('披风是独立背部装备')
+
+  // 128×128 skins are imported and exported without downscaling.
+  const skin128DataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 128
+    canvas.height = 128
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#789abc'
+    context.fillRect(0, 0, 128, 128)
+    return canvas.toDataURL('image/png')
+  })
+  await page.locator('input[type="file"]').first().setInputFiles({
+    name: 'browser-128-skin.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(skin128DataUrl.split(',')[1], 'base64'),
+  })
+  await expect(page.getByText('当前皮肤：browser-128-skin.png')).toBeVisible()
+  const download128Promise = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出皮肤 PNG' }).click()
+  const download128 = await download128Promise
+  expect(download128.suggestedFilename()).toBe('cdpc-skin-128x128.png')
+  const path128 = await download128.path()
+  const bytes128 = await readFile(path128!)
+  expect(bytes128.readUInt32BE(16)).toBe(128)
+  expect(bytes128.readUInt32BE(20)).toBe(128)
 
   await page.getByText('更多操作与备份').click()
   await page.getByRole('button', { name: '恢复默认角色' }).click()
