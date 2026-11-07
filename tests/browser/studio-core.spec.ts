@@ -33,7 +33,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.route('**/api/outfits**', route => route.fulfill({
     status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Authentication required' }),
   }))
-  await page.route('**/api/assets**', route => route.fulfill({
+  await page.route('**/api/assets***', route => route.fulfill({
     status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Authentication required' }),
   }))
   await page.route('**/api/workspace', route => route.fulfill({
@@ -139,7 +139,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByRole('button', { name: '关闭' }).click()
   // Repeat against the classic Steve model to cover both 128px atlas variants.
   await page.getByRole('button', { name: 'Steve 粗臂' }).click()
-  await page.getByRole('button', { name: '独立预览' }).first().click()
+  await page.locator('.dressup-selected-row').filter({ hasText: '眼眸花披肩' }).getByRole('button', { name: '独立预览' }).click()
   await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).not.toContainText('单件预览失败')
   await page.getByRole('button', { name: '关闭' }).click()
