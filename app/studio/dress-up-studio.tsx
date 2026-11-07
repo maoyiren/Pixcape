@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
+import CatalogGarmentPreview from './catalog-garment-preview'
 import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
 import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
 import { canEquipStudioOverlayTogether, getStudioOverlayUvProfile, type StudioOverlayCategory } from '@/src/domain/studio-uv-layout'
@@ -1133,7 +1134,7 @@ export default function DressUpStudio() {
           </section>}
           <div className="dressup-items">
             {filtered.map(item => <button type="button" key={item.id} className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => { setSinglePreviewItem(item); toggleItem(item) }}>
-              <img className="dressup-item-thumbnail" src={item.fileUrl || ASSET_ROOT + (item.category === '披风' ? item.texture : selectStudioOverlayTexture(item, model, 64))} alt="" aria-hidden="true" loading="lazy" draggable={false} />
+              <CatalogGarmentPreview item={item} model={model} skinUrl={skinUrl} />
               <strong>{item.name}</strong>
               <small>{item.category} · {item.note}</small>
               <span className="dressup-item-state">{selected[item.category]?.id === item.id ? '已选择' : '点击试穿'}</span>
