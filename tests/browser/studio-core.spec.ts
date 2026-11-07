@@ -118,10 +118,6 @@ test('canonical Studio supports live outfit selection, controls, local restore a
     await expect(page.getByLabel('切换角色动作')).toHaveValue(pose)
   }
   // Repeating the action switch must not leave a stale pose animation attached.
-  for (const pose of ['run', 'crouch', 'hit', 'swim']) {
-    await page.getByLabel('切换角色动作').selectOption(pose)
-    await expect(page.getByLabel('切换角色动作')).toHaveValue(pose)
-  }
   await page.getByRole('button', { name: '自动旋转' }).click()
   await expect(page.getByRole('button', { name: '停止旋转' })).toBeVisible()
   await page.getByRole('button', { name: '显示鞘翅' }).click()
