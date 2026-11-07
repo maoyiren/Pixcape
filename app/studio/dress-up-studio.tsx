@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
+import { validateStudioSkinTexture } from '@/src/domain/studio-texture'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
 const BASE_SKIN = ASSET_ROOT + 'stevea.png'
@@ -395,6 +396,9 @@ export default function DressUpStudio() {
       setStatus('正在加载皮肤与选装素材…')
       try {
         const base = await loadImage(skinUrl)
+        if (cancelled) return
+        const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
+        if (baseError) throw new Error(baseError)
         const canvas = document.createElement('canvas')
         canvas.width = 64
         canvas.height = 64
@@ -406,6 +410,8 @@ export default function DressUpStudio() {
           const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
           const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
           if (cancelled) return
+          const overlayError = validateStudioSkinTexture({ width: overlay.naturalWidth, height: overlay.naturalHeight }, 'clothing-overlay')
+          if (overlayError) throw new Error(`${item.name}：${overlayError}`)
           context.save()
           context.beginPath()
           const uvRegions = [{ x: 16, y: 16, width: 24, height: 16 }, { x: 16, y: 32, width: 24, height: 16 }, { x: 40, y: 16, width: 16, height: 16 }, { x: 40, y: 32, width: 16, height: 16 }, { x: 32, y: 48, width: 16, height: 16 }, { x: 48, y: 48, width: 16, height: 16 }]
