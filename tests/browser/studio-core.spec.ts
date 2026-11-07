@@ -33,7 +33,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.route('**/api/outfits**', route => route.fulfill({
     status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Authentication required' }),
   }))
-  await page.route('**/api/assets***', route => route.fulfill({
+  await page.route('**/api/assets**', route => route.fulfill({
     status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'Authentication required' }),
   }))
   await page.route('**/api/workspace', route => route.fulfill({
