@@ -22,11 +22,28 @@ test('canonical Studio supports live outfit selection, controls, local restore a
     return canvas.toDataURL('image/png')
   })
   const png128Bytes = Buffer.from(png128DataUrl.split(',')[1], 'base64')
+  const capeDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 32
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#abcdef'
+    context.fillRect(0, 0, 64, 32)
+    return canvas.toDataURL('image/png')
+  })
+  const capeBytes = Buffer.from(capeDataUrl.split(',')[1], 'base64')
 
-  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
-    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' },
-    body: /_(?:default|slim)_128\.png$/.test(new URL(route.request().url()).pathname) ? png128Bytes : pngBytes,
-  }))
+  await page.route('https://raw.githubusercontent.com/**', route => {
+    const pathname = new URL(route.request().url()).pathname
+    const body = /\/cape_[^/]+\.png$/.test(pathname)
+      ? capeBytes
+      : /_(?:default|slim)_128\.png$/.test(pathname)
+        ? png128Bytes
+        : pngBytes
+    return route.fulfill({
+      status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body,
+    })
+  })
   await page.route('https://www.minecraft.net/**', route => route.fulfill({
     status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: pngBytes,
   }))
