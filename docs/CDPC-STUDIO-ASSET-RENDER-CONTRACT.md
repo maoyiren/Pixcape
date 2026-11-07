@@ -142,3 +142,13 @@ Required automated cases:
 5. PRIVATE original cape: another user cannot download it.
 6. Licensed community cape: download is allowed only within the recorded license scope.
 7. Unknown provenance: download is denied by default.
+
+
+## 10. Implemented download authorization (2026-11-07)
+
+- PostgreSQL `Asset` now stores `provenance` (`USER_CREATED`, `OFFICIAL`, `LICENSED`, `THIRD_PARTY`, `UNKNOWN`) and `downloadPolicy` (`DENY`, `OWNER_ONLY`, `LICENSED_PUBLIC`). Existing records migrate to the conservative `UNKNOWN` + `DENY` state.
+- Uploads default to non-downloadable. The uploader must explicitly confirm ownership of the original work before the API records `USER_CREATED` + `OWNER_ONLY`; `source=UPLOAD` alone is never treated as proof of rights.
+- `/api/assets/:assetId/download` is a separate authenticated endpoint. It permits an original creator to download their own private asset, and permits licensed public downloads only with a `licenseId`, PUBLIC visibility, and the explicit `LICENSED_PUBLIC` policy.
+- OFFICIAL assets are denied by the stored-file preview endpoint and download endpoint. If an official cape is shown in a preview, its display source must be separately authorized and must not be the downloadable original bytes.
+- The wardrobe UI now requires an explicit originality / rights declaration to enable owner downloads and hides the download action for assets without an effective download permission.
+- Automated E2E coverage has been added for unknown-provenance denial, owner download of an explicitly declared original cape, cross-user denial for a private cape, and OFFICIAL preview-file / download denial. The latest CI run is the acceptance gate; JSON backup and alternate endpoint bypass audits remain open.
