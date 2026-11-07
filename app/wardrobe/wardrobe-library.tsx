@@ -8,11 +8,15 @@ import { cdpcApi, CdpcApiError } from '@/src/client/cdpc-api'
 type Category = 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE' | 'HAT' | 'PANTS' | 'SHOES' | 'OTHER_ACCESSORY'
 type Asset = {
   id: string
+  ownerId: string | null
   category: Category | null
   kind: string
   width: number | null
   height: number | null
   attribution: string | null
+  provenance: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'
+  downloadPolicy: 'DENY' | 'OWNER_ONLY' | 'LICENSED_PUBLIC'
+  canDownload: boolean
   fileUrl: string
   createdAt: string
   isFavorite: boolean
@@ -46,6 +50,7 @@ export default function WardrobeLibrary() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('正在加载你的收藏库…')
   const [uploadCategory, setUploadCategory] = useState<Category>('SKIN')
+  const [rightsDeclared, setRightsDeclared] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const reload = useCallback(async () => {
@@ -160,7 +165,7 @@ export default function WardrobeLibrary() {
   const downloadAsset = async (asset: Asset) => {
     setError('')
     try {
-      const response = await fetch(cdpcApi.assetFileUrl(asset.id), {
+      const response = await fetch(cdpcApi.assetDownloadUrl(asset.id), {
         credentials: 'same-origin',
         cache: 'no-store',
       })
@@ -186,7 +191,7 @@ export default function WardrobeLibrary() {
     setBusy(true)
     setError('')
     try {
-      await cdpcApi.uploadAsset(file, uploadCategory, { visibility: 'PRIVATE' })
+      await cdpcApi.uploadAsset(file, uploadCategory, { visibility: 'PRIVATE', rightsDeclaration: rightsDeclared })
       await reload()
       setFilter(uploadCategory)
       setNotice('素材已上传并保存到私人衣橱')
@@ -254,6 +259,7 @@ export default function WardrobeLibrary() {
           <select className="upload-select" aria-label="上传素材类型" value={uploadCategory} onChange={(event) => setUploadCategory(event.target.value as Category)}>
             {categories.map((item) => <option key={item.value} value={item.value}>上传：{item.label}</option>)}
           </select>
+          <label className="rights-declaration"><input type="checkbox" checked={rightsDeclared} onChange={(event) => setRightsDeclared(event.target.checked)} />我确认素材为本人原创并拥有下载权</label>
           <button className="action primary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? '上传中…' : '＋ 上传素材'}</button>
           <input ref={fileRef} type="file" accept="image/png" hidden disabled={busy} onChange={(event) => void upload(event.target.files?.[0])} />
           <Link className="action" href="/studio">进入 3D 换装</Link>
@@ -295,7 +301,7 @@ export default function WardrobeLibrary() {
                   <button className="favorite" type="button" aria-label={asset.isFavorite ? '取消收藏' : '收藏素材'} aria-pressed={asset.isFavorite} onClick={() => void toggleFavorite(asset)}>{asset.isFavorite ? '★' : '☆'}</button>
                 </div>
                 <div className="asset-bottom">
-                  <button className="action" type="button" onClick={() => void downloadAsset(asset)}>下载 PNG</button>
+                  {asset.canDownload ? <button className="action" type="button" onClick={() => void downloadAsset(asset)}>下载 PNG</button> : <span className="asset-date">仅可预览 · 无下载授权</span>}
                   {asset.category && ['SKIN', 'SHAWL', 'COAT', 'CAPE'].includes(asset.category) && <button className="action" type="button" onClick={() => void openInDressUp(asset)}>在 3D 换装中使用</button>}
                 </div>
               </div>
