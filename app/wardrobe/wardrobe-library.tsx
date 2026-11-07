@@ -93,6 +93,7 @@ export default function WardrobeLibrary() {
         ? filter === 'ALL' || asset.isFavorite
         : filter === 'OUTFITS' ? false : asset.category === filter
       const matchesQuery = !normalized || categoryLabel(asset.category).toLowerCase().includes(normalized)
+        || (asset.name || '').toLowerCase().includes(normalized)
         || (asset.attribution || '').toLowerCase().includes(normalized)
         || asset.id.toLowerCase().includes(normalized)
       return matchesFilter && matchesQuery
@@ -182,7 +183,7 @@ export default function WardrobeLibrary() {
       link.click()
       link.remove()
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-      setNotice(`已开始下载“${asset.attribution || categoryLabel(asset.category)}”`)
+      setNotice(`已开始下载“${asset.name || categoryLabel(asset.category)}”`)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '素材下载失败')
     }
@@ -307,7 +308,7 @@ export default function WardrobeLibrary() {
                   <button className="favorite" type="button" aria-label={asset.isFavorite ? '取消收藏' : '收藏素材'} aria-pressed={asset.isFavorite} onClick={() => void toggleFavorite(asset)}>{asset.isFavorite ? '★' : '☆'}</button>
                 </div>
                 <div className="asset-bottom">
-                  {asset.canDownload ? <button className="action" type="button" onClick={() => void downloadAsset(asset)}>下载 PNG</button> : <span className="asset-date">仅可预览 · 无下载授权</span>}
+                  {asset.canDownload ? <button className="action" type="button" onClick={() => void downloadAsset(asset)}>下载 PNG</button> : <span className="asset-date">下载未授权</span>}
                   {asset.category && ['SKIN', 'SHAWL', 'COAT', 'CAPE'].includes(asset.category) && <button className="action" type="button" onClick={() => void openInDressUp(asset)}>在 3D 换装中使用</button>}
                 </div>
               </div>
