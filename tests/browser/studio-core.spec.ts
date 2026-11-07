@@ -64,7 +64,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
 
   // Three separate garment types must remain independently selectable.
   await page.getByRole('button', { name: '披肩', exact: true }).click()
-  const shawlCard = page.getByRole('button', { name: /眼眸花披肩/ })
+  const shawlCard = page.locator('.dressup-item').filter({ hasText: '眼眸花披肩' })
   await shawlCard.scrollIntoViewIfNeeded()
   await shawlCard.click()
   await page.getByRole('button', { name: '收藏 眼眸花披肩' }).click()
