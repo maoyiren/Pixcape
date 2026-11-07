@@ -155,7 +155,7 @@ export default function DressUpStudio() {
           assetId: asset.id,
           fileUrl: asset.fileUrl,
           texture: asset.fileUrl,
-          name: `云端${category}素材`,
+          name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : `云端${category}素材`,
           category,
           note: '账号云端素材',
           attribution: asset.attribution,
