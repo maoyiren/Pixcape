@@ -69,7 +69,9 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 export default function DressUpStudio() {
   const previewHost = useRef<HTMLDivElement>(null)
+  const singleItemPreviewHost = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<SkinViewer | null>(null)
+  const [singlePreviewItem, setSinglePreviewItem] = useState<CatalogItem | null>(null)
   const skinFileRef = useRef<HTMLInputElement>(null)
   const outfitFileRef = useRef<HTMLInputElement>(null)
   const [category, setCategory] = useState<Category>('全部')
@@ -339,6 +341,76 @@ export default function DressUpStudio() {
   }, [])
 
   useEffect(() => {
+    const host = singleItemPreviewHost.current
+    const item = singlePreviewItem
+    if (!host || !item) return
+
+    let viewer: SkinViewer
+    let cancelled = false
+    try {
+      const canvas = document.createElement('canvas')
+      viewer = new SkinViewer({
+        canvas,
+        width: Math.max(host.clientWidth, 240),
+        height: 240,
+        enableControls: true,
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      })
+      viewer.controls.enableDamping = true
+      viewer.controls.enablePan = false
+      viewer.controls.autoRotate = true
+      viewer.controls.autoRotateSpeed = 1.6
+      viewer.renderer.setClearColor(0x182437, 0)
+      host.replaceChildren(canvas)
+    } catch {
+      host.textContent = '当前浏览器无法初始化单件 3D 预览（需要 WebGL）。'
+      return
+    }
+
+    const resize = () => {
+      if (!cancelled && host.clientWidth) viewer.width = Math.max(host.clientWidth, 240)
+    }
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null
+    observer?.observe(host)
+    window.addEventListener('resize', resize)
+
+    void (async () => {
+      try {
+        if (item.category === '披风') {
+          const transparentSkin = document.createElement('canvas')
+          transparentSkin.width = 64
+          transparentSkin.height = 64
+          await viewer.loadSkin(transparentSkin, { model: model === 'alex' ? 'slim' : 'default' })
+          if (cancelled) return
+          await viewer.loadCape(item.fileUrl || ASSET_ROOT + item.texture, { backEquipment: 'cape' })
+        } else {
+          const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
+          const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
+          if (cancelled) return
+          const textureError = validateStudioSkinTexture({ width: overlay.naturalWidth, height: overlay.naturalHeight }, 'clothing-overlay')
+          if (textureError) throw new Error(textureError)
+          // Render the source atlas directly on the 3D skin geometry with no
+          // character skin underneath. Transparent pixels stay invisible, so
+          // the user sees only the selected garment's mapped surfaces.
+          await viewer.loadSkin(overlay, { model: model === 'alex' ? 'slim' : 'default' })
+          if (cancelled) return
+          viewer.playerObject.backEquipment = null
+        }
+        if (!cancelled) viewer.controls.autoRotate = true
+      } catch (error) {
+        if (!cancelled) host.textContent = error instanceof Error ? `单件预览失败：${error.message}` : '单件预览失败，请检查素材文件。'
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      observer?.disconnect()
+      window.removeEventListener('resize', resize)
+      viewer.dispose()
+    }
+  }, [singlePreviewItem, model])
+
+  useEffect(() => {
     const viewer = viewerRef.current
     if (!viewer) return
     viewer.controls.autoRotate = autoRotate
@@ -403,7 +475,6 @@ export default function DressUpStudio() {
         const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
         if (baseError) throw new Error(baseError)
         const textureSize = base.naturalWidth
-        const uvScale = textureSize / 64
         const canvas = document.createElement('canvas')
         canvas.width = textureSize
         canvas.height = textureSize
@@ -417,13 +488,10 @@ export default function DressUpStudio() {
           if (cancelled) return
           const overlayError = validateStudioSkinTexture({ width: overlay.naturalWidth, height: overlay.naturalHeight }, 'clothing-overlay')
           if (overlayError) throw new Error(`${item.name}：${overlayError}`)
-          context.save()
-          context.beginPath()
-          const uvRegions = [{ x: 16, y: 16, width: 24, height: 16 }, { x: 16, y: 32, width: 24, height: 16 }, { x: 40, y: 16, width: 16, height: 16 }, { x: 40, y: 32, width: 16, height: 16 }, { x: 32, y: 48, width: 16, height: 16 }, { x: 48, y: 48, width: 16, height: 16 }]
-          uvRegions.forEach(region => context.rect(region.x * uvScale, region.y * uvScale, region.width * uvScale, region.height * uvScale))
-          context.clip()
+          // These source PNGs are already authored as complete Minecraft skin UV
+          // atlases. Composite the full alpha map; clipping every category to the
+          // same guessed rectangles corrupts the category-specific UV artwork.
           context.drawImage(overlay, 0, 0, textureSize, textureSize)
-          context.restore()
         }
         await viewer.loadSkin(canvas, { model: model === 'alex' ? 'slim' : 'default' })
         if (cancelled) return
@@ -453,7 +521,14 @@ export default function DressUpStudio() {
     setSelected(current => {
       const next = { ...current }
       if (next[item.category]?.id === item.id) delete next[item.category]
-      else next[item.category] = item
+      else {
+        // The source atlas provides distinct shawl and coat overlays, but they
+        // occupy overlapping skin UV surfaces. Match the source project behavior:
+        // equip one upper-body overlay at a time instead of silently painting over it.
+        if (item.category === '披肩') delete next['外套']
+        if (item.category === '外套') delete next['披肩']
+        next[item.category] = item
+      }
       return next
     })
   }
@@ -848,12 +923,8 @@ export default function DressUpStudio() {
       for (const item of selectedItems.filter(entry => entry.category !== '披风')) {
         const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
         const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
-        context.save()
-        context.beginPath()
-        uvRegions.forEach(region => context.rect(region.x, region.y, region.width, region.height))
-        context.clip()
+        // Export the complete, pre-mapped category UV atlas with its alpha channel.
         context.drawImage(overlay, 0, 0, textureSize, textureSize)
-        context.restore()
       }
       const link = document.createElement('a')
       link.download = `cdpc-skin-${textureSize}x${textureSize}.png`
@@ -942,10 +1013,13 @@ export default function DressUpStudio() {
     setSelectedSavedOutfitId('')
     setOutfitName('随机搭配 ' + new Date().toLocaleDateString())
     const next: Record<string, CatalogItem> = {}
-    for (const itemCategory of ['披肩', '外套', '披风'] as const) {
-      const options = availableItems.filter(item => item.category === itemCategory)
-      if (options.length) next[itemCategory] = options[Math.floor(Math.random() * options.length)]
+    const upperBodyOptions = availableItems.filter(item => item.category === '披肩' || item.category === '外套')
+    if (upperBodyOptions.length) {
+      const item = upperBodyOptions[Math.floor(Math.random() * upperBodyOptions.length)]
+      next[item.category] = item
     }
+    const capeOptions = availableItems.filter(item => item.category === '披风')
+    if (capeOptions.length) next['披风'] = capeOptions[Math.floor(Math.random() * capeOptions.length)]
     setSelected(next)
     setSaveNotice('已随机生成一套搭配；保存后才会保留到下次访问')
   }
@@ -1044,7 +1118,7 @@ export default function DressUpStudio() {
             <span className="dressup-skin-name" title={skinName}>当前皮肤：{skinName}</span>
             <button type="button" onClick={resetPreviewCamera}>重置视角</button>
             <button type="button" onClick={downloadPreviewScreenshot}>下载预览截图</button>
-            <button type="button" onClick={() => skinFileRef.current?.click()}>导入 64×64 PNG</button>
+            <button type="button" onClick={() => skinFileRef.current?.click()}>导入 64×64 / 128×128 PNG</button>
             <input ref={skinFileRef} hidden type="file" accept="image/png,.png" onChange={event => importSkin(event.target.files?.[0])} />
           </div>
           {loadError && <div className="dressup-error" role="alert"><span>{loadError}</span><button type="button" onClick={() => { setLoadError(''); setRetryVersion(version => version + 1) }}>重试</button></div>}
@@ -1054,8 +1128,13 @@ export default function DressUpStudio() {
         <aside className="dressup-panel" aria-label="当前穿搭">
           <div className="dressup-panel-heading"><h2>搭配清单</h2><span>{selectedItems.length} 件</span></div>
           {selectedItems.length ? <div className="dressup-selected-list">
-            {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong></span><button type="button" onClick={() => toggleItem(item)}>移除</button></div>)}
+            {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong></span><div className="dressup-selected-row-actions"><button type="button" onClick={() => setSinglePreviewItem(item)}>独立预览</button><button type="button" onClick={() => toggleItem(item)}>移除</button></div></div>)}
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
+          {singlePreviewItem && <section className="dressup-single-item-card" aria-label="单件素材独立渲染预览">
+            <div className="dressup-panel-heading"><h3>单件 3D 预览</h3><button type="button" onClick={() => setSinglePreviewItem(null)}>关闭</button></div>
+            <p className="dressup-preview-note">{singlePreviewItem.name} · 仅渲染该素材贴图对应的模型表面，不叠加基础皮肤</p>
+            <div ref={singleItemPreviewHost} className="dressup-single-item-preview" />
+          </section>}
           <div className="dressup-actions dressup-primary-actions">
             <button type="button" onClick={removeCurrentCategory} disabled={category === '全部' || !selected[category]}>脱下当前分类</button>
             <button type="button" onClick={randomOutfit}>随机搭配</button>
