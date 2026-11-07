@@ -151,10 +151,10 @@ export default function PixelCanvasEditor() {
 
   useEffect(() => {
     if (loaded) {
-      try { localStorage.setItem('cdpc-pixel-editor-v1', JSON.stringify({ layers, activeId })) }
+      try { localStorage.setItem('cdpc-pixel-editor-v1', JSON.stringify({ version: 1, width: size, height: size, layers, activeId })) }
       catch { setStatus('本地空间不足，请及时导出 PNG') }
     }
-  }, [layers, activeId, loaded])
+  }, [layers, activeId, loaded, size])
 
   const currentCloudSnapshot = useMemo(() => cloudSnapshot(cloudName, size, activeId, layers), [cloudName, activeId, layers])
   const cloudDirty = cloudDocumentLoaded && cloudBaseline !== null && currentCloudSnapshot !== cloudBaseline
@@ -277,7 +277,7 @@ export default function PixelCanvasEditor() {
   }
   const addLayer = () => {
     checkpoint()
-    const layer = newLayer('图层 ' + (layers.length + 1))
+    const layer = newLayer('图层 ' + (layers.length + 1), size)
     setLayers(current => [...current, layer])
     setActiveId(layer.id)
   }
@@ -480,7 +480,7 @@ export default function PixelCanvasEditor() {
         ctx.fillRect(index % size, Math.floor(index / size), 1, 1)
       })
       const blob = await new Promise<Blob>((resolve, reject) => output.toBlob(value => value ? resolve(value) : reject(new Error('PNG 编码失败')), 'image/png'))
-      const file = new File([blob], 'cdpc-pixel-skin-64x64.png', { type: 'image/png' })
+      const file = new File([blob], 'cdpc-pixel-skin-' + size + 'x' + size + '.png', { type: 'image/png' })
       const asset = await cdpcApi.uploadAsset(file, 'SKIN', {
         visibility: 'PRIVATE',
         attribution: 'CDPC Pixel Editor',
