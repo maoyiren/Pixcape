@@ -23,7 +23,7 @@ const SCENE_BACKGROUNDS: Record<string, string> = {
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
-type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; texture128?: string; modelTexture?: string; modelTexture128?: string; note: string; assetId?: string; fileUrl?: string; attribution?: string | null; source?: string; visibility?: string }
+type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; texture128?: string; modelTexture?: string; modelTexture128?: string; note: string; assetId?: string; fileUrl?: string; attribution?: string | null; source?: string; visibility?: string; provenance?: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'; downloadPolicy?: 'DENY' | 'OWNER_ONLY' | 'LICENSED_PUBLIC' }
 const catalog: CatalogItem[] = [
   { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', texture128: 'office_shawl_default_128.png', modelTexture: 'office_shawl_slim_64.png', modelTexture128: 'office_shawl_slim_128.png', note: '正式披肩贴图' },
   { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', texture128: 'MCC_shawl_default_128.png', modelTexture: 'MCC_shawl_slim_64.png', modelTexture128: 'MCC_shawl_slim_128.png', note: '正式披肩贴图' },
@@ -161,6 +161,8 @@ export default function DressUpStudio() {
           attribution: asset.attribution,
           source: asset.source,
           visibility: asset.visibility,
+          provenance: asset.provenance,
+          downloadPolicy: asset.downloadPolicy,
         }]
       })
       const skin = outfit.skinAssetId ? assets.get(outfit.skinAssetId) : null
@@ -788,7 +790,7 @@ export default function DressUpStudio() {
       skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
-      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
+      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl) && item.provenance !== 'OFFICIAL'),
     }
     try {
       const next = selectedOutfit
