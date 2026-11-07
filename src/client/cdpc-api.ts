@@ -30,6 +30,7 @@ export type ApiAsset = {
   height: number | null
   source: string
   visibility: string
+  name: string | null
   attribution: string | null
   licenseId: string | null
   provenance: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'
@@ -148,11 +149,12 @@ export const cdpcApi = {
     return request<AssetList>(`/api/assets${query ? `?${query}` : ''}`)
   },
 
-  uploadAsset: async (file: File, category: AssetCategory, options: { visibility?: string; attribution?: string; rightsDeclaration?: boolean } = {}) => {
+  uploadAsset: async (file: File, category: AssetCategory, options: { visibility?: string; name?: string; attribution?: string; rightsDeclaration?: boolean } = {}) => {
     const form = new FormData()
     form.set('file', file)
     form.set('category', category)
     form.set('visibility', options.visibility || 'PRIVATE')
+    if (options.name) form.set('name', options.name)
     if (options.attribution) form.set('attribution', options.attribution)
     if (options.rightsDeclaration) form.set('rightsDeclaration', 'I_OWN_THE_RIGHTS')
     return (await request<{ item: ApiAsset }>('/api/assets', { method: 'POST', body: form })).item
