@@ -108,3 +108,15 @@
 - Studio 静态审计确认：当前 UI 映射仅覆盖 SHAWL / COAT / CAPE；HAT / PANTS / SHOES 尚未接入；非披风素材共用一组 UV 矩形；素材卡片仍为 PNG 缩略图。上述项目继续保持未完成状态。
 - PR #61 与 main 的差异仅涉及新增技术架构文档，没有与 PostgreSQL 实现文件发生重叠；但 PR #61 仍落后 main 两个提交。当前 GitHub 操作未提供安全的 Update branch 能力，因此没有伪造 merge commit 或强行移动分支。
 - 本轮未合并 PR、未发布镜像、未执行生产迁移或部署。新增提交必须重新获得 CI 结果后才能计入验收。
+
+
+## 最新验证更新（2026-11-07 10:35 UTC）
+
+- PR #64 当前提交 `3a267a0201841a563ca507f8df71f79b95ab1a42` 的 CI #1029、Next.js Preview/Security #818、Docker smoke #1028 均成功。
+- CI #1029 的 unit tests、PostgreSQL integration、MySQL integration、SQLite integration、Next.js production build、Playwright browser regression、AI API tests、AI API container build 和完整 CDPC Docker image build 均通过。
+- Preview/Security #818 的 Prisma schema validation、PostgreSQL/MySQL/SQLite migrations、RBAC/ownership unit tests、PostgreSQL integration、Next.js production build、三种数据库 runtime image build 与 security E2E 均通过。
+- Docker smoke #1028 的单一 runtime-switchable image build，以及 PostgreSQL/MySQL/SQLite 容器启动 smoke 均通过；publish 与 1Panel V2 deploy job 为 skipped，未发布镜像、未部署生产。
+- 本轮修正 `tests/browser/studio-core.spec.ts`：在披肩仍处于选中状态时先验证独立预览，再切换外套并验证同槽位互斥；避免测试先切换外套、再错误要求已被移除的披肩仍可预览。提交为 `3a267a0`。
+- `tests/browser/auth-navigation.spec.ts` 中已登录头像菜单到 `/u/[username]` 的端到端测试本轮通过，验证了个人主页链接 href、点击后 URL，以及菜单悬停、Escape 和外部点击关闭行为。此项有本轮 Playwright 通过证据；真实生产账号与生产域名仍未人工验收。
+- 注意：以上 #1029/#818/#1028 仍使用当前 main 的多数据库测试矩阵，不是 PostgreSQL-only 最终基线。PR #61 仍为 Draft 且未合并；其 PostgreSQL-only 变更需在同步 main 后重跑并完成生产数据库/备份确认。
+- 本轮未合并 PR、未发布镜像、未触发 1Panel 部署、未执行生产迁移。Studio 的单件真实渲染、完整分类 UV、皮肤导入/编辑/保存恢复/导出完整旅程仍未完成验收，不能因 CI 绿灯标记为完成。
