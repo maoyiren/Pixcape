@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
 import { validateStudioSkinTexture } from '@/src/domain/studio-texture'
+import { normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
 const BASE_SKIN = ASSET_ROOT + 'stevea.png'
@@ -38,7 +39,6 @@ const catalog: CatalogItem[] = [
 ]
 const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风'])
 type ModelType = 'steve' | 'alex'
-type StudioPose = 'idle' | 'wave' | 'walk' | 'fly'
 type StudioView = 'front' | 'back' | 'side'
 type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; pose?: StudioPose; background: string; backgroundScene?: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
 
@@ -132,7 +132,7 @@ export default function DressUpStudio() {
         name: outfit.name,
         itemIds: assetItems.map(item => item.id),
         model: outfit.skinModel === 'SLIM' ? 'alex' : 'steve',
-        pose: (['idle', 'wave', 'walk', 'fly'].includes(outfit.pose) ? outfit.pose : 'idle') as StudioPose,
+        pose: normalizeStudioPose(outfit.pose),
         background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
         skinUrl: skin?.fileUrl,
         skinAssetId: outfit.skinAssetId ?? null,
@@ -197,7 +197,7 @@ export default function DressUpStudio() {
       }, {})
       setSelected(restored)
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
-      if (saved.pose === 'idle' || saved.pose === 'wave' || saved.pose === 'walk' || saved.pose === 'fly') setPose(saved.pose)
+      setPose(normalizeStudioPose(saved.pose))
       if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
       if (saved.backgroundScene === 'day' || saved.backgroundScene === 'night' || saved.backgroundScene === 'plains' || saved.backgroundScene === 'desert' || saved.backgroundScene === 'forest' || saved.backgroundScene === 'nether' || saved.backgroundScene === 'end' || saved.backgroundScene === 'custom') setBackgroundScene(saved.backgroundScene)
       else setBackgroundScene('custom')
@@ -619,7 +619,7 @@ export default function DressUpStudio() {
       if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
     }
     if (outfit.model === 'steve' || outfit.model === 'alex') setModel(outfit.model)
-    if (outfit.pose === 'idle' || outfit.pose === 'wave' || outfit.pose === 'walk' || outfit.pose === 'fly') setPose(outfit.pose)
+    setPose(normalizeStudioPose(outfit.pose))
     if (/^#[0-9a-f]{6}$/i.test(outfit.background)) setBackground(outfit.background)
     if (outfit.backgroundScene === 'day' || outfit.backgroundScene === 'night' || outfit.backgroundScene === 'plains' || outfit.backgroundScene === 'desert' || outfit.backgroundScene === 'forest' || outfit.backgroundScene === 'nether' || outfit.backgroundScene === 'end' || outfit.backgroundScene === 'custom') setBackgroundScene(outfit.backgroundScene)
     else setBackgroundScene('custom')
