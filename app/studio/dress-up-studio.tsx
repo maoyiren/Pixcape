@@ -948,7 +948,7 @@ export default function DressUpStudio() {
       link.click()
       setSaveNotice(cape
         ? '标准皮肤 PNG 已导出。注意：披风是独立背部装备，不包含在标准皮肤 PNG 中。'
-        : '标准皮肤 PNG 已导出（64 × 64）。')
+        : `标准皮肤 PNG 已导出（${textureSize} × ${textureSize}）。`)
     } catch (error) {
       setSaveNotice(error instanceof Error ? `导出失败：${error.message}` : '导出失败，请稍后重试')
     } finally {
