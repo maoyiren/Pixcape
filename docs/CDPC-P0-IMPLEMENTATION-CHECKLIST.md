@@ -153,3 +153,15 @@
 - 最终 head `91fda28` 的 CI #1044（run `42381456139`）成功，包含 Playwright browser regression；Preview / Security #833（run `42381456158`）成功；PostgreSQL Docker smoke #1042（run `42381456137`）成功；Lockfile refresh #39（run `42381456162`）成功。
 - 目录 3D 预览当前只支持已验证的披肩、外套、披风。帽子 / 裤子 / 鞋子仍显示未接入状态；没有为其虚构 UV。实际素材 Classic / Slim、64 / 128px 的像素级视觉验收仍未完成。
 - 以上 CI 只证明构建和自动化回归通过，不代表真实素材视觉验收、移动端体验、生产 OAuth / 邮件配置、生产 PostgreSQL 备份恢复或回滚演练完成。PR 继续保持 Draft；publish 与 1Panel deploy 均 skipped，未发布镜像、未迁移或部署生产。
+
+
+## 最新实施更新（2026-11-07 15:30 UTC）
+
+- 修复最新 CI #1059 的两个浏览器回归定位问题：素材卡片点击改用 `.dressup-item`，避免误匹配独立收藏按钮；待最新 CI #1060 验证。
+- 增加 PostgreSQL 素材权利迁移：`Asset.provenance` 与 `Asset.downloadPolicy`，历史素材默认 `UNKNOWN` / `DENY`。
+- 增加独立下载 API `/api/assets/:assetId/download`。上传默认禁止下载；只有显式声明原创权利后，作者本人可下载。LICENSED 公共素材必须同时具备 `licenseId`、PUBLIC 可见性和 `LICENSED_PUBLIC` 策略。
+- 官方素材标记为 `OFFICIAL` 时，存储文件预览接口与下载接口均拒绝返回原始纹理；官方披风预览如需支持，应使用独立授权的展示来源。
+- 衣橱增加原创权利声明控件，并根据服务端返回的 `canDownload` 显示下载入口；不再通过预览文件接口直接触发下载。
+- 已补充 E2E：匿名下载拒绝、未知来源默认拒绝、原创披风作者可下载、私有披风跨用户拒绝、OFFICIAL 原始文件与下载拒绝。新 migration / API / browser test 均待 CI 验证。
+- JSON 备份不嵌入纹理字节；仍需完成备份引用过滤与其他批量接口绕过专项审计，不能提前标记整个版权闭环完成。
+- PR #64 继续 Draft；不合并、不发布、不部署生产。
