@@ -97,7 +97,7 @@ export async function saveAssetFile(input: {
       select: {
         id: true, ownerId: true, kind: true, category: true, mimeType: true,
         byteSize: true, width: true, height: true, source: true, visibility: true,
-        attribution: true, createdAt: true, updatedAt: true,
+        attribution: true, provenance: true, downloadPolicy: true, createdAt: true, updatedAt: true,
       },
     })
   } catch (error) {
