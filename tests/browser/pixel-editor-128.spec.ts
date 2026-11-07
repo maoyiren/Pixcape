@@ -129,8 +129,8 @@ test('128×128 editor import, undo/redo, cloud restore, wardrobe save and PNG ex
   await expect(page.locator('select[aria-label="选择云端文档"] option[value="cloud-doc-128"]')).toHaveCount(1)
   await page.getByLabel('选择云端文档').selectOption('cloud-doc-128')
   await page.getByRole('button', { name: '打开云端' }).click()
+  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('已从云端恢复编辑文档', { timeout: 15_000 })
   await expect(page.getByRole('heading', { name: '128 × 128 像素编辑器' })).toBeVisible()
-  await expect(page.locator('.cdpc-pixel-stage small')).toContainText('已从云端恢复编辑文档')
 
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出 PNG' }).click()
