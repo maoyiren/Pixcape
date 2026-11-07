@@ -64,7 +64,9 @@ test('canonical Studio supports live outfit selection, controls, local restore a
 
   // Three separate garment types must remain independently selectable.
   await page.getByRole('button', { name: '披肩', exact: true }).click()
-  await page.getByRole('button', { name: /眼眸花披肩/ }).click()
+  const shawlCard = page.getByRole('button', { name: /眼眸花披肩/ })
+  await shawlCard.scrollIntoViewIfNeeded()
+  await shawlCard.click()
   const selected = page.locator('.dressup-selected-list')
   // Catalog selection must immediately show an isolated 3D asset preview and
   // update the character try-on; no second action in the outfit list is needed.

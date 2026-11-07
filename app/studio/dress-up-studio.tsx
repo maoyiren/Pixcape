@@ -993,7 +993,8 @@ export default function DressUpStudio() {
       link.style.display = 'none'
       document.body.appendChild(link)
       link.click()
-      link.remove()
+      // Keep the anchor mounted through the browser's download dispatch.
+      window.setTimeout(() => link.remove(), 0)
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000)
       setSaveNotice(cape
         ? '标准皮肤 PNG 已导出。注意：披风是独立背部装备，不包含在标准皮肤 PNG 中。'

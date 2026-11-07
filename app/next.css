@@ -564,3 +564,6 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
 .dressup-preview-select select option{background:#182538;color:#e5edf9}
 .dressup-preview-select:focus-within{outline:2px solid #9bb8ff;outline-offset:2px}
 @media(max-width:700px){.dressup-preview-select{flex:1 1 calc(50% - 6px);justify-content:space-between}.dressup-preview-select select{max-width:none;min-width:0;flex:1}}
+
+/* Catalog WebGL is display-only; keep pointer input on the surrounding item button. */
+.dressup-item-render,.dressup-item-render canvas{pointer-events:none}
