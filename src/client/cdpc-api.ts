@@ -82,8 +82,8 @@ export type ApiOutfit = {
 
 export type EditorDocumentPayload = {
   version: 1
-  width: 64
-  height: 64
+  width: 64 | 128
+  height: 64 | 128
   activeId: string | null
   layers: Array<{ id: string; name: string; visible: boolean; opacity: number; pixels: string[] }>
 }
