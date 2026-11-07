@@ -54,6 +54,10 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
     source: 'UPLOAD',
     visibility: 'PRIVATE',
     attribution: '浏览器上传外套',
+    licenseId: null,
+    provenance: 'USER_CREATED',
+    downloadPolicy: 'OWNER_ONLY',
+    canDownload: true,
     createdAt: '2026-11-07T00:00:00.000Z',
     isFavorite: false,
     fileUrl: '/api/assets/browser-asset-1/file',
@@ -62,8 +66,8 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
   await page.route('**/api/assets**', async route => {
     const request = route.request()
     const url = new URL(request.url())
-    if (url.pathname.endsWith('/file')) {
-      await route.fulfill({ status: 200, contentType: 'image/png', body: png })
+    if (url.pathname.endsWith('/file') || url.pathname.endsWith('/download')) {
+      await route.fulfill({ status: 200, contentType: 'image/png', headers: { 'Content-Disposition': 'attachment; filename="asset.png"' }, body: png })
       return
     }
     if (request.method() === 'POST') {
@@ -85,6 +89,7 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
   await page.goto(`/u/${username}/wardrobe`)
   await expect(page.getByRole('heading', { name: '我的衣橱' })).toBeVisible()
   await page.getByLabel('上传素材类型').selectOption('COAT')
+  await page.getByLabel('我确认素材为本人原创并拥有下载权').check()
   await page.getByRole('button', { name: '＋ 上传素材' }).click()
   await page.locator('input[type="file"]').first().setInputFiles({
     name: 'browser-coat.png', mimeType: 'image/png', buffer: png,
@@ -204,6 +209,10 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
     source: 'UPLOAD',
     visibility: 'PRIVATE',
     attribution: '128 像素皮肤',
+    licenseId: null,
+    provenance: 'USER_CREATED',
+    downloadPolicy: 'OWNER_ONLY',
+    canDownload: true,
     createdAt: '2026-11-07T00:00:00.000Z',
     isFavorite: false,
     fileUrl: '/api/assets/browser-skin-128/file',
