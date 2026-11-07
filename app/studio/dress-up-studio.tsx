@@ -23,7 +23,7 @@ const SCENE_BACKGROUNDS: Record<string, string> = {
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
-type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; texture128?: string; modelTexture?: string; modelTexture128?: string; note: string; assetId?: string; fileUrl?: string }
+type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; texture128?: string; modelTexture?: string; modelTexture128?: string; note: string; assetId?: string; fileUrl?: string; attribution?: string | null; source?: string; visibility?: string }
 const catalog: CatalogItem[] = [
   { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', texture128: 'office_shawl_default_128.png', modelTexture: 'office_shawl_slim_64.png', modelTexture128: 'office_shawl_slim_128.png', note: '正式披肩贴图' },
   { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', texture128: 'MCC_shawl_default_128.png', modelTexture: 'MCC_shawl_slim_64.png', modelTexture128: 'MCC_shawl_slim_128.png', note: '正式披肩贴图' },
@@ -155,9 +155,12 @@ export default function DressUpStudio() {
           assetId: asset.id,
           fileUrl: asset.fileUrl,
           texture: asset.fileUrl,
-          name: asset.attribution || `云端${category}`,
+          name: `云端${category}素材`,
           category,
           note: '账号云端素材',
+          attribution: asset.attribution,
+          source: asset.source,
+          visibility: asset.visibility,
         }]
       })
       const skin = outfit.skinAssetId ? assets.get(outfit.skinAssetId) : null
@@ -267,9 +270,12 @@ export default function DressUpStudio() {
             assetId: asset.id,
             fileUrl: asset.fileUrl,
             texture: asset.fileUrl,
-            name: asset.attribution || `我的${garmentCategory}`,
+            name: `我的${garmentCategory}素材`,
             category: garmentCategory,
             note: '我的衣橱素材',
+            attribution: asset.attribution,
+            source: asset.source,
+            visibility: asset.visibility,
           }]
         })
         setWardrobeItems(items)
@@ -320,9 +326,12 @@ export default function DressUpStudio() {
           assetId: asset.id,
           fileUrl: asset.fileUrl,
           texture: asset.fileUrl,
-          name: asset.attribution || `云端${garmentCategory}`,
+          name: `云端${garmentCategory}素材`,
           category: garmentCategory,
           note: '从衣橱载入的云端素材',
+          attribution: asset.attribution,
+          source: asset.source,
+          visibility: asset.visibility,
         }
         setSelected(current => ({ ...current, [garmentCategory]: item }))
         setSaveNotice(`已从衣橱载入${garmentCategory}素材`)
@@ -1213,6 +1222,7 @@ export default function DressUpStudio() {
                 <CatalogGarmentPreview item={item} model={model} skinUrl={skinUrl} />
                 <strong>{item.name}</strong>
                 <small>{item.category} · {item.note}</small>
+                {(item.attribution || item.source || item.visibility) && <small className="dressup-item-provenance">作者/署名：{item.attribution || '未注明'} · 来源：{item.source || '未知'} · {item.visibility === 'PRIVATE' ? '私有素材' : item.visibility === 'PUBLIC' ? '公开素材' : item.visibility === 'UNLISTED' ? '未列出' : '权限未知'}</small>}
                 <span className="dressup-item-state">{selected[item.category]?.id === item.id ? '已选择' : '点击试穿'}</span>
               </button>
               <button type="button" className="dressup-favorite-toggle" aria-label={favoriteIds.includes(item.id) ? '取消收藏 ' + item.name : '收藏 ' + item.name} aria-pressed={favoriteIds.includes(item.id)} onClick={() => toggleFavorite(item.id)}>{favoriteIds.includes(item.id) ? '★' : '☆'}</button>
