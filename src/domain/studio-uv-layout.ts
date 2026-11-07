@@ -30,7 +30,9 @@ export const STUDIO_OVERLAY_UV_PROFILES: Record<StudioOverlayCategory, StudioUvP
 }
 
 export function getStudioOverlayUvProfile(category: StudioOverlayCategory): StudioUvProfile {
-  return STUDIO_OVERLAY_UV_PROFILES[category]
+  const profile = STUDIO_OVERLAY_UV_PROFILES[category]
+  if (!profile) throw new Error('该服装分类尚未定义真实 UV 布局。')
+  return profile
 }
 
 export function canEquipStudioOverlayTogether(
