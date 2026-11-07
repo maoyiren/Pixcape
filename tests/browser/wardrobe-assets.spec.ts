@@ -118,7 +118,7 @@ test('Studio restores a cloud outfit from server state with an empty local devic
     {
       id: 'cloud-coat-1', ownerId: 'browser-user', kind: 'IMAGE', category: 'COAT',
       mimeType: 'image/png', byteSize: png.length, width: 64, height: 64,
-      name: '跨设备外套', source: 'UPLOAD', visibility: 'PRIVATE', attribution: '跨设备外套作者',
+      source: 'UPLOAD', visibility: 'PRIVATE', attribution: '跨设备外套',
       createdAt: '2026-11-07T00:00:00.000Z', isFavorite: false,
       fileUrl: '/api/assets/cloud-coat-1/file',
     },
@@ -179,7 +179,8 @@ test('Studio restores a cloud outfit from server state with an empty local devic
   await page.goto('/studio')
   await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await expect(page.getByRole('status')).toContainText('已从衣橱恢复云端穿搭“跨设备云端搭配”', { timeout: 15_000 })
-  await expect(page.locator('.dressup-selected-list')).toContainText('跨设备外套')
+  await expect(page.locator('.dressup-selected-list')).toContainText('云端外套素材')
+  await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：跨设备外套')
   await expect(page.getByLabel('穿搭名称')).toHaveValue('跨设备云端搭配')
   await expect(page.getByLabel('切换角色动作')).toHaveValue('walk')
   await expect(page.getByRole('button', { name: 'Alex 细臂' })).toHaveAttribute('aria-pressed', 'true')
