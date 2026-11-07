@@ -285,7 +285,7 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     const oversizedEditorDocument = await fetch(new URL('/api/editor-documents', base), {
       method: 'POST',
       headers: { cookie: ownerSession, 'content-type': 'application/json' },
-      body: 'x'.repeat(2 * 1024 * 1024 + 8192),
+      body: 'x'.repeat(9 * 1024 * 1024 + 8192),
     })
     assert.equal(oversizedEditorDocument.status, 413, 'oversized streamed editor requests are rejected before JSON parsing')
 
