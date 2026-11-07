@@ -402,13 +402,15 @@ export default function DressUpStudio() {
         if (cancelled) return
         const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
         if (baseError) throw new Error(baseError)
+        const textureSize = base.naturalWidth
+        const uvScale = textureSize / 64
         const canvas = document.createElement('canvas')
-        canvas.width = 64
-        canvas.height = 64
+        canvas.width = textureSize
+        canvas.height = textureSize
         const context = canvas.getContext('2d')
         if (!context) throw new Error('无法创建皮肤画布')
         context.imageSmoothingEnabled = false
-        context.drawImage(base, 0, 0, 64, 64)
+        context.drawImage(base, 0, 0, textureSize, textureSize)
         for (const item of selectedItems.filter(item => item.category !== '披风')) {
           const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
           const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
@@ -418,9 +420,9 @@ export default function DressUpStudio() {
           context.save()
           context.beginPath()
           const uvRegions = [{ x: 16, y: 16, width: 24, height: 16 }, { x: 16, y: 32, width: 24, height: 16 }, { x: 40, y: 16, width: 16, height: 16 }, { x: 40, y: 32, width: 16, height: 16 }, { x: 32, y: 48, width: 16, height: 16 }, { x: 48, y: 48, width: 16, height: 16 }]
-          uvRegions.forEach(region => context.rect(region.x, region.y, region.width, region.height))
+          uvRegions.forEach(region => context.rect(region.x * uvScale, region.y * uvScale, region.width * uvScale, region.height * uvScale))
           context.clip()
-          context.drawImage(overlay, 0, 0, 64, 64)
+          context.drawImage(overlay, 0, 0, textureSize, textureSize)
           context.restore()
         }
         await viewer.loadSkin(canvas, { model: model === 'alex' ? 'slim' : 'default' })
@@ -759,7 +761,8 @@ export default function DressUpStudio() {
       let skinAssetUnavailable = false
       if (nextSkinUrl) {
         const image = await loadImage(nextSkinUrl)
-        if (image.width !== 64 || image.height !== 64) throw new Error('备份中的皮肤不是 64 × 64 PNG')
+        const textureError = validateStudioSkinTexture({ width: image.naturalWidth, height: image.naturalHeight }, 'base-skin')
+        if (textureError) throw new Error(`备份中的皮肤无效：${textureError}`)
       } else if (nextSkinAssetUrl) {
         try { await loadImage(nextSkinAssetUrl) } catch {
           nextSkinAssetUrl = undefined
@@ -809,15 +812,17 @@ export default function DressUpStudio() {
   async function exportSkinPng() {
     try {
       setIsBusy(true)
-      setSaveNotice('正在合成 64 × 64 标准皮肤 PNG…')
       const base = await loadImage(skinUrl)
+      const textureSize = base.naturalWidth
+      const uvScale = textureSize / 64
+      setSaveNotice(`正在合成 ${textureSize} × ${textureSize} 皮肤 PNG…`)
       const canvas = document.createElement('canvas')
-      canvas.width = 64
-      canvas.height = 64
+      canvas.width = textureSize
+      canvas.height = textureSize
       const context = canvas.getContext('2d')
       if (!context) throw new Error('无法创建导出画布')
       context.imageSmoothingEnabled = false
-      context.drawImage(base, 0, 0, 64, 64)
+      context.drawImage(base, 0, 0, textureSize, textureSize)
       const uvRegions = [
         { x: 16, y: 16, width: 24, height: 16 },
         { x: 16, y: 32, width: 24, height: 16 },
@@ -825,7 +830,7 @@ export default function DressUpStudio() {
         { x: 40, y: 32, width: 16, height: 16 },
         { x: 32, y: 48, width: 16, height: 16 },
         { x: 48, y: 48, width: 16, height: 16 },
-      ]
+      ].map(region => ({ x: region.x * uvScale, y: region.y * uvScale, width: region.width * uvScale, height: region.height * uvScale }))
       for (const item of selectedItems.filter(entry => entry.category !== '披风')) {
         const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
         const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
@@ -833,11 +838,11 @@ export default function DressUpStudio() {
         context.beginPath()
         uvRegions.forEach(region => context.rect(region.x, region.y, region.width, region.height))
         context.clip()
-        context.drawImage(overlay, 0, 0, 64, 64)
+        context.drawImage(overlay, 0, 0, textureSize, textureSize)
         context.restore()
       }
       const link = document.createElement('a')
-      link.download = 'cdpc-skin-64x64.png'
+      link.download = `cdpc-skin-${textureSize}x${textureSize}.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
       setSaveNotice(cape
@@ -942,8 +947,9 @@ export default function DressUpStudio() {
       const url = String(reader.result || '')
       try {
         const image = await loadImage(url)
-        if (image.width !== 64 || image.height !== 64) {
-          setLoadError('皮肤尺寸必须为标准 64 × 64 PNG。当前文件未应用。')
+        const textureError = validateStudioSkinTexture({ width: image.naturalWidth, height: image.naturalHeight }, 'base-skin')
+        if (textureError) {
+          setLoadError(`${textureError} 当前文件未应用。`)
           return
         }
         setSkinUrl(url)
