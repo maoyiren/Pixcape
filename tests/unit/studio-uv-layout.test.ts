@@ -28,6 +28,8 @@ test('overlapping shawl and coat atlases cannot silently overwrite one another',
   assert.equal(canEquipStudioOverlayTogether(['披肩', '外套'], '披肩'), false)
 })
 
-test('a cape is not assigned a skin overlay UV profile', () => {
-  assert.throws(() => getStudioOverlayUvProfile('披风' as never))
+test('cape and unverified accessory categories are not assigned skin overlay UV profiles', () => {
+  for (const category of ['披风', '帽子', '裤子', '鞋子']) {
+    assert.throws(() => getStudioOverlayUvProfile(category as never))
+  }
 })
