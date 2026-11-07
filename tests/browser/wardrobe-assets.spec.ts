@@ -1,6 +1,29 @@
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
+async function createAuthenticatedUser(page: import('@playwright/test').Page) {
+  const email = `cdpc-wardrobe-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`
+  const testIp = `198.51.100.${Math.floor(Math.random() * 254) + 1}`
+  await page.setExtraHTTPHeaders({ 'x-real-ip': testIp })
+  const registration = await page.request.post('http://127.0.0.1:3000/api/register', {
+    headers: { 'x-real-ip': testIp },
+    data: { email, name: 'CDPC Wardrobe Browser Tester', password: 'CDPC-Test-Password-2026!' },
+  })
+  expect(registration.status()).toBe(201)
+  await page.goto('/login')
+  await page.getByLabel('用户名或邮箱地址').fill(email)
+  await page.locator('#login-password').fill('CDPC-Test-Password-2026!')
+  await page.getByRole('button', { name: '登录 CDPC' }).click()
+  const trigger = page.getByRole('button', { name: /CDPC Wardrobe Browser Tester/ })
+  await expect(trigger).toBeVisible({ timeout: 15_000 })
+  const session = await page.evaluate(async () => {
+    const response = await fetch('/api/auth/session', { cache: 'no-store' })
+    return response.json()
+  })
+  expect(session.user?.username).toBeTruthy()
+  return session.user.username as string
+}
+
 async function makePng(page: import('@playwright/test').Page, size = 64) {
   const dataUrl = await page.evaluate((dimension) => {
     const canvas = document.createElement('canvas')
@@ -15,6 +38,7 @@ async function makePng(page: import('@playwright/test').Page, size = 64) {
 }
 
 test('wardrobe uploads a private PNG and downloads the stored asset', async ({ page }) => {
+  const username = await createAuthenticatedUser(page)
   const png = await makePng(page)
   let uploaded = false
   const asset = {
@@ -57,7 +81,7 @@ test('wardrobe uploads a private PNG and downloads the stored asset', async ({ p
     status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }),
   }))
 
-  await page.goto('/wardrobe')
+  await page.goto(`/u/${username}/wardrobe`)
   await expect(page.getByRole('heading', { name: '我的衣橱' })).toBeVisible()
   await page.getByLabel('上传素材类型').selectOption('COAT')
   await page.getByRole('button', { name: '＋ 上传素材' }).click()
