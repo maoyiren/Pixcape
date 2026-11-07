@@ -142,6 +142,9 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(page.getByRole('status')).toContainText('披风是独立背部装备')
 
   // 128×128 skins are imported and exported without downscaling.
+  // Keep this resolution-specific overlay check isolated from cape loading:
+  // capes use a separate 64×32 back-equipment texture contract.
+  await page.locator('.dressup-selected-row').filter({ hasText: '眼眸花披风' }).getByRole('button', { name: '移除' }).click()
   const skin128DataUrl = png128DataUrl
   await page.locator('input[type="file"]').first().setInputFiles({
     name: 'browser-128-skin.png',
