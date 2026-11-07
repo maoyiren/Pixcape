@@ -155,7 +155,7 @@ export default function DressUpStudio() {
           assetId: asset.id,
           fileUrl: asset.fileUrl,
           texture: asset.fileUrl,
-          name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : asset.attribution || `云端${category}素材`,
+          name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : `云端${category}素材`,
           category,
           note: '账号云端素材',
           attribution: asset.attribution,
@@ -273,7 +273,7 @@ export default function DressUpStudio() {
             assetId: asset.id,
             fileUrl: asset.fileUrl,
             texture: asset.fileUrl,
-            name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : asset.attribution || `我的${garmentCategory}素材`,
+            name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : `我的${garmentCategory}素材`,
             category: garmentCategory,
             note: '我的衣橱素材',
             attribution: asset.attribution,
@@ -332,7 +332,7 @@ export default function DressUpStudio() {
           assetId: asset.id,
           fileUrl: asset.fileUrl,
           texture: asset.fileUrl,
-          name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : asset.attribution || `云端${garmentCategory}素材`,
+          name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : `云端${garmentCategory}素材`,
           category: garmentCategory,
           note: '从衣橱载入的云端素材',
           attribution: asset.attribution,
@@ -657,17 +657,17 @@ export default function DressUpStudio() {
   }
 
 
-  async function uploadAssetFromUrl(url: string, category: 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE', attribution: string) {
+  async function uploadAssetFromUrl(url: string, category: 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE', name: string) {
     const imageResponse = await fetch(url, { cache: 'no-store', credentials: 'same-origin' })
-    if (!imageResponse.ok) throw new Error(`无法读取素材：${attribution}`)
+    if (!imageResponse.ok) throw new Error(`无法读取素材：${name}`)
     const blob = await imageResponse.blob()
-    if (blob.type !== 'image/png') throw new Error(`素材“${attribution}”不是 PNG 格式`)
+    if (blob.type !== 'image/png') throw new Error(`素材“${name}”不是 PNG 格式`)
     if (category !== 'CAPE') {
       const bitmap = await createImageBitmap(blob)
       try {
         const role = category === 'SKIN' ? 'base-skin' : 'clothing-overlay'
         const textureError = validateStudioSkinTexture({ width: bitmap.width, height: bitmap.height }, role)
-        if (textureError) throw new Error(`素材“${attribution}”：${textureError}`)
+        if (textureError) throw new Error(`素材“${name}”：${textureError}`)
       } finally {
         bitmap.close()
       }
@@ -675,7 +675,7 @@ export default function DressUpStudio() {
     const file = new File([blob], `${category.toLowerCase()}-${Date.now()}.png`, { type: 'image/png' })
     const asset = await cdpcApi.uploadAsset(file, category, {
       visibility: 'PRIVATE',
-      attribution,
+      name,
     })
     return { id: asset.id, fileUrl: asset.fileUrl }
   }
@@ -952,7 +952,7 @@ export default function DressUpStudio() {
       skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
-      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
+      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl) && item.provenance !== 'OFFICIAL'),
     }
     const blob = new Blob([JSON.stringify({ format: 'cdpc-outfit', version: 1, outfit: payload }, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
