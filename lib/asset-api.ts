@@ -47,8 +47,9 @@ export async function saveAssetFile(input: {
   if (bytes.length !== input.file.size) throw new AssetInputError('上传文件大小校验失败。')
   let dimensions: { width: number; height: number }
   try { dimensions = parsePng(bytes) } catch (error) { throw new AssetInputError(error instanceof Error ? error.message : 'PNG 图片无效。') }
-  if (input.category === 'SKIN' && (dimensions.width !== 64 || dimensions.height !== 64)) {
-    throw new AssetInputError('Minecraft 皮肤必须为 64×64 PNG。')
+  if (input.category === 'SKIN') {
+    const textureError = validateStudioSkinTexture(dimensions, 'base-skin')
+    if (textureError) throw new AssetInputError(textureError)
   }
 
   const actor = await loadAssetActor(input.actorId)
