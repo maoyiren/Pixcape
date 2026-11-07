@@ -368,6 +368,20 @@ export default function DressUpStudio() {
       return
     }
 
+    const makeTransparentSkinSurface = () => {
+      viewer.playerObject.skin.traverse(object => {
+        const mesh = object as unknown as { isMesh?: boolean; material?: unknown }
+        if (!mesh.isMesh || !mesh.material) return
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        for (const entry of materials) {
+          const material = entry as { transparent: boolean; alphaTest: number; needsUpdate: boolean }
+          material.transparent = true
+          material.alphaTest = 0.001
+          material.needsUpdate = true
+        }
+      })
+    }
+
     const resize = () => {
       if (!cancelled && host.clientWidth) viewer.width = Math.max(host.clientWidth, 240)
     }
@@ -383,6 +397,7 @@ export default function DressUpStudio() {
           transparentSkin.height = 64
           await viewer.loadSkin(transparentSkin, { model: model === 'alex' ? 'slim' : 'default' })
           if (cancelled) return
+          makeTransparentSkinSurface()
           await viewer.loadCape(item.fileUrl || ASSET_ROOT + item.texture, { backEquipment: 'cape' })
         } else {
           const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
@@ -395,6 +410,7 @@ export default function DressUpStudio() {
           // the user sees only the selected garment's mapped surfaces.
           await viewer.loadSkin(overlay, { model: model === 'alex' ? 'slim' : 'default' })
           if (cancelled) return
+          makeTransparentSkinSurface()
           viewer.playerObject.backEquipment = null
         }
         if (!cancelled) viewer.controls.autoRotate = true
@@ -912,7 +928,6 @@ export default function DressUpStudio() {
       setIsBusy(true)
       const base = await loadImage(skinUrl)
       const textureSize = base.naturalWidth
-      const uvScale = textureSize / 64
       setSaveNotice(`正在合成 ${textureSize} × ${textureSize} 皮肤 PNG…`)
       const canvas = document.createElement('canvas')
       canvas.width = textureSize
@@ -921,14 +936,6 @@ export default function DressUpStudio() {
       if (!context) throw new Error('无法创建导出画布')
       context.imageSmoothingEnabled = false
       context.drawImage(base, 0, 0, textureSize, textureSize)
-      const uvRegions = [
-        { x: 16, y: 16, width: 24, height: 16 },
-        { x: 16, y: 32, width: 24, height: 16 },
-        { x: 40, y: 16, width: 16, height: 16 },
-        { x: 40, y: 32, width: 16, height: 16 },
-        { x: 32, y: 48, width: 16, height: 16 },
-        { x: 48, y: 48, width: 16, height: 16 },
-      ].map(region => ({ x: region.x * uvScale, y: region.y * uvScale, width: region.width * uvScale, height: region.height * uvScale }))
       for (const item of selectedItems.filter(entry => entry.category !== '披风')) {
         const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
         const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
