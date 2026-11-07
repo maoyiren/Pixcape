@@ -1,0 +1,6 @@
+CREATE TYPE "AssetProvenance" AS ENUM ('USER_CREATED', 'OFFICIAL', 'LICENSED', 'THIRD_PARTY', 'UNKNOWN');
+CREATE TYPE "AssetDownloadPolicy" AS ENUM ('DENY', 'OWNER_ONLY', 'LICENSED_PUBLIC');
+
+ALTER TABLE "Asset"
+  ADD COLUMN "provenance" "AssetProvenance" NOT NULL DEFAULT 'UNKNOWN',
+  ADD COLUMN "downloadPolicy" "AssetDownloadPolicy" NOT NULL DEFAULT 'DENY';

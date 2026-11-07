@@ -4,6 +4,10 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
 import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
+import CatalogGarmentPreview from './catalog-garment-preview'
+import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
+import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
+import { canEquipStudioOverlayTogether, getStudioOverlayUvProfile, type StudioOverlayCategory } from '@/src/domain/studio-uv-layout'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
 const BASE_SKIN = ASSET_ROOT + 'stevea.png'
@@ -19,16 +23,16 @@ const SCENE_BACKGROUNDS: Record<string, string> = {
 const categories = ['全部', '上衣', '外套', '裤子', '鞋子', '帽子', '披肩', '披风'] as const
 type Category = typeof categories[number]
 type GarmentCategory = Exclude<Category, '全部'>
-type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; modelTexture?: string; note: string; assetId?: string; fileUrl?: string }
+type CatalogItem = { id: string; name: string; category: GarmentCategory; texture: string; texture128?: string; modelTexture?: string; modelTexture128?: string; note: string; assetId?: string; fileUrl?: string; attribution?: string | null; source?: string; visibility?: string; provenance?: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'; downloadPolicy?: 'DENY' | 'OWNER_ONLY' | 'LICENSED_PUBLIC'; canDownload?: boolean }
 const catalog: CatalogItem[] = [
-  { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', modelTexture: 'office_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', modelTexture: 'MCC_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'creeper-shawl', name: '苦力怕披肩', category: '披肩', texture: 'creeper_shawl_default_64.png', modelTexture: 'creeper_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'tiktok-shawl', name: 'TikTok 披肩', category: '披肩', texture: 'tiktok_shawl_default_64.png', modelTexture: 'tiktok_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'twitch-shawl', name: 'Twitch 披肩', category: '披肩', texture: 'twitch_shawl_default_64.png', modelTexture: 'twitch_shawl_slim_64.png', note: '正式披肩贴图' },
-  { id: 'creeper-coat', name: '苦力怕外套', category: '外套', texture: 'creeper_coat_default_64.png', modelTexture: 'creeper_coat_slim_64.png', note: '正式外套贴图' },
-  { id: 'tiktok-coat', name: 'TikTok 外套', category: '外套', texture: 'tiktok_coat_default_64.png', modelTexture: 'tiktok_coat_slim_64.png', note: '正式外套贴图' },
-  { id: 'twitch-coat', name: 'Twitch 外套', category: '外套', texture: 'twitch_coat_default_64.png', modelTexture: 'twitch_coat_slim_64.png', note: '正式外套贴图' },
+  { id: 'office-shawl', name: '眼眸花披肩', category: '披肩', texture: 'office_shawl_default_64.png', texture128: 'office_shawl_default_128.png', modelTexture: 'office_shawl_slim_64.png', modelTexture128: 'office_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'mcc-shawl', name: 'MCC 披肩', category: '披肩', texture: 'MCC_shawl_default_64.png', texture128: 'MCC_shawl_default_128.png', modelTexture: 'MCC_shawl_slim_64.png', modelTexture128: 'MCC_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'creeper-shawl', name: '苦力怕披肩', category: '披肩', texture: 'creeper_shawl_default_64.png', texture128: 'creeper_shawl_default_128.png', modelTexture: 'creeper_shawl_slim_64.png', modelTexture128: 'creeper_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'tiktok-shawl', name: 'TikTok 披肩', category: '披肩', texture: 'tiktok_shawl_default_64.png', texture128: 'tiktok_shawl_default_128.png', modelTexture: 'tiktok_shawl_slim_64.png', modelTexture128: 'tiktok_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'twitch-shawl', name: 'Twitch 披肩', category: '披肩', texture: 'twitch_shawl_default_64.png', texture128: 'twitch_shawl_default_128.png', modelTexture: 'twitch_shawl_slim_64.png', modelTexture128: 'twitch_shawl_slim_128.png', note: '正式披肩贴图' },
+  { id: 'creeper-coat', name: '苦力怕外套', category: '外套', texture: 'creeper_coat_default_64.png', texture128: 'creeper_coat_default_128.png', modelTexture: 'creeper_coat_slim_64.png', modelTexture128: 'creeper_coat_slim_128.png', note: '正式外套贴图' },
+  { id: 'tiktok-coat', name: 'TikTok 外套', category: '外套', texture: 'tiktok_coat_default_64.png', texture128: 'tiktok_coat_default_128.png', modelTexture: 'tiktok_coat_slim_64.png', modelTexture128: 'tiktok_coat_slim_128.png', note: '正式外套贴图' },
+  { id: 'twitch-coat', name: 'Twitch 外套', category: '外套', texture: 'twitch_coat_default_64.png', texture128: 'twitch_coat_default_128.png', modelTexture: 'twitch_coat_slim_64.png', modelTexture128: 'twitch_coat_slim_128.png', note: '正式外套贴图' },
   { id: 'office-cape', name: '眼眸花披风', category: '披风', texture: 'cape_office.png', note: '背部披风纹理' },
   { id: 'mcc-cape', name: 'MCC 披风', category: '披风', texture: 'cape_MCC.png', note: '背部披风纹理' },
   { id: 'creeper-cape', name: '苦力怕披风', category: '披风', texture: 'cape_creeper.png', note: '背部披风纹理' },
@@ -37,9 +41,8 @@ const catalog: CatalogItem[] = [
 ]
 const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风'])
 type ModelType = 'steve' | 'alex'
-type StudioPose = 'idle' | 'wave' | 'walk' | 'fly'
 type StudioView = 'front' | 'back' | 'side'
-type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; background: string; backgroundScene?: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
+type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; pose?: StudioPose; background: string; backgroundScene?: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
 
 
 function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' {
@@ -68,7 +71,9 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 export default function DressUpStudio() {
   const previewHost = useRef<HTMLDivElement>(null)
+  const singleItemPreviewHost = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<SkinViewer | null>(null)
+  const [singlePreviewItem, setSinglePreviewItem] = useState<CatalogItem | null>(null)
   const skinFileRef = useRef<HTMLInputElement>(null)
   const outfitFileRef = useRef<HTMLInputElement>(null)
   const [category, setCategory] = useState<Category>('全部')
@@ -93,6 +98,36 @@ export default function DressUpStudio() {
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
   const [savingCloud, setSavingCloud] = useState(false)
   const [wardrobeItems, setWardrobeItems] = useState<CatalogItem[]>([])
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([])
+  const [favoritesLoaded, setFavoritesLoaded] = useState(false)
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('cdpc:studio:favorites:v1')
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored)
+        if (Array.isArray(parsed)) setFavoriteIds(parsed.filter((value): value is string => typeof value === 'string').slice(0, 1000))
+      }
+    } catch {
+      setSaveNotice('本地收藏记录无法读取；你仍可继续使用换装功能')
+    } finally {
+      setFavoritesLoaded(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!favoritesLoaded) return
+    try {
+      window.localStorage.setItem('cdpc:studio:favorites:v1', JSON.stringify(favoriteIds))
+    } catch {
+      setSaveNotice('收藏保存失败：浏览器本地存储空间可能不足')
+    }
+  }, [favoriteIds, favoritesLoaded])
+
+  const toggleFavorite = useCallback((itemId: string) => {
+    setFavoriteIds(current => current.includes(itemId) ? current.filter(id => id !== itemId) : [...current, itemId].slice(-1000))
+  }, [])
 
   const refreshCloudOutfits = useCallback(async () => {
     let outfits
@@ -120,9 +155,15 @@ export default function DressUpStudio() {
           assetId: asset.id,
           fileUrl: asset.fileUrl,
           texture: asset.fileUrl,
-          name: asset.attribution || `云端${category}`,
+          name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : `云端${category}素材`,
           category,
           note: '账号云端素材',
+          attribution: asset.attribution,
+          source: asset.source,
+          visibility: asset.visibility,
+          provenance: asset.provenance,
+          downloadPolicy: asset.downloadPolicy,
+          canDownload: asset.canDownload === true,
         }]
       })
       const skin = outfit.skinAssetId ? assets.get(outfit.skinAssetId) : null
@@ -131,6 +172,7 @@ export default function DressUpStudio() {
         name: outfit.name,
         itemIds: assetItems.map(item => item.id),
         model: outfit.skinModel === 'SLIM' ? 'alex' : 'steve',
+        pose: normalizeStudioPose(outfit.pose),
         background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
         skinUrl: skin?.fileUrl,
         skinAssetId: outfit.skinAssetId ?? null,
@@ -153,6 +195,7 @@ export default function DressUpStudio() {
         setSkinUrl(activeOutfit.skinAssetUrl || BASE_SKIN)
         setSkinName(activeOutfit.skinName || 'Steve 默认皮肤')
         setModel(activeOutfit.model)
+        setPose(activeOutfit.pose || 'idle')
         setBackgroundScene('custom')
         setBackground(activeOutfit.background)
         setOutfitName(activeOutfit.name)
@@ -194,6 +237,7 @@ export default function DressUpStudio() {
       }, {})
       setSelected(restored)
       if (saved.model === 'steve' || saved.model === 'alex') setModel(saved.model)
+      setPose(normalizeStudioPose(saved.pose))
       if (typeof saved.background === 'string' && /^#[0-9a-f]{6}$/i.test(saved.background)) setBackground(saved.background)
       if (saved.backgroundScene === 'day' || saved.backgroundScene === 'night' || saved.backgroundScene === 'plains' || saved.backgroundScene === 'desert' || saved.backgroundScene === 'forest' || saved.backgroundScene === 'nether' || saved.backgroundScene === 'end' || saved.backgroundScene === 'custom') setBackgroundScene(saved.backgroundScene)
       else setBackgroundScene('custom')
@@ -229,9 +273,15 @@ export default function DressUpStudio() {
             assetId: asset.id,
             fileUrl: asset.fileUrl,
             texture: asset.fileUrl,
-            name: asset.attribution || `我的${garmentCategory}`,
+            name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : `我的${garmentCategory}素材`,
             category: garmentCategory,
             note: '我的衣橱素材',
+            attribution: asset.attribution,
+            source: asset.source,
+            visibility: asset.visibility,
+            provenance: asset.provenance,
+            downloadPolicy: asset.downloadPolicy,
+            canDownload: asset.canDownload === true,
           }]
         })
         setWardrobeItems(items)
@@ -254,8 +304,9 @@ export default function DressUpStudio() {
 
   const filtered = useMemo(() => availableItems.filter(item =>
     (category === '全部' || item.category === category) &&
+    (!showFavoritesOnly || favoriteIds.includes(item.id)) &&
     (item.name.toLowerCase().includes(query.trim().toLowerCase()) || item.category.includes(query.trim())),
-  ), [availableItems, category, query])
+  ), [availableItems, category, query, favoriteIds, showFavoritesOnly])
   const selectedItems = Object.values(selected)
   const cape = selected['披风']
 
@@ -281,9 +332,15 @@ export default function DressUpStudio() {
           assetId: asset.id,
           fileUrl: asset.fileUrl,
           texture: asset.fileUrl,
-          name: asset.attribution || `云端${garmentCategory}`,
+          name: typeof asset.name === 'string' && asset.name.trim() ? asset.name : `云端${garmentCategory}素材`,
           category: garmentCategory,
           note: '从衣橱载入的云端素材',
+          attribution: asset.attribution,
+          source: asset.source,
+          visibility: asset.visibility,
+          provenance: asset.provenance,
+          downloadPolicy: asset.downloadPolicy,
+          canDownload: asset.canDownload === true,
         }
         setSelected(current => ({ ...current, [garmentCategory]: item }))
         setSaveNotice(`已从衣橱载入${garmentCategory}素材`)
@@ -335,6 +392,104 @@ export default function DressUpStudio() {
   }, [])
 
   useEffect(() => {
+    const host = singleItemPreviewHost.current
+    const item = singlePreviewItem
+    if (!host || !item) return
+
+    let viewer: SkinViewer
+    let cancelled = false
+    try {
+      const canvas = document.createElement('canvas')
+      viewer = new SkinViewer({
+        canvas,
+        width: Math.max(host.clientWidth, 240),
+        height: 240,
+        enableControls: true,
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      })
+      viewer.controls.enableDamping = true
+      viewer.controls.enablePan = false
+      viewer.controls.autoRotate = true
+      viewer.controls.autoRotateSpeed = 1.6
+      viewer.renderer.setClearColor(0x182437, 0)
+      host.replaceChildren(canvas)
+    } catch {
+      host.textContent = '当前浏览器无法初始化单件 3D 预览（需要 WebGL）。'
+      return
+    }
+
+    const makeTransparentSkinSurface = () => {
+      viewer.playerObject.skin.traverse(object => {
+        const mesh = object as unknown as { isMesh?: boolean; material?: unknown }
+        if (!mesh.isMesh || !mesh.material) return
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+        for (const entry of materials) {
+          const material = entry as { transparent: boolean; alphaTest: number; needsUpdate: boolean }
+          material.transparent = true
+          material.alphaTest = 0.001
+          material.needsUpdate = true
+        }
+      })
+    }
+
+    const resize = () => {
+      if (!cancelled && host.clientWidth) viewer.width = Math.max(host.clientWidth, 240)
+    }
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null
+    observer?.observe(host)
+    window.addEventListener('resize', resize)
+
+    void (async () => {
+      try {
+        if (item.category === '披风') {
+          const transparentSkin = document.createElement('canvas')
+          transparentSkin.width = 64
+          transparentSkin.height = 64
+          await viewer.loadSkin(transparentSkin, { model: model === 'alex' ? 'slim' : 'default' })
+          if (cancelled) return
+          makeTransparentSkinSurface()
+          await viewer.loadCape(item.fileUrl || ASSET_ROOT + item.texture, { backEquipment: 'cape' })
+        } else {
+          if (item.category !== '披肩' && item.category !== '外套') {
+            throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，无法进行单件预览`)
+          }
+          const uvProfile = getStudioOverlayUvProfile(item.category)
+          if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的单件服装 UV 预览方式')
+          const base = await loadImage(skinUrl)
+          if (cancelled) return
+          const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
+          if (baseError) throw new Error(baseError)
+          const textureName = item.fileUrl || ASSET_ROOT + selectStudioOverlayTexture(item, model, base.naturalWidth as 64 | 128)
+          const overlay = await loadImage(textureName)
+          if (cancelled) return
+          const textureError = validateStudioOverlayMatchesBase(
+            { width: base.naturalWidth, height: base.naturalHeight },
+            { width: overlay.naturalWidth, height: overlay.naturalHeight },
+          )
+          if (textureError) throw new Error(textureError)
+          // Render the source atlas directly on the 3D skin geometry with no
+          // character skin underneath. Transparent pixels stay invisible, so
+          // the user sees only the selected garment's mapped surfaces.
+          await viewer.loadSkin(overlay, { model: model === 'alex' ? 'slim' : 'default' })
+          if (cancelled) return
+          makeTransparentSkinSurface()
+          viewer.playerObject.backEquipment = null
+        }
+        if (!cancelled) viewer.controls.autoRotate = true
+      } catch (error) {
+        if (!cancelled) host.textContent = error instanceof Error ? `单件预览失败：${error.message}` : '单件预览失败，请检查素材文件。'
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      observer?.disconnect()
+      window.removeEventListener('resize', resize)
+      viewer.dispose()
+    }
+  }, [singlePreviewItem, model])
+
+  useEffect(() => {
     const viewer = viewerRef.current
     if (!viewer) return
     viewer.controls.autoRotate = autoRotate
@@ -361,11 +516,43 @@ export default function DressUpStudio() {
   useEffect(() => {
     const viewer = viewerRef.current
     if (!viewer) return
-    const animation = pose === 'fly' ? new FlyingAnimation() : pose === 'walk' ? new WalkingAnimation() : new IdleAnimation()
+    const animation = pose === 'fly' ? new FlyingAnimation() : pose === 'walk' || pose === 'run' ? new WalkingAnimation() : new IdleAnimation()
     if (pose === 'wave') {
       animation.addAnimation((player, progress) => {
         player.skin.rightArm.rotation.z = -2.35 + Math.sin(progress * 5) * 0.22
         player.skin.rightArm.rotation.x = Math.sin(progress * 3) * 0.12
+      })
+    }
+    if (pose === 'crouch') {
+      animation.addAnimation((player, progress) => {
+        player.skin.body.rotation.x = 0.32
+        player.skin.head.rotation.x = -0.22
+        player.skin.leftArm.rotation.x = -0.48 + Math.sin(progress * 2) * 0.035
+        player.skin.rightArm.rotation.x = -0.48 - Math.sin(progress * 2) * 0.035
+        player.skin.leftLeg.rotation.x = -0.62
+        player.skin.rightLeg.rotation.x = -0.62
+      })
+    }
+    if (pose === 'hit') {
+      animation.addAnimation((player, progress) => {
+        const recoil = Math.sin(progress * 8) * 0.12
+        player.skin.body.rotation.z = recoil
+        player.skin.head.rotation.z = -recoil * 0.6
+        player.skin.leftArm.rotation.x = -1.15 + recoil
+        player.skin.rightArm.rotation.x = -1.15 - recoil
+        player.skin.leftLeg.rotation.x = 0.24
+        player.skin.rightLeg.rotation.x = -0.18
+      })
+    }
+    if (pose === 'swim') {
+      animation.addAnimation((player, progress) => {
+        const stroke = Math.sin(progress * 5)
+        player.skin.body.rotation.x = -0.72
+        player.skin.head.rotation.x = 0.48
+        player.skin.leftArm.rotation.x = -1.2 + stroke * 0.75
+        player.skin.rightArm.rotation.x = -1.2 - stroke * 0.75
+        player.skin.leftLeg.rotation.x = Math.sin(progress * 5 + Math.PI) * 0.55
+        player.skin.rightLeg.rotation.x = Math.sin(progress * 5) * 0.55
       })
     }
     if (pose === 'fly' && cape && !elytraVisible) {
@@ -374,7 +561,7 @@ export default function DressUpStudio() {
         player.cape.rotation.z = Math.sin(progress * 1.8) * 0.025
       })
     }
-    animation.speed = pose === 'walk' ? 0.72 : 1
+    animation.speed = pose === 'walk' ? 0.72 : pose === 'run' ? 1.45 : 1
     viewer.animation = animation
     return () => { if (viewer.animation === animation) viewer.animation = null }
   }, [pose, cape?.id, elytraVisible])
@@ -395,24 +582,35 @@ export default function DressUpStudio() {
       setStatus('正在加载皮肤与选装素材…')
       try {
         const base = await loadImage(skinUrl)
+        if (cancelled) return
+        const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
+        if (baseError) throw new Error(baseError)
+        const textureSize = base.naturalWidth
         const canvas = document.createElement('canvas')
-        canvas.width = 64
-        canvas.height = 64
+        canvas.width = textureSize
+        canvas.height = textureSize
         const context = canvas.getContext('2d')
         if (!context) throw new Error('无法创建皮肤画布')
         context.imageSmoothingEnabled = false
-        context.drawImage(base, 0, 0, 64, 64)
+        context.drawImage(base, 0, 0, textureSize, textureSize)
         for (const item of selectedItems.filter(item => item.category !== '披风')) {
-          const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
-          const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
+          if (item.category !== '披肩' && item.category !== '外套') {
+            throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，已停止合成`)
+          }
+          const uvProfile = getStudioOverlayUvProfile(item.category)
+          if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的服装 UV 合成方式')
+          const textureName = item.fileUrl || ASSET_ROOT + selectStudioOverlayTexture(item, model, textureSize as 64 | 128)
+          const overlay = await loadImage(textureName)
           if (cancelled) return
-          context.save()
-          context.beginPath()
-          const uvRegions = [{ x: 16, y: 16, width: 24, height: 16 }, { x: 16, y: 32, width: 24, height: 16 }, { x: 40, y: 16, width: 16, height: 16 }, { x: 40, y: 32, width: 16, height: 16 }, { x: 32, y: 48, width: 16, height: 16 }, { x: 48, y: 48, width: 16, height: 16 }]
-          uvRegions.forEach(region => context.rect(region.x, region.y, region.width, region.height))
-          context.clip()
-          context.drawImage(overlay, 0, 0, 64, 64)
-          context.restore()
+          const overlayError = validateStudioOverlayMatchesBase(
+            { width: base.naturalWidth, height: base.naturalHeight },
+            { width: overlay.naturalWidth, height: overlay.naturalHeight },
+          )
+          if (overlayError) throw new Error(`${item.name}：${overlayError}`)
+          // These source PNGs are already authored as complete Minecraft skin UV
+          // atlases. Composite the full alpha map; clipping every category to the
+          // same guessed rectangles corrupts the category-specific UV artwork.
+          context.drawImage(overlay, 0, 0, textureSize, textureSize)
         }
         await viewer.loadSkin(canvas, { model: model === 'alex' ? 'slim' : 'default' })
         if (cancelled) return
@@ -442,21 +640,42 @@ export default function DressUpStudio() {
     setSelected(current => {
       const next = { ...current }
       if (next[item.category]?.id === item.id) delete next[item.category]
-      else next[item.category] = item
+      else {
+        // Shawl and coat use separate authored skin atlases, but overlap on the
+        // same Minecraft body surfaces. Enforce the tested compatibility profile.
+        if (item.category === '披肩' || item.category === '外套') {
+          const incoming = item.category as StudioOverlayCategory
+          const equipped = Object.keys(next).filter(key => key === '披肩' || key === '外套') as StudioOverlayCategory[]
+          if (!canEquipStudioOverlayTogether(equipped, incoming)) {
+            delete next[getStudioOverlayUvProfile(incoming).mutuallyExclusiveWith]
+          }
+        }
+        next[item.category] = item
+      }
       return next
     })
   }
 
 
-  async function uploadAssetFromUrl(url: string, category: 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE', attribution: string) {
+  async function uploadAssetFromUrl(url: string, category: 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE', name: string) {
     const imageResponse = await fetch(url, { cache: 'no-store', credentials: 'same-origin' })
-    if (!imageResponse.ok) throw new Error(`无法读取素材：${attribution}`)
+    if (!imageResponse.ok) throw new Error(`无法读取素材：${name}`)
     const blob = await imageResponse.blob()
-    if (blob.type !== 'image/png') throw new Error(`素材“${attribution}”不是 PNG 格式`)
+    if (blob.type !== 'image/png') throw new Error(`素材“${name}”不是 PNG 格式`)
+    if (category !== 'CAPE') {
+      const bitmap = await createImageBitmap(blob)
+      try {
+        const role = category === 'SKIN' ? 'base-skin' : 'clothing-overlay'
+        const textureError = validateStudioSkinTexture({ width: bitmap.width, height: bitmap.height }, role)
+        if (textureError) throw new Error(`素材“${name}”：${textureError}`)
+      } finally {
+        bitmap.close()
+      }
+    }
     const file = new File([blob], `${category.toLowerCase()}-${Date.now()}.png`, { type: 'image/png' })
     const asset = await cdpcApi.uploadAsset(file, category, {
       visibility: 'PRIVATE',
-      attribution,
+      name,
     })
     return { id: asset.id, fileUrl: asset.fileUrl }
   }
@@ -472,12 +691,21 @@ export default function DressUpStudio() {
     setSaveNotice('正在同步素材并保存账号云端穿搭…')
     try {
       const persistedItems: CatalogItem[] = []
+      const saveBaseSkin = await loadImage(skinUrl)
+      const saveBaseError = validateStudioSkinTexture(
+        { width: saveBaseSkin.naturalWidth, height: saveBaseSkin.naturalHeight },
+        'base-skin',
+      )
+      if (saveBaseError) throw new Error(saveBaseError)
+      const saveTextureSize = saveBaseSkin.naturalWidth as 64 | 128
       for (const item of selectedItems) {
         if (item.assetId && item.fileUrl) {
           persistedItems.push(item)
           continue
         }
-        const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
+        const textureName = item.category === '披风'
+          ? item.texture
+          : selectStudioOverlayTexture(item, model, saveTextureSize)
         const sourceUrl = item.fileUrl || ASSET_ROOT + textureName
         const asset = await uploadAssetFromUrl(sourceUrl, toAssetCategory(item.category), item.name)
         const persisted = { ...item, assetId: asset.id, fileUrl: asset.fileUrl }
@@ -502,7 +730,7 @@ export default function DressUpStudio() {
         skinAssetId,
         skinModel: model === 'alex' ? 'SLIM' : 'CLASSIC',
         background,
-        pose: null,
+        pose,
         items: persistedItems.map((item, index) => ({
           assetId: item.assetId!,
           category: toAssetCategory(item.category),
@@ -516,28 +744,30 @@ export default function DressUpStudio() {
         : await cdpcApi.createOutfit(input)
       const savedId = saved.id
 
-      const workspace = await cdpcApi.getWorkspace().catch(() => null)
-      if (workspace) {
-        await cdpcApi.updateWorkspace({
-          projectId: workspace.projectId ?? null,
-          activeTool: 'WARDROBE',
-          activeAssetId: skinAssetId,
-          activeOutfitId: savedId,
-        })
+      // The outfit record is authoritative. A workspace-pointer failure must not
+      // turn a successful cloud save into a reported save failure.
+      let workspaceSyncFailed = false
+      try {
+        const workspace = await cdpcApi.getWorkspace()
+        await cdpcApi.updateWorkspace(buildStudioWorkspaceState(workspace, savedId, skinAssetId))
+      } catch {
+        workspaceSyncFailed = true
       }
 
       setSelectedSavedOutfitId(savedId)
       setOutfitName(name)
       setSelected(current => persistedItems.reduce((next, item) => ({ ...next, [item.category]: item }), current))
       const localCache: LocalOutfit = {
-        id: savedId, name, itemIds: persistedItems.map(item => item.id), model, background,
+        id: savedId, name, itemIds: persistedItems.map(item => item.id), model, pose, background,
         skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
         skinAssetId, skinAssetUrl, skinName, savedAt: new Date().toISOString(), cloud: true,
         assetItems: persistedItems,
       }
       setSavedOutfits(current => [...current.filter(item => item.id !== savedId), localCache])
       try { window.localStorage.setItem('cdpc:dress-up:local-v1', JSON.stringify(localCache)) } catch { /* Cloud save remains authoritative. */ }
-      setSaveNotice(`“${name}”已保存到账号云端，衣橱可在其他设备读取`)
+      setSaveNotice(workspaceSyncFailed
+        ? `“${name}”已保存到账号云端，但工作区指针同步失败；可在已保存穿搭中重新载入`
+        : `“${name}”已保存到账号云端，衣橱可在其他设备读取`)
       void refreshCloudOutfits().catch(() => undefined)
     } catch (error) {
       setSaveNotice(error instanceof Error ? error.message : '云端保存失败，请登录后重试')
@@ -559,6 +789,7 @@ export default function DressUpStudio() {
       name,
       itemIds: selectedItems.map(item => item.id),
       model,
+      pose,
       background,
       backgroundScene,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
@@ -566,7 +797,7 @@ export default function DressUpStudio() {
       skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
-      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
+      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl) && item.provenance !== 'OFFICIAL'),
     }
     try {
       const next = selectedOutfit
@@ -609,6 +840,7 @@ export default function DressUpStudio() {
       if (typeof outfit.skinName === 'string') setSkinName(outfit.skinName)
     }
     if (outfit.model === 'steve' || outfit.model === 'alex') setModel(outfit.model)
+    setPose(normalizeStudioPose(outfit.pose))
     if (/^#[0-9a-f]{6}$/i.test(outfit.background)) setBackground(outfit.background)
     if (outfit.backgroundScene === 'day' || outfit.backgroundScene === 'night' || outfit.backgroundScene === 'plains' || outfit.backgroundScene === 'desert' || outfit.backgroundScene === 'forest' || outfit.backgroundScene === 'nether' || outfit.backgroundScene === 'end' || outfit.backgroundScene === 'custom') setBackgroundScene(outfit.backgroundScene)
     else setBackgroundScene('custom')
@@ -630,26 +862,40 @@ export default function DressUpStudio() {
       setSaveNotice('请选择要删除的穿搭')
       return
     }
+    if (!window.confirm(`确定删除“${outfit.name}”吗？此操作无法撤销。`)) return
     if (outfit.cloud) {
       try {
         await cdpcApi.deleteOutfit(outfit.id)
       } catch (error) {
-        setSaveNotice(error instanceof Error ? error.message : '云端穿搭删除失败')
+        setSaveNotice(error instanceof Error ? `云端删除失败：${error.message}` : '云端穿搭删除失败；当前记录未从列表移除')
         return
       }
       setSavedOutfits(current => current.filter(item => item.id !== outfit.id))
       setSelectedSavedOutfitId('')
       setOutfitName('我的穿搭')
-      void cdpcApi.getWorkspace().then(async workspace => {
-        if (workspace.activeOutfitId !== outfit.id) return
-        await cdpcApi.updateWorkspace({
-          projectId: workspace.projectId ?? null,
-          activeTool: 'WARDROBE',
-          activeAssetId: workspace.activeAssetId ?? null,
-          activeOutfitId: null,
-        })
-      }).catch(() => undefined)
-      setSaveNotice(`已从账号云端删除“${outfit.name}”`)
+      let workspaceSyncFailed = false
+      try {
+        const workspace = await cdpcApi.getWorkspace()
+        if (workspace.activeOutfitId === outfit.id) {
+          await cdpcApi.updateWorkspace({
+            projectId: workspace.projectId ?? null,
+            activeTool: 'WARDROBE',
+            activeAssetId: workspace.activeAssetId ?? null,
+            activeOutfitId: null,
+          })
+        }
+      } catch {
+        workspaceSyncFailed = true
+      }
+      try {
+        const raw = window.localStorage.getItem('cdpc:dress-up:local-v1')
+        if (raw && (JSON.parse(raw) as Partial<LocalOutfit>).id === outfit.id) {
+          window.localStorage.removeItem('cdpc:dress-up:local-v1')
+        }
+      } catch { /* Cloud deletion succeeded; a stale local cache is non-authoritative. */ }
+      setSaveNotice(workspaceSyncFailed
+        ? `“${outfit.name}”已从云端删除，但工作区指针同步失败；请重新载入衣橱状态`
+        : `已从账号云端删除“${outfit.name}”`)
       return
     }
     const next = savedOutfits.filter(item => item.id !== selectedSavedOutfitId)
@@ -706,7 +952,7 @@ export default function DressUpStudio() {
       skinAssetUrl: /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(skinUrl) ? skinUrl : undefined,
       skinName,
       savedAt: new Date().toISOString(),
-      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl)),
+      assetItems: selectedItems.filter(item => Boolean(item.assetId && item.fileUrl) && item.provenance !== 'OFFICIAL'),
     }
     const blob = new Blob([JSON.stringify({ format: 'cdpc-outfit', version: 1, outfit: payload }, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -736,7 +982,8 @@ export default function DressUpStudio() {
       let skinAssetUnavailable = false
       if (nextSkinUrl) {
         const image = await loadImage(nextSkinUrl)
-        if (image.width !== 64 || image.height !== 64) throw new Error('备份中的皮肤不是 64 × 64 PNG')
+        const textureError = validateStudioSkinTexture({ width: image.naturalWidth, height: image.naturalHeight }, 'base-skin')
+        if (textureError) throw new Error(`备份中的皮肤无效：${textureError}`)
       } else if (nextSkinAssetUrl) {
         try { await loadImage(nextSkinAssetUrl) } catch {
           nextSkinAssetUrl = undefined
@@ -786,40 +1033,53 @@ export default function DressUpStudio() {
   async function exportSkinPng() {
     try {
       setIsBusy(true)
-      setSaveNotice('正在合成 64 × 64 标准皮肤 PNG…')
       const base = await loadImage(skinUrl)
+      const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
+      if (baseError) throw new Error(baseError)
+      const textureSize = base.naturalWidth as 64 | 128
+      setSaveNotice(`正在合成 ${textureSize} × ${textureSize} 皮肤 PNG…`)
       const canvas = document.createElement('canvas')
-      canvas.width = 64
-      canvas.height = 64
+      canvas.width = textureSize
+      canvas.height = textureSize
       const context = canvas.getContext('2d')
       if (!context) throw new Error('无法创建导出画布')
       context.imageSmoothingEnabled = false
-      context.drawImage(base, 0, 0, 64, 64)
-      const uvRegions = [
-        { x: 16, y: 16, width: 24, height: 16 },
-        { x: 16, y: 32, width: 24, height: 16 },
-        { x: 40, y: 16, width: 16, height: 16 },
-        { x: 40, y: 32, width: 16, height: 16 },
-        { x: 32, y: 48, width: 16, height: 16 },
-        { x: 48, y: 48, width: 16, height: 16 },
-      ]
+      context.drawImage(base, 0, 0, textureSize, textureSize)
       for (const item of selectedItems.filter(entry => entry.category !== '披风')) {
-        const textureName = model === 'alex' && item.modelTexture ? item.modelTexture : item.texture
-        const overlay = await loadImage(item.fileUrl || ASSET_ROOT + textureName)
-        context.save()
-        context.beginPath()
-        uvRegions.forEach(region => context.rect(region.x, region.y, region.width, region.height))
-        context.clip()
-        context.drawImage(overlay, 0, 0, 64, 64)
-        context.restore()
+        if (item.category !== '披肩' && item.category !== '外套') {
+          throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，无法导出`)
+        }
+        const uvProfile = getStudioOverlayUvProfile(item.category)
+        if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的服装 UV 导出方式')
+        const textureName = item.fileUrl || ASSET_ROOT + selectStudioOverlayTexture(item, model, textureSize)
+        const overlay = await loadImage(textureName)
+        const overlayError = validateStudioOverlayMatchesBase(
+          { width: base.naturalWidth, height: base.naturalHeight },
+          { width: overlay.naturalWidth, height: overlay.naturalHeight },
+        )
+        if (overlayError) throw new Error(`${item.name}：${overlayError}`)
+        // Export the complete, pre-mapped category UV atlas with its alpha channel.
+        context.drawImage(overlay, 0, 0)
       }
+      const pngBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob)
+          else reject(new Error('无法生成 PNG 文件'))
+        }, 'image/png')
+      })
+      const objectUrl = URL.createObjectURL(pngBlob)
       const link = document.createElement('a')
-      link.download = 'cdpc-skin-64x64.png'
-      link.href = canvas.toDataURL('image/png')
+      link.download = `cdpc-skin-${textureSize}x${textureSize}.png`
+      link.href = objectUrl
+      link.style.display = 'none'
+      document.body.appendChild(link)
       link.click()
+      // Keep the anchor mounted through the browser's download dispatch.
+      window.setTimeout(() => link.remove(), 0)
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000)
       setSaveNotice(cape
         ? '标准皮肤 PNG 已导出。注意：披风是独立背部装备，不包含在标准皮肤 PNG 中。'
-        : '标准皮肤 PNG 已导出（64 × 64）。')
+        : `标准皮肤 PNG 已导出（${textureSize} × ${textureSize}）。`)
     } catch (error) {
       setSaveNotice(error instanceof Error ? `导出失败：${error.message}` : '导出失败，请稍后重试')
     } finally {
@@ -844,6 +1104,18 @@ export default function DressUpStudio() {
     setAutoRotate(false)
     setViewAngle('front')
     setSaveNotice('已恢复默认角色状态；此前保存的本地穿搭不会被删除')
+  }
+
+  function downloadCapeAsset(item: CatalogItem) {
+    if (item.category !== '披风' || !item.assetId || item.canDownload !== true) {
+      setSaveNotice('该披风素材没有可用的下载授权；官方或未授权素材仅可在平台内预览。')
+      return
+    }
+    const link = document.createElement('a')
+    link.href = `/api/assets/${encodeURIComponent(item.assetId)}/download`
+    link.download = `${item.name.replace(/[^\p{L}\p{N}_-]+/gu, '-') || 'cdpc-cape'}.png`
+    link.click()
+    setSaveNotice('已请求下载你有权导出的独立披风 PNG。')
   }
 
   function downloadPreviewScreenshot() {
@@ -900,10 +1172,13 @@ export default function DressUpStudio() {
     setSelectedSavedOutfitId('')
     setOutfitName('随机搭配 ' + new Date().toLocaleDateString())
     const next: Record<string, CatalogItem> = {}
-    for (const itemCategory of ['披肩', '外套', '披风'] as const) {
-      const options = availableItems.filter(item => item.category === itemCategory)
-      if (options.length) next[itemCategory] = options[Math.floor(Math.random() * options.length)]
+    const upperBodyOptions = availableItems.filter(item => item.category === '披肩' || item.category === '外套')
+    if (upperBodyOptions.length) {
+      const item = upperBodyOptions[Math.floor(Math.random() * upperBodyOptions.length)]
+      next[item.category] = item
     }
+    const capeOptions = availableItems.filter(item => item.category === '披风')
+    if (capeOptions.length) next['披风'] = capeOptions[Math.floor(Math.random() * capeOptions.length)]
     setSelected(next)
     setSaveNotice('已随机生成一套搭配；保存后才会保留到下次访问')
   }
@@ -919,10 +1194,15 @@ export default function DressUpStudio() {
       const url = String(reader.result || '')
       try {
         const image = await loadImage(url)
-        if (image.width !== 64 || image.height !== 64) {
-          setLoadError('皮肤尺寸必须为标准 64 × 64 PNG。当前文件未应用。')
+        const textureError = validateStudioSkinTexture({ width: image.naturalWidth, height: image.naturalHeight }, 'base-skin')
+        if (textureError) {
+          setLoadError(`${textureError} 当前文件未应用。`)
           return
         }
+        // Disable export in the same render that publishes the new skin name.
+        // The preview effect runs after paint; without this, the UI can briefly
+        // show the imported filename while the old preview is still exportable.
+        setIsBusy(true)
         setSkinUrl(url)
         setSkinName(file.name)
         setLoadError('')
@@ -947,22 +1227,31 @@ export default function DressUpStudio() {
       <div className="dressup-layout">
         <section className="dressup-panel" aria-label="服装素材">
           <div className="dressup-panel-heading"><h2>挑选服装</h2><span>{filtered.length} 项</span></div>
-          <input className="dressup-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索服装名称…" aria-label="搜索服装" />
+          <div className="dressup-catalog-tools"><input className="dressup-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索服装名称…" aria-label="搜索服装" /><button type="button" className="dressup-favorites-filter" aria-pressed={showFavoritesOnly} onClick={() => setShowFavoritesOnly(value => !value)}>{showFavoritesOnly ? '显示全部素材' : `只看收藏 (${favoriteIds.length})`}</button></div>
           <div className="dressup-categories" aria-label="服装分类">
             {categories.map(item => <button type="button" className="dressup-category" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}
           </div>
           {category !== '全部' && !availableCategories.has(category) && <div className="dressup-unavailable"><strong>{category}素材尚未接入</strong><p>目前正式素材目录尚未提供该分类的可用贴图，因此不会展示虚构素材。素材接入后会在这里出现。</p></div>}
+          {singlePreviewItem && <section className="dressup-single-item-card" aria-label="单件素材独立渲染预览">
+            <div className="dressup-panel-heading"><h3>单件 3D 预览</h3><button type="button" onClick={() => setSinglePreviewItem(null)}>关闭</button></div>
+            <p className="dressup-preview-note">{singlePreviewItem.name} · 仅渲染该素材贴图对应的模型表面，不叠加基础皮肤</p>
+            <div ref={singleItemPreviewHost} className="dressup-single-item-preview" />
+          </section>}
           <div className="dressup-items">
-            {filtered.map(item => <button type="button" key={item.id} className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => toggleItem(item)}>
-              <img className="dressup-item-thumbnail" src={item.fileUrl || ASSET_ROOT + (model === 'alex' && item.modelTexture ? item.modelTexture : item.texture)} alt="" aria-hidden="true" loading="lazy" draggable={false} />
-              <strong>{item.name}</strong>
-              <small>{item.category} · {item.note}</small>
-              <span className="dressup-item-state">{selected[item.category]?.id === item.id ? '已选择' : '点击试穿'}</span>
-            </button>)}
+            {filtered.map(item => <div className="dressup-item-wrap" key={item.id}>
+              <button type="button" className="dressup-item" aria-pressed={selected[item.category]?.id === item.id} onClick={() => { setSinglePreviewItem(item); toggleItem(item) }}>
+                <CatalogGarmentPreview item={item} model={model} skinUrl={skinUrl} />
+                <strong>{item.name}</strong>
+                <small>{item.category} · {item.note}</small>
+                {(item.attribution || item.source || item.visibility) && <small className="dressup-item-provenance">作者/署名：{item.attribution || '未注明'} · 来源：{item.source || '未知'} · {item.visibility === 'PRIVATE' ? '私有素材' : item.visibility === 'PUBLIC' ? '公开素材' : item.visibility === 'UNLISTED' ? '未列出' : '权限未知'}</small>}
+                <span className="dressup-item-state">{selected[item.category]?.id === item.id ? '已选择' : '点击试穿'}</span>
+              </button>
+              <button type="button" className="dressup-favorite-toggle" aria-label={favoriteIds.includes(item.id) ? '取消收藏 ' + item.name : '收藏 ' + item.name} aria-pressed={favoriteIds.includes(item.id)} onClick={() => toggleFavorite(item.id)}>{favoriteIds.includes(item.id) ? '★' : '☆'}</button>
+            </div>)}
           </div>
           {filtered.length === 0 && category !== '全部' && availableCategories.has(category) && <p className="dressup-empty">该分类暂无匹配素材，请更换关键词。</p>}
           {filtered.length === 0 && category === '全部' && <p className="dressup-empty">没有找到匹配的素材。试试其他关键词。</p>}
-          <div className="dressup-source-note">素材来自项目预设与账号衣橱；账号素材可直接试穿、保存和导出。</div>
+          <div className="dressup-source-note">素材来自项目预设与账号衣橱；此处收藏为设备本地快捷收藏，账号素材的云端收藏请在我的衣橱管理。</div>
         </section>
 
         <section className="dressup-panel dressup-preview" aria-label="角色搭配预览">
@@ -982,8 +1271,12 @@ export default function DressUpStudio() {
               <select aria-label="切换角色动作" value={pose} onChange={event => setPose(event.target.value as StudioPose)}>
                 <option value="idle">待机</option>
                 <option value="walk">行走</option>
+                <option value="run">奔跑</option>
                 <option value="fly">飞行</option>
                 <option value="wave">挥手</option>
+                <option value="crouch">蹲下</option>
+                <option value="hit">受击</option>
+                <option value="swim">游泳</option>
               </select>
             </label>
             <label className="dressup-preview-select">
@@ -1001,7 +1294,7 @@ export default function DressUpStudio() {
             <span className="dressup-skin-name" title={skinName}>当前皮肤：{skinName}</span>
             <button type="button" onClick={resetPreviewCamera}>重置视角</button>
             <button type="button" onClick={downloadPreviewScreenshot}>下载预览截图</button>
-            <button type="button" onClick={() => skinFileRef.current?.click()}>导入 64×64 PNG</button>
+            <button type="button" onClick={() => skinFileRef.current?.click()}>导入 64×64 / 128×128 PNG</button>
             <input ref={skinFileRef} hidden type="file" accept="image/png,.png" onChange={event => importSkin(event.target.files?.[0])} />
           </div>
           {loadError && <div className="dressup-error" role="alert"><span>{loadError}</span><button type="button" onClick={() => { setLoadError(''); setRetryVersion(version => version + 1) }}>重试</button></div>}
@@ -1011,7 +1304,7 @@ export default function DressUpStudio() {
         <aside className="dressup-panel" aria-label="当前穿搭">
           <div className="dressup-panel-heading"><h2>搭配清单</h2><span>{selectedItems.length} 件</span></div>
           {selectedItems.length ? <div className="dressup-selected-list">
-            {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong></span><button type="button" onClick={() => toggleItem(item)}>移除</button></div>)}
+            {selectedItems.map(item => <div className="dressup-selected-row" key={item.id}><span><small>{item.category}</small><strong>{item.name}</strong>{item.attribution && <small>作者/署名：{item.attribution}</small>}</span><div className="dressup-selected-row-actions"><button type="button" onClick={() => setSinglePreviewItem(item)}>独立预览</button>{item.category === '披风' && item.canDownload === true && <button type="button" onClick={() => downloadCapeAsset(item)}>导出披风 PNG</button>}<button type="button" onClick={() => toggleItem(item)}>移除</button></div></div>)}
           </div> : <p className="dressup-empty">还没有选择素材。点击左侧已接入的披肩、外套或披风开始搭配。</p>}
           <div className="dressup-actions dressup-primary-actions">
             <button type="button" onClick={removeCurrentCategory} disabled={category === '全部' || !selected[category]}>脱下当前分类</button>

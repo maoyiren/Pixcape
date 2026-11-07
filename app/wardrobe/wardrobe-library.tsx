@@ -8,11 +8,16 @@ import { cdpcApi, CdpcApiError } from '@/src/client/cdpc-api'
 type Category = 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE' | 'HAT' | 'PANTS' | 'SHOES' | 'OTHER_ACCESSORY'
 type Asset = {
   id: string
+  ownerId: string | null
+  name: string | null
   category: Category | null
   kind: string
   width: number | null
   height: number | null
   attribution: string | null
+  provenance: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'
+  downloadPolicy: 'DENY' | 'OWNER_ONLY' | 'LICENSED_PUBLIC'
+  canDownload: boolean
   fileUrl: string
   createdAt: string
   isFavorite: boolean
@@ -46,6 +51,8 @@ export default function WardrobeLibrary() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('正在加载你的收藏库…')
   const [uploadCategory, setUploadCategory] = useState<Category>('SKIN')
+  const [uploadName, setUploadName] = useState('')
+  const [rightsDeclared, setRightsDeclared] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const reload = useCallback(async () => {
@@ -86,6 +93,7 @@ export default function WardrobeLibrary() {
         ? filter === 'ALL' || asset.isFavorite
         : filter === 'OUTFITS' ? false : asset.category === filter
       const matchesQuery = !normalized || categoryLabel(asset.category).toLowerCase().includes(normalized)
+        || (asset.name || '').toLowerCase().includes(normalized)
         || (asset.attribution || '').toLowerCase().includes(normalized)
         || asset.id.toLowerCase().includes(normalized)
       return matchesFilter && matchesQuery
@@ -157,12 +165,36 @@ export default function WardrobeLibrary() {
     }
   }
 
+  const downloadAsset = async (asset: Asset) => {
+    setError('')
+    try {
+      const response = await fetch(cdpcApi.assetDownloadUrl(asset.id), {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      })
+      if (!response.ok) throw new Error(response.status === 401 ? '登录状态已失效，请重新登录后下载' : '素材下载失败，请稍后重试')
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      const category = asset.category?.toLowerCase() || 'asset'
+      link.href = objectUrl
+      link.download = `cdpc-${category}-${asset.id}.png`
+      document.body.append(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+      setNotice(`已开始下载“${asset.name || categoryLabel(asset.category)}”`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '素材下载失败')
+    }
+  }
+
   const upload = async (file?: File) => {
     if (!file) return
     setBusy(true)
     setError('')
     try {
-      await cdpcApi.uploadAsset(file, uploadCategory, { visibility: 'PRIVATE' })
+      await cdpcApi.uploadAsset(file, uploadCategory, { visibility: 'PRIVATE', name: uploadName.trim() || file.name.replace(/\.png$/i, '').slice(0, 120), rightsDeclaration: rightsDeclared })
       await reload()
       setFilter(uploadCategory)
       setNotice('素材已上传并保存到私人衣橱')
@@ -171,6 +203,8 @@ export default function WardrobeLibrary() {
     } finally {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
+      setRightsDeclared(false)
+      setUploadName('')
     }
   }
 
@@ -230,6 +264,8 @@ export default function WardrobeLibrary() {
           <select className="upload-select" aria-label="上传素材类型" value={uploadCategory} onChange={(event) => setUploadCategory(event.target.value as Category)}>
             {categories.map((item) => <option key={item.value} value={item.value}>上传：{item.label}</option>)}
           </select>
+          <input aria-label="素材名称" placeholder="素材名称（可选）" value={uploadName} onChange={(event) => setUploadName(event.target.value)} style={{ width: 170 }} />
+          <label className="rights-declaration"><input type="checkbox" checked={rightsDeclared} onChange={(event) => setRightsDeclared(event.target.checked)} />我确认素材为本人原创并拥有下载权</label>
           <button className="action primary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? '上传中…' : '＋ 上传素材'}</button>
           <input ref={fileRef} type="file" accept="image/png" hidden disabled={busy} onChange={(event) => void upload(event.target.files?.[0])} />
           <Link className="action" href="/studio">进入 3D 换装</Link>
@@ -265,12 +301,16 @@ export default function WardrobeLibrary() {
               <div className="thumb"><img src={asset.fileUrl} alt={categoryLabel(asset.category)} loading="lazy" /></div>
               <div className="asset-meta">
                 <div className="asset-category">{categoryLabel(asset.category)}</div>
-                <div className="asset-name" title={asset.attribution || asset.id}>{asset.attribution || asset.id.slice(0, 12)}</div>
+                <div className="asset-name" title={asset.name || asset.id}>{asset.name || `${categoryLabel(asset.category)}素材`}</div>
+                {asset.attribution && <div className="asset-date">作者/署名：{asset.attribution}</div>}
                 <div className="asset-bottom">
                   <span className="asset-date">{asset.width && asset.height ? `${asset.width} × ${asset.height}` : 'PNG 素材'}</span>
                   <button className="favorite" type="button" aria-label={asset.isFavorite ? '取消收藏' : '收藏素材'} aria-pressed={asset.isFavorite} onClick={() => void toggleFavorite(asset)}>{asset.isFavorite ? '★' : '☆'}</button>
                 </div>
-                {asset.category && ['SKIN', 'SHAWL', 'COAT', 'CAPE'].includes(asset.category) && <button className="action" type="button" onClick={() => void openInDressUp(asset)}>在 3D 换装中使用</button>}
+                <div className="asset-bottom">
+                  {asset.canDownload ? <button className="action" type="button" onClick={() => void downloadAsset(asset)}>下载 PNG</button> : <span className="asset-date">下载未授权</span>}
+                  {asset.category && ['SKIN', 'SHAWL', 'COAT', 'CAPE'].includes(asset.category) && <button className="action" type="button" onClick={() => void openInDressUp(asset)}>在 3D 换装中使用</button>}
+                </div>
               </div>
             </article>)}</div>
           ) : (

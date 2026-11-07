@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-v4-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-postgres-v1-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -30,20 +30,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root-ci
-          MYSQL_DATABASE: pixcape
-          MYSQL_USER: ci
-          MYSQL_PASSWORD: ci
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd "mysqladmin ping -h 127.0.0.1 -uci -pci"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/pixcape?schema=public
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -51,23 +39,12 @@ jobs:
           node-version: 26.13.0
           check-latest: true
       - run: npm ci --no-audit --no-fund
+      - name: Generate PostgreSQL Prisma Client and apply migrations
+        run: npm run db:generate && npm run db:migrate
       - name: Run unit tests
         run: npm run test:unit
-      - name: Migrate PostgreSQL and run security integration tests
-        env:
-          DATABASE_PROVIDER: postgresql
-          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/pixcape?schema=public
-        run: npm run db:generate:all && npm run db:migrate && npm run test:integration
-      - name: Migrate MySQL and run rate-limit integration tests
-        env:
-          DATABASE_PROVIDER: mysql
-          DATABASE_URL: mysql://ci:ci@127.0.0.1:3306/pixcape
-        run: npm run db:generate:all && npm run db:migrate && npm run test:mysql-rate-limit
-      - name: Migrate SQLite and run rate-limit integration tests
-        env:
-          DATABASE_PROVIDER: sqlite
-          DATABASE_URL: file:/tmp/pixcape-ci.db
-        run: npm run db:generate:all && npm run db:migrate && npm run test:sqlite-rate-limit
+      - name: Run PostgreSQL integration tests
+        run: npm run test:integration
       - name: Report high and critical dependency advisories
         run: |
           npm audit --json > /tmp/npm-audit.json || true
@@ -87,15 +64,14 @@ jobs:
           NODE
       - name: Fail on high or critical dependency advisories
         run: npm audit --audit-level=high
-      - run: npm run build
+      - name: Build Next.js production app
+        run: npm run build
       - name: Install Chromium for browser regression tests
         run: npx playwright install --with-deps chromium
       - name: Run browser regression tests
         env:
           NEXTAUTH_SECRET: cdpc-browser-test-secret-not-for-production-0123456789
           NEXTAUTH_URL: http://127.0.0.1:3000
-          DATABASE_PROVIDER: sqlite
-          DATABASE_URL: file:/tmp/cdpc-browser-test.db
         run: npm run test:browser
       - name: Install and test AI API
         run: npm --prefix ai-api ci && npm --prefix ai-api test

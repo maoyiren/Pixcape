@@ -564,3 +564,19 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
 .dressup-preview-select select option{background:#182538;color:#e5edf9}
 .dressup-preview-select:focus-within{outline:2px solid #9bb8ff;outline-offset:2px}
 @media(max-width:700px){.dressup-preview-select{flex:1 1 calc(50% - 6px);justify-content:space-between}.dressup-preview-select select{max-width:none;min-width:0;flex:1}}
+
+/* Catalog WebGL is display-only; keep pointer input on the surrounding item button. */
+.dressup-item-render,.dressup-item-render canvas{pointer-events:none}
+
+.dressup-item-render-placeholder{padding:8px 10px;border:1px dashed #536174;border-radius:6px;color:var(--cdpc-muted,#a4adba);font-size:10px;text-align:center}
+
+/* Studio catalog favorites and filter */
+.dressup-catalog-tools{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.dressup-catalog-tools .dressup-search{flex:1;min-width:0;margin:0}
+.dressup-favorites-filter{flex:0 0 auto;min-height:38px;padding:7px 10px;border:1px solid #344258;border-radius:7px;background:#182538;color:#dbe6f8;font:inherit;font-size:11px;cursor:pointer}
+.dressup-favorites-filter[aria-pressed=true]{border-color:#8ba8ff;background:#263d61}
+.dressup-item-wrap{position:relative;min-width:0}
+.dressup-item-wrap>.dressup-item{width:100%;height:100%}
+.dressup-favorite-toggle{position:absolute;top:7px;right:7px;z-index:3;width:30px;height:30px;border:1px solid #536174;border-radius:7px;background:#111a28eF;color:#d9e4f7;font-size:19px;line-height:1;cursor:pointer}
+.dressup-favorite-toggle[aria-pressed=true]{color:#ffd36a;border-color:#b58c39}
+@media(max-width:420px){.dressup-catalog-tools{align-items:stretch;flex-direction:column}.dressup-favorites-filter{width:100%}}

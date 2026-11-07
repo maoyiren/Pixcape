@@ -1,5 +1,10 @@
 import { redirect } from 'next/navigation'
+import { legacyRedirectUrl, type LegacySearchParams } from '@/lib/legacy-route'
 
-export default function LegacyBenchPage() {
-  redirect('/editor')
+export default async function LegacyBenchPage({
+  searchParams,
+}: {
+  searchParams?: Promise<LegacySearchParams>
+}) {
+  redirect(legacyRedirectUrl('/editor', searchParams ? await searchParams : {}))
 }

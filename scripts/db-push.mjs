@@ -1,22 +1,18 @@
 import { spawnSync } from 'node:child_process'
 
-const provider = (process.env.DATABASE_PROVIDER || 'postgresql').toLowerCase()
-const schemas = {
-  postgresql: 'prisma/schema.prisma',
-  mysql: 'prisma/schema.mysql.prisma',
-  sqlite: 'prisma/schema.sqlite.prisma',
-}
-const schema = schemas[provider]
-if (!schema) {
-  console.error(`Unsupported DATABASE_PROVIDER: ${provider}`)
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL is required for PostgreSQL.')
   process.exit(1)
 }
-if (!process.env.DATABASE_URL) {
-  console.error('DATABASE_URL is required.')
+if (!/^postgres(ql)?:\/\//i.test(process.env.DATABASE_URL)) {
+  console.error('CDPC supports PostgreSQL only. DATABASE_URL must use postgresql:// or postgres://.')
   process.exit(1)
 }
 const command = process.platform === 'win32' ? 'npx.cmd' : 'npx'
-const result = spawnSync(command, ['prisma', 'db', 'push', '--schema', schema], { stdio: 'inherit', env: process.env })
+const result = spawnSync(command, ['prisma', 'db', 'push', '--schema', 'prisma/schema.prisma'], {
+  stdio: 'inherit',
+  env: process.env,
+})
 if (result.error) {
   console.error(result.error.message)
   process.exit(1)
