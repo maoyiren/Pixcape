@@ -1093,6 +1093,10 @@ export default function DressUpStudio() {
           setLoadError(`${textureError} 当前文件未应用。`)
           return
         }
+        // Disable export in the same render that publishes the new skin name.
+        // The preview effect runs after paint; without this, the UI can briefly
+        // show the imported filename while the old preview is still exportable.
+        setIsBusy(true)
         setSkinUrl(url)
         setSkinName(file.name)
         setLoadError('')
