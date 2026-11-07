@@ -9,6 +9,7 @@ type Category = 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE' | 'HAT' | 'PANTS' | 'SHOES' |
 type Asset = {
   id: string
   ownerId: string | null
+  name: string | null
   category: Category | null
   kind: string
   width: number | null
@@ -50,6 +51,7 @@ export default function WardrobeLibrary() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('正在加载你的收藏库…')
   const [uploadCategory, setUploadCategory] = useState<Category>('SKIN')
+  const [uploadName, setUploadName] = useState('')
   const [rightsDeclared, setRightsDeclared] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -191,7 +193,7 @@ export default function WardrobeLibrary() {
     setBusy(true)
     setError('')
     try {
-      await cdpcApi.uploadAsset(file, uploadCategory, { visibility: 'PRIVATE', rightsDeclaration: rightsDeclared })
+      await cdpcApi.uploadAsset(file, uploadCategory, { visibility: 'PRIVATE', name: uploadName.trim() || file.name.replace(/\.png$/i, '').slice(0, 120), rightsDeclaration: rightsDeclared })
       await reload()
       setFilter(uploadCategory)
       setNotice('素材已上传并保存到私人衣橱')
@@ -201,6 +203,7 @@ export default function WardrobeLibrary() {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
       setRightsDeclared(false)
+      setUploadName('')
     }
   }
 
@@ -260,6 +263,7 @@ export default function WardrobeLibrary() {
           <select className="upload-select" aria-label="上传素材类型" value={uploadCategory} onChange={(event) => setUploadCategory(event.target.value as Category)}>
             {categories.map((item) => <option key={item.value} value={item.value}>上传：{item.label}</option>)}
           </select>
+          <input aria-label="素材名称" placeholder="素材名称（可选）" value={uploadName} onChange={(event) => setUploadName(event.target.value)} style={{ width: 170 }} />
           <label className="rights-declaration"><input type="checkbox" checked={rightsDeclared} onChange={(event) => setRightsDeclared(event.target.checked)} />我确认素材为本人原创并拥有下载权</label>
           <button className="action primary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}>{busy ? '上传中…' : '＋ 上传素材'}</button>
           <input ref={fileRef} type="file" accept="image/png" hidden disabled={busy} onChange={(event) => void upload(event.target.files?.[0])} />
@@ -296,7 +300,8 @@ export default function WardrobeLibrary() {
               <div className="thumb"><img src={asset.fileUrl} alt={categoryLabel(asset.category)} loading="lazy" /></div>
               <div className="asset-meta">
                 <div className="asset-category">{categoryLabel(asset.category)}</div>
-                <div className="asset-name" title={asset.attribution || asset.id}>{asset.attribution || asset.id.slice(0, 12)}</div>
+                <div className="asset-name" title={asset.name || asset.id}>{asset.name || `${categoryLabel(asset.category)}素材`}</div>
+                {asset.attribution && <div className="asset-date">作者/署名：{asset.attribution}</div>}
                 <div className="asset-bottom">
                   <span className="asset-date">{asset.width && asset.height ? `${asset.width} × ${asset.height}` : 'PNG 素材'}</span>
                   <button className="favorite" type="button" aria-label={asset.isFavorite ? '取消收藏' : '收藏素材'} aria-pressed={asset.isFavorite} onClick={() => void toggleFavorite(asset)}>{asset.isFavorite ? '★' : '☆'}</button>
