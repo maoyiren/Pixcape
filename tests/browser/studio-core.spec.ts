@@ -25,7 +25,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
 
   await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
     status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' },
-    body: /_(?:default|slim)_128\\.png$/.test(new URL(route.request().url()).pathname) ? png128Bytes : pngBytes,
+    body: /_(?:default|slim)_128\.png$/.test(new URL(route.request().url()).pathname) ? png128Bytes : pngBytes,
   }))
   await page.route('https://www.minecraft.net/**', route => route.fulfill({
     status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: pngBytes,
