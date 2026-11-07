@@ -156,7 +156,7 @@ export default function PixelCanvasEditor() {
     }
   }, [layers, activeId, loaded, size])
 
-  const currentCloudSnapshot = useMemo(() => cloudSnapshot(cloudName, size, activeId, layers), [cloudName, activeId, layers])
+  const currentCloudSnapshot = useMemo(() => cloudSnapshot(cloudName, size, activeId, layers), [cloudName, size, activeId, layers])
   const cloudDirty = cloudDocumentLoaded && cloudBaseline !== null && currentCloudSnapshot !== cloudBaseline
   const composite = useMemo(() => {
     const result = blank(size)
@@ -231,8 +231,8 @@ export default function PixelCanvasEditor() {
 
   const getIndex = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    const x = Math.max(0, Math.min(63, Math.floor((event.clientX - rect.left) / rect.width * size)))
-    const y = Math.max(0, Math.min(63, Math.floor((event.clientY - rect.top) / rect.height * size)))
+    const x = Math.max(0, Math.min(size - 1, Math.floor((event.clientX - rect.left) / rect.width * size)))
+    const y = Math.max(0, Math.min(size - 1, Math.floor((event.clientY - rect.top) / rect.height * size)))
     return y * size + x
   }
   const start = (event: React.PointerEvent<HTMLCanvasElement>) => {
