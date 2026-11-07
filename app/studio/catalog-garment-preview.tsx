@@ -20,7 +20,7 @@ export default function CatalogGarmentPreview({ item, model, skinUrl }: Props) {
     const host = hostRef.current
     if (!host || visible || !supported) return
     if (typeof IntersectionObserver === 'undefined') { setVisible(true); return }
-    const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) { setVisible(true); observer.disconnect() } }, { rootMargin: '160px' })
+    const observer = new IntersectionObserver(entries => { const current = entries.find(entry => entry.target === host); if (current) setVisible(current.isIntersecting) }, { rootMargin: '96px', threshold: 0 })
     observer.observe(host); return () => observer.disconnect()
   }, [visible, supported])
   useEffect(() => {
