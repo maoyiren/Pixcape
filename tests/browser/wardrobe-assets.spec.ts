@@ -183,3 +183,71 @@ test('Studio restores a cloud outfit from server state with an empty local devic
   await expect(page.getByRole('button', { name: 'Alex 细臂' })).toHaveAttribute('aria-pressed', 'true')
   expect(await page.evaluate(() => localStorage.getItem('cdpc:dress-up:outfits-v1'))).toBeNull()
 })
+
+
+test('wardrobe preserves a 128×128 skin PNG through private upload and download', async ({ page }) => {
+  const username = await createAuthenticatedUser(page)
+  const png = await makePng(page, 128)
+  let uploaded = false
+  const asset = {
+    id: 'browser-skin-128',
+    ownerId: 'browser-user',
+    kind: 'IMAGE',
+    category: 'SKIN',
+    mimeType: 'image/png',
+    byteSize: png.length,
+    width: 128,
+    height: 128,
+    source: 'UPLOAD',
+    visibility: 'PRIVATE',
+    attribution: '128 像素皮肤',
+    createdAt: '2026-11-07T00:00:00.000Z',
+    isFavorite: false,
+    fileUrl: '/api/assets/browser-skin-128/file',
+  }
+
+  await page.route('**/api/assets*', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (url.pathname.endsWith('/file')) {
+      await route.fulfill({ status: 200, contentType: 'image/png', body: png })
+      return
+    }
+    if (request.method() === 'POST') {
+      uploaded = true
+      expect(request.postData() || '').toContain('SKIN')
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: asset }) })
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: uploaded ? [asset] : [], nextCursor: null }),
+    })
+  })
+  await page.route('**/api/outfits', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }),
+  }))
+
+  await page.goto(`/u/${username}/wardrobe`)
+  await expect(page.getByRole('heading', { name: '我的衣橱' })).toBeVisible()
+  await page.getByLabel('上传素材类型').selectOption('SKIN')
+  await page.getByRole('button', { name: '＋ 上传素材' }).click()
+  await page.locator('input[type="file"]').first().setInputFiles({
+    name: 'browser-skin-128.png', mimeType: 'image/png', buffer: png,
+  })
+  await expect(page.getByText('128 像素皮肤')).toBeVisible()
+  expect(uploaded).toBe(true)
+  await expect(page.getByText('128 × 128')).toBeVisible()
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: '下载 PNG' }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toBe('cdpc-skin-browser-skin-128.png')
+  const downloadedPath = await download.path()
+  expect(downloadedPath).toBeTruthy()
+  const downloaded = await readFile(downloadedPath!)
+  expect(downloaded.subarray(1, 4).toString()).toBe('PNG')
+  expect(downloaded.readUInt32BE(16)).toBe(128)
+  expect(downloaded.readUInt32BE(20)).toBe(128)
+})
