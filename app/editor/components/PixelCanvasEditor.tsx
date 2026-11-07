@@ -8,8 +8,8 @@ import { normalizePixelEditorDocument } from '@/src/domain/pixel-editor-document
 type Layer = { id: string; name: string; visible: boolean; opacity: number; pixels: string[] }
 type Tool = 'pencil' | 'eraser' | 'fill' | 'eyedropper'
 const DEFAULT_SIZE = 64
-const blank = (size = DEFAULT_size) => Array<string>(size * size).fill('')
-const newLayer = (name: string, size = DEFAULT_size): Layer => ({ id: crypto.randomUUID(), name, visible: true, opacity: 100, pixels: blank(size) })
+const blank = (size = DEFAULT_SIZE) => Array<string>(size * size).fill('')
+const newLayer = (name: string, size = DEFAULT_SIZE): Layer => ({ id: crypto.randomUUID(), name, visible: true, opacity: 100, pixels: blank(size) })
 const cloudSnapshot = (name: string, size: number, activeId: string, layers: Layer[]) => JSON.stringify({ name, document: { version: 1, width: size, height: size, activeId, layers } })
 
 function floodFill(source: string[], start: number, replacement: string, size: number) {
@@ -159,7 +159,7 @@ export default function PixelCanvasEditor() {
   const currentCloudSnapshot = useMemo(() => cloudSnapshot(cloudName, size, activeId, layers), [cloudName, activeId, layers])
   const cloudDirty = cloudDocumentLoaded && cloudBaseline !== null && currentCloudSnapshot !== cloudBaseline
   const composite = useMemo(() => {
-    const result = blank()
+    const result = blank(size)
     layers.forEach(layer => {
       if (!layer.visible || layer.opacity <= 0) return
       layer.pixels.forEach((pixel, index) => {
@@ -178,7 +178,7 @@ export default function PixelCanvasEditor() {
       })
     })
     return result
-  }, [layers])
+  }, [layers, size])
 
   const render = useCallback((pixels: string[]) => {
     const canvas = canvasRef.current
@@ -190,7 +190,7 @@ export default function PixelCanvasEditor() {
       ctx.fillStyle = pixel
       ctx.fillRect(index % size, Math.floor(index / size), 1, 1)
     })
-  }, [])
+  }, [size])
   useEffect(() => render(composite), [composite, render])
 
   const checkpoint = () => {
@@ -315,9 +315,11 @@ export default function PixelCanvasEditor() {
       })
       checkpoint()
       const layer = { ...newLayer(file.name.replace(/\.png$/i, '') || '导入皮肤', image.width), pixels }
-      setLayers(current => [...current, layer])
+      setLayers([layer])
       setActiveId(layer.id)
-      setStatus('已导入 PNG，新图层可独立编辑')
+      setHistory([])
+      setFuture([])
+      setStatus('已导入 PNG，可在新画布中继续编辑')
     } catch { setStatus('无法读取 PNG 文件') }
     finally { URL.revokeObjectURL(url) }
   }
@@ -338,10 +340,10 @@ export default function PixelCanvasEditor() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'cdpc-pixel-skin-64x64.png'
+    link.download = 'cdpc-pixel-skin-' + size + 'x' + size + '.png'
     link.click()
     URL.revokeObjectURL(url)
-    setStatus('已导出 64 × 64 PNG')
+    setStatus('已导出 ' + size + ' × ' + size + ' PNG')
   }
 
   const saveCloudDocument = async () => {
@@ -355,7 +357,7 @@ export default function PixelCanvasEditor() {
     }
     setCloudBusy(true)
     const document = { version: 1 as const, width: size as 64 | 128, height: size as 64 | 128, activeId, layers }
-    const savedSnapshot = cloudSnapshot(cloudName, activeId, layers)
+    const savedSnapshot = cloudSnapshot(cloudName, size, activeId, layers)
     try {
       const saved = cloudDocumentId && cloudDocumentLoaded
         ? await cdpcApi.updateEditorDocument(cloudDocumentId, cloudName, document, cloudRevision)
@@ -382,7 +384,7 @@ export default function PixelCanvasEditor() {
   const saveCloudCopy = async () => {
     setCloudBusy(true)
     const copyName = `${cloudName.trim() || '未命名作品'}（副本）`.slice(0, 80)
-    const document = { version: 1 as const, width: 64 as const, height: 64 as const, activeId, layers }
+    const document = { version: 1 as const, width: size as 64 | 128, height: size as 64 | 128, activeId, layers }
     const savedSnapshot = cloudSnapshot(copyName, size, activeId, layers)
     try {
       const saved = await cdpcApi.createEditorDocument(copyName, document)
@@ -434,13 +436,15 @@ export default function PixelCanvasEditor() {
     setCloudBusy(true)
     try {
       const item = await cdpcApi.getEditorDocument(cloudDocumentId)
-      const nextActiveId = item.document.activeId || item.document.layers[0]?.id || ''
-      setLayers(item.document.layers)
+      const normalized = normalizePixelEditorDocument(item.document)
+      if (!normalized) throw new Error('云端文档尺寸或图层数据无效')
+      const nextActiveId = normalized.activeId
+      setLayers(normalized.layers)
       setActiveId(nextActiveId)
       setCloudName(item.name)
       setCloudRevision(item.revision)
       setCloudDocumentLoaded(true)
-      setCloudBaseline(cloudSnapshot(item.name, nextActiveId, item.document.layers))
+      setCloudBaseline(cloudSnapshot(item.name, normalized.width, nextActiveId, normalized.layers))
       setCloudConflict(false)
       setHistory([])
       setFuture([])
@@ -499,9 +503,9 @@ export default function PixelCanvasEditor() {
 
   const active = layers.find(layer => layer.id === activeId)
   return (
-    <section className="cdpc-pixel-editor" aria-label="64×64 像素编辑器">
+    <section className="cdpc-pixel-editor" aria-label={size + '×' + size + ' 像素编辑器'}>
       <header className="cdpc-pixel-header">
-        <div><h2>64 × 64 像素编辑器</h2><p>原尺寸编辑 · 多图层 · 撤销重做 · PNG 导入导出</p></div>
+        <div><h2>{size} × {size} 像素编辑器</h2><p>原尺寸编辑 · 多图层 · 撤销重做 · PNG 导入导出</p></div>
         <div className="cdpc-pixel-actions">
           <button type="button" onClick={() => fileRef.current?.click()}>导入 PNG</button>
           <input ref={fileRef} hidden type="file" accept="image/png" onChange={event => { void importPng(event.target.files?.[0]); event.currentTarget.value = '' }} />
@@ -542,7 +546,7 @@ export default function PixelCanvasEditor() {
           <canvas ref={canvasRef} width={size} height={size} aria-label={size + ' 乘 ' + size + ' 像素画布'}
             style={{ width: size * zoom + 'px', height: size * zoom + 'px' }}
             onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onLostPointerCapture={stop} />
-          <small>透明背景 · 64 × 64 · {status}</small>
+          <small>透明背景 · {size} × {size} · {status}</small>
         </div>
         <aside className="cdpc-pixel-layers" aria-label="图层面板">
           <div><strong>图层</strong><button type="button" onClick={addLayer}>＋ 新建</button></div>
