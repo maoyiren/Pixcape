@@ -5,9 +5,16 @@ export type PixelEditorDocument = { version: 1; width: 64 | 128; height: 64 | 12
 export function normalizePixelEditorDocument(value: unknown): PixelEditorDocument | null {
   if (!value || typeof value !== 'object') return null
   const input = value as Record<string, unknown>
-  const width = input.width
-  const height = input.height
-  if ((width !== 64 && width !== 128) || height !== width || input.version !== 1 || !Array.isArray(input.layers) || input.layers.length < 1 || input.layers.length > 64) return null
+  let width = input.width
+  let height = input.height
+  // Migrate the previous local draft shape, which stored only layers + activeId.
+  if (input.version === undefined && width === undefined && height === undefined && Array.isArray(input.layers)) {
+    const firstLayer = input.layers[0] as Record<string, unknown> | undefined
+    const pixels = firstLayer && Array.isArray(firstLayer.pixels) ? firstLayer.pixels.length : 0
+    width = pixels === 4096 ? 64 : pixels === 16384 ? 128 : undefined
+    height = width
+  }
+  if ((width !== 64 && width !== 128) || height !== width || (input.version !== undefined && input.version !== 1) || !Array.isArray(input.layers) || input.layers.length < 1 || input.layers.length > 64) return null
 
   const ids = new Set<string>()
   const layers: PixelEditorLayer[] = []
