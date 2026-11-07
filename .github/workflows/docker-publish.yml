@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'Dockerfile'
+      - 'Dockerfile.nextjs'
       - 'docker-entrypoint-single.sh'
       - 'docker-compose.yml'
       - '.env.example'
@@ -25,9 +26,8 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
-# Keep only the newest image build active for each branch; stale runs must not publish over latest.
 concurrency:
-  group: docker-publish-${{ github.ref }}
+  group: docker-publish-postgres-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -55,35 +55,20 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: pixcape
-          MYSQL_DATABASE: pixcape
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd "mysqladmin ping -h 127.0.0.1 -ppixcape"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 15
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-
-      - name: Build the single runtime-switchable image
+      - name: Build PostgreSQL-only image
         uses: docker/build-push-action@v7
         with:
           context: .
           load: true
-          tags: pixcape:runtime-multidb-test
-          cache-from: type=gha,scope=runtime-multidb
-          cache-to: type=gha,mode=max,scope=runtime-multidb
-
-      - name: Start the same image with PostgreSQL, MySQL and SQLite
+          tags: pixcape:postgresql-smoke-test
+          cache-from: type=gha,scope=runtime-postgresql
+          cache-to: type=gha,mode=max,scope=runtime-postgresql
+      - name: Start image against PostgreSQL and verify routes
         shell: bash
         run: |
           set -euo pipefail
@@ -94,88 +79,88 @@ jobs:
             docker rm -f pixcape-smoke >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
-
-          for PROVIDER in postgresql mysql sqlite; do
-            echo "Smoke-testing runtime provider: $PROVIDER"
-            case "$PROVIDER" in
-              postgresql)
-                DATABASE_URL='postgresql://pixcape:pixcape@host.docker.internal:5432/pixcape?schema=public'
-                ;;
-              mysql)
-                DATABASE_URL='mysql://root:pixcape@host.docker.internal:3306/pixcape'
-                ;;
-              sqlite)
-                DATABASE_URL='file:/data/pixcape.db'
-                ;;
-            esac
-
-            docker rm -f pixcape-smoke >/dev/null 2>&1 || true
-            docker run -d --name pixcape-smoke \
-              --add-host=host.docker.internal:host-gateway \
-              -p 127.0.0.1:18787:80 \
-              -e DATABASE_PROVIDER="$PROVIDER" \
-              -e DATABASE_URL="$DATABASE_URL" \
-              -e NEXTAUTH_SECRET='ci-only-secret-not-for-production-0123456789' \
-              -e NEXTAUTH_URL='http://localhost:18787' \
-              -v /tmp/pixcape-smoke-data:/data \
-              pixcape:runtime-multidb-test >/dev/null
-
-            ready=0
-            for attempt in $(seq 1 60); do
-              health_ok=0
-              app_ok=0
-              if curl --fail --silent http://127.0.0.1:18787/health >/tmp/pixcape-health.json; then
-                health_ok=1
-              fi
-              # /health is served directly by nginx; also wait for the Next.js upstream
-              # so a transient 502 during process startup is not mistaken for app readiness.
-              app_code="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18787/ || true)"
-              if [ "$app_code" = "200" ]; then
-                app_ok=1
-              fi
-              if [ "$health_ok" -eq 1 ] && [ "$app_ok" -eq 1 ]; then
-                ready=1
-                break
-              fi
-              if [ "$attempt" -eq 60 ]; then
-                echo "Container did not become ready for $PROVIDER (health=$health_ok app_http=$app_code)" >&2
-                docker logs pixcape-smoke >&2 || true
-                exit 1
-              fi
-              sleep 2
-            done
-            test "$ready" -eq 1
-            node -e "const fs=require('fs'); const h=JSON.parse(fs.readFileSync('/tmp/pixcape-health.json','utf8')); if(h.status!=='ok') process.exit(1)"
-            check_http() {
-              local path="$1"
-              local expected="${2:-}"
-              local code
-              code="$(curl --location --silent --show-error --output /tmp/pixcape-response.txt --write-out '%{http_code}' "http://127.0.0.1:18787$path" || true)"
-              if [ "$code" != "200" ]; then
-                echo "Request $path returned HTTP $code" >&2
-                cat /tmp/pixcape-response.txt >&2 || true
-                docker logs pixcape-smoke >&2 || true
-                exit 1
-              fi
-              if [ -n "$expected" ] && ! grep -qi "$expected" /tmp/pixcape-response.txt; then
-                echo "Request $path did not contain expected marker: $expected" >&2
-                head -c 2000 /tmp/pixcape-response.txt >&2 || true
-                docker logs pixcape-smoke >&2 || true
-                exit 1
-              fi
-            }
-            check_http / '<html'
-            check_http /login '<html'
-            check_http /studio/ '<html'
-            check_http /blockbench/ '<html'
-            check_http /api/ai/models
-            docker exec pixcape-smoke sh -c 'test -s /opt/pixcape-next/generated/prisma-postgresql/index.js && test -s /opt/pixcape-next/generated/prisma-mysql/index.js && test -s /opt/pixcape-next/generated/prisma-sqlite/index.js'
-            if [ "$PROVIDER" = sqlite ]; then
-              test -s /tmp/pixcape-smoke-data/pixcape.db
+          docker run -d --name pixcape-smoke \
+            --add-host=host.docker.internal:host-gateway \
+            -p 127.0.0.1:18787:80 \
+            -e DATABASE_URL='postgresql://pixcape:pixcape@host.docker.internal:5432/pixcape?schema=public' \
+            -e NEXTAUTH_SECRET='ci-only-secret-not-for-production-0123456789' \
+            -e NEXTAUTH_URL='http://localhost:18787' \
+            -v /tmp/pixcape-smoke-data:/data \
+            pixcape:postgresql-smoke-test >/dev/null
+          for attempt in $(seq 1 60); do
+            health_ok=0
+            app_ok=0
+            curl --fail --silent http://127.0.0.1:18787/health >/tmp/pixcape-health.json && health_ok=1 || true
+            app_code="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18787/ || true)"
+            [ "$app_code" = "200" ] && app_ok=1 || true
+            if [ "$health_ok" -eq 1 ] && [ "$app_ok" -eq 1 ]; then break; fi
+            if [ "$attempt" -eq 60 ]; then
+              echo "Container did not become ready (health=$health_ok app_http=$app_code)" >&2
+              docker logs pixcape-smoke >&2 || true
+              exit 1
             fi
-            cleanup
+            sleep 2
           done
-          echo "Single image passed runtime startup checks for PostgreSQL, MySQL and SQLite."
+          node -e "const fs=require('fs'); const h=JSON.parse(fs.readFileSync('/tmp/pixcape-health.json','utf8')); if(h.status!=='ok') process.exit(1)"
+          check_http() {
+            local path="$1"
+            local expected="${2:-}"
+            local code
+            code="$(curl --location --silent --show-error --output /tmp/pixcape-response.txt --write-out '%{http_code}' "http://127.0.0.1:18787$path" || true)"
+            if [ "$code" != "200" ]; then
+              echo "Request $path returned HTTP $code" >&2
+              cat /tmp/pixcape-response.txt >&2 || true
+              docker logs pixcape-smoke >&2 || true
+              exit 1
+            fi
+            if [ -n "$expected" ] && ! grep -qi "$expected" /tmp/pixcape-response.txt; then
+              echo "Request $path did not contain expected marker: $expected" >&2
+              head -c 2000 /tmp/pixcape-response.txt >&2 || true
+              exit 1
+            fi
+          }
+          check_http / '<html'
+          check_http /login '<html'
+          check_http /studio/ '<html'
+          check_http /blockbench/ '<html'
+          check_http /api/ai/models
+          docker exec pixcape-smoke sh -c 'test -s /opt/pixcape-next/generated/prisma-postgresql/index.js'
+          echo "PostgreSQL-only Docker image passed runtime smoke tests."
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: smoke-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+      - name: Build and publish PostgreSQL-only image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=runtime-postgresql
+          cache-to: type=gha,mode=max,scope=runtime-postgresql
 
   deploy-1panel:
     name: Deploy to 1Panel V2
@@ -214,42 +199,3 @@ jobs:
             cd "$DEPLOY_PATH"
             chmod 700 deploy-1panel.sh
             ./deploy-1panel.sh "$COMMIT_SHA"
-
-  publish:
-    if: github.event_name != 'pull_request'
-    needs: smoke-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=branch
-            type=ref,event=tag
-            type=sha,prefix=sha-
-
-      - name: Build and publish one multi-database image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=runtime-multidb
-          cache-to: type=gha,mode=max,scope=runtime-multidb
