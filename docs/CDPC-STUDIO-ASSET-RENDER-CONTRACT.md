@@ -18,7 +18,7 @@ The shared domain and PostgreSQL enum are the source of truth:
 
 | Category | Domain value | Rendering status |
 |---|---|---|
-| Skin | `SKIN` | Base 64×64 skin texture |
+| Skin | `SKIN` | Base 64×64 or 128×128 skin texture |
 | Shawl / 披肩 | `SHAWL` | Existing Studio path; verify texture contract |
 | Coat / 外套 | `COAT` | Existing Studio path; verify texture contract |
 | Cape / 披风 | `CAPE` | Separate back equipment; never merge into the skin PNG |
@@ -27,7 +27,7 @@ The shared domain and PostgreSQL enum are the source of truth:
 | Shoes / 鞋子 | `SHOES` | Not enabled until its UV/layer contract is defined and tested |
 | Other accessory | `OTHER_ACCESSORY` | Not enabled until a concrete renderer contract exists |
 
-披肩、外套、披风 are distinct product concepts and must remain distinct storage categories. In particular, a cape is independent back equipment and is excluded from standard 64×64 skin PNG export.
+披肩、外套、披风 are distinct product concepts and must remain distinct storage categories. In particular, a cape is independent back equipment and is excluded from skin PNG export.
 
 ## 3. Texture contract required before enabling a category
 
@@ -70,7 +70,7 @@ Keep the rendering responsibilities separate:
 - **Texture adapter** validates the category-specific texture contract and produces a normalized render descriptor.
 - **Single-item renderer** displays one item in isolation using its declared renderer.
 - **Character try-on renderer** applies the normalized descriptor to the current character immediately.
-- **Outfit compositor/exporter** composes only exportable skin layers into a 64×64 PNG. Separate equipment such as capes is reported as excluded and may have its own asset export path.
+- **Outfit compositor/exporter** composes only exportable skin layers into a 64×64 or 128×128 PNG, preserving the base skin's native dimensions. Separate equipment such as capes is reported as excluded and may have its own asset export path.
 
 The same normalized descriptor must be consumed by preview and export. Do not maintain separate, subtly different hard-coded UV rectangle lists in the preview and export code.
 
