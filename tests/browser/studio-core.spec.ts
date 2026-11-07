@@ -118,7 +118,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
     await expect(page.getByLabel('切换角色动作')).toHaveValue(pose)
   }
   // Repeating the action switch must not leave a stale pose animation attached.
-  const autoRotateControl = page.locator('.dressup-preview-select button').first()
+  const autoRotateControl = page.locator('.dressup-top-tools > button').first()
   await autoRotateControl.click()
   await expect(autoRotateControl).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '显示鞘翅' }).click()
