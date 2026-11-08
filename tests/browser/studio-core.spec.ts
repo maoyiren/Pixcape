@@ -126,6 +126,9 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   for (const pose of ['run', 'crouch', 'hit', 'swim']) {
     await actionSelect.selectOption(pose)
     await expect(actionSelect).toHaveValue(pose)
+    // Assert the control group survives each React/Three.js animation update.
+    await expect(actionGroup).toBeVisible()
+    expect(pageErrors).toEqual([])
   }
   // Repeating the action switch must not leave a stale pose animation attached.
   const autoRotateControl = page.getByRole('button', { name: '自动旋转', exact: true })
