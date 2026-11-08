@@ -518,9 +518,10 @@ export default function DressUpStudio() {
     const viewer = viewerRef.current
     if (!viewer) return
 
-    // Use skinview3d's native animation classes. Custom callbacks attached to
-    // IdleAnimation triggered a null.trim runtime error in the animation
-    // controller when switching to crouch/hit/swim.
+    // Use skinview3d's native animation classes. Replacing the animation
+    // directly lets SkinViewer stop/reset the previous pose exactly once;
+    // clearing to null in effect cleanup caused an unnecessary intermediate
+    // reset during rapid pose changes.
     const animation =
       pose === 'fly' ? new FlyingAnimation()
         : pose === 'walk' ? new WalkingAnimation()
@@ -533,7 +534,6 @@ export default function DressUpStudio() {
 
     animation.speed = pose === 'walk' ? 0.72 : pose === 'run' ? 1.45 : 1
     viewer.animation = animation
-    return () => { if (viewer.animation === animation) viewer.animation = null }
   }, [pose, cape?.id, elytraVisible])
 
   useEffect(() => {
