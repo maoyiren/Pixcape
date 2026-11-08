@@ -659,6 +659,7 @@ export default function DressUpStudio() {
           viewer.playerObject.backEquipment = elytraVisible ? 'elytra' : null
         }
         if (cancelled) return
+        viewer.canvas.dataset.cdpcGarmentCategories = selectedItems.map(item => item.category).sort().join(',')
         setStatus('预览已更新')
       } catch (error) {
         if (!cancelled) {
