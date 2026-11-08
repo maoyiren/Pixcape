@@ -14,19 +14,18 @@ type SkinLeg = Object3D & { outerLayer: Object3D }
 type SkinParts = Object3D & { leftLeg: SkinLeg; rightLeg: SkinLeg }
 
 function setShoeUv(geometry: BoxGeometry, region: ReturnType<typeof getStudioShoeUvRegions>[number], textureSize: 64 | 128) {
-  const { u, v, width, height, depth } = region
-  const face = (x1: number, y1: number, x2: number, y2: number) => [
-    [x1 / textureSize, 1 - y2 / textureSize],
-    [x2 / textureSize, 1 - y2 / textureSize],
-    [x2 / textureSize, 1 - y1 / textureSize],
-    [x1 / textureSize, 1 - y1 / textureSize],
+  const face = (rect: { x: number; y: number; width: number; height: number }) => [
+    [rect.x / textureSize, 1 - (rect.y + rect.height) / textureSize],
+    [(rect.x + rect.width) / textureSize, 1 - (rect.y + rect.height) / textureSize],
+    [(rect.x + rect.width) / textureSize, 1 - rect.y / textureSize],
+    [rect.x / textureSize, 1 - rect.y / textureSize],
   ]
-  const top = face(u + depth, v, u + width + depth, v + depth)
-  const bottom = face(u + width + depth, v, u + width * 2 + depth, v + depth)
-  const left = face(u, v + depth, u + depth, v + depth + height)
-  const right = face(u + width + depth, v + depth, u + width + depth * 2, v + height + depth)
-  const front = face(u + depth, v + depth, u + width + depth, v + depth + height)
-  const back = face(u + width + depth * 2, v + depth, u + width * 2 + depth * 2, v + height + depth)
+  const top = face(region.faces.top)
+  const bottom = face(region.faces.bottom)
+  const left = face(region.faces.left)
+  const right = face(region.faces.right)
+  const front = face(region.faces.front)
+  const back = face(region.faces.back)
   const uvFaces = [
     [right[3], right[2], right[0], right[1]],
     [left[3], left[2], left[0], left[1]],
@@ -55,7 +54,7 @@ export function createStudioShoeGeometry(
 
 /**
  * Adds two independent boot meshes to the animated left/right leg pivots.
- * Each mesh samples only the lower 4×4×4 UV island of its corresponding
+ * Each mesh samples only the lower four-unit shoe surfaces from its corresponding
  * Minecraft outer-leg atlas; it does not reuse the full-leg outer-layer mesh.
  */
 export function attachStudioShoeGeometry(
