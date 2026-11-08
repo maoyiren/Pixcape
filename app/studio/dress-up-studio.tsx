@@ -794,7 +794,7 @@ export default function DressUpStudio() {
       const assetIds = [...new Set([...persisted.map(item => item.assetId).filter((id): id is string => Boolean(id)), ...(skinAssetId ? [skinAssetId] : [])])]
       const document = {
         format: 'cdpc-studio-project', version: 1,
-        workspace: { activeTool: 'WARDROBE', model, pose, background, backgroundScene, skinName },
+        workspace: { activeTool: 'WARDROBE', model, pose, background, backgroundScene, skinName, elytraVisible, autoRotate, viewAngle },
         outfit: { name: title, itemAssetIds: persisted.map(item => item.assetId), skinAssetId },
       }
       const input: ProjectInput = { title, description: 'CDPC 角色换装与创作项目', visibility: 'PRIVATE', document, assetIds }
@@ -850,6 +850,9 @@ export default function DressUpStudio() {
       setSelected(restored); setSkinUrl(skin?.fileUrl || BASE_SKIN)
       setSkinName(typeof workspace.skinName === 'string' ? workspace.skinName : skin?.name || 'Steve 默认皮肤')
       setModel(workspace.model === 'alex' ? 'alex' : 'steve'); setPose(normalizeStudioPose(workspace.pose))
+      setElytraVisible(workspace.elytraVisible === true)
+      setAutoRotate(workspace.autoRotate === true)
+      setViewAngle(workspace.viewAngle === 'back' || workspace.viewAngle === 'side' ? workspace.viewAngle : 'front')
       if (typeof workspace.background === 'string' && /^#[0-9a-f]{6}$/i.test(workspace.background)) setBackground(workspace.background)
       const scenes = ['day','night','plains','desert','forest','nether','end','custom']
       setBackgroundScene(typeof workspace.backgroundScene === 'string' && scenes.includes(workspace.backgroundScene) ? workspace.backgroundScene : 'custom')
