@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
+import { cdpcApi, type ApiProjectSummary, type OutfitInput, type ProjectInput } from '@/src/client/cdpc-api'
 import { CrouchAnimation, FlyingAnimation, HitAnimation, IdleAnimation, RunningAnimation, SkinViewer, SwimAnimation, WalkingAnimation, WaveAnimation } from 'skinview3d'
 import CatalogGarmentPreview from './catalog-garment-preview'
 import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
@@ -98,6 +98,10 @@ export default function DressUpStudio() {
   const [savedOutfits, setSavedOutfits] = useState<LocalOutfit[]>([])
   const [selectedSavedOutfitId, setSelectedSavedOutfitId] = useState('')
   const [savingCloud, setSavingCloud] = useState(false)
+  const [projects, setProjects] = useState<ApiProjectSummary[]>([])
+  const [selectedProjectId, setSelectedProjectId] = useState('')
+  const [selectedProjectRevision, setSelectedProjectRevision] = useState(0)
+  const [savingProject, setSavingProject] = useState(false)
   const [wardrobeItems, setWardrobeItems] = useState<CatalogItem[]>([])
   const [favoriteIds, setFavoriteIds] = useState<string[]>([])
   const [favoritesLoaded, setFavoritesLoaded] = useState(false)
@@ -293,6 +297,14 @@ export default function DressUpStudio() {
       }
     }
     void loadWardrobeAssets()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void cdpcApi.listProjects().then(items => { if (!cancelled) setProjects(items) }).catch(error => {
+      if (!cancelled && !(error instanceof Error && 'status' in error && error.status === 401)) setSaveNotice(error instanceof Error ? `云端项目列表加载失败：${error.message}` : '云端项目列表加载失败')
+    })
     return () => { cancelled = true }
   }, [])
 
@@ -744,6 +756,73 @@ export default function DressUpStudio() {
     } finally {
       setSavingCloud(false)
     }
+  }
+
+  async function saveStudioProject() {
+    const title = outfitName.trim().slice(0, 80)
+    if (!title) { setSaveNotice('请先填写项目名称'); return }
+    if (savingProject) return
+    setSavingProject(true); setSaveNotice('正在整理素材并保存完整创作项目…')
+    try {
+      const base = await loadImage(skinUrl)
+      const invalid = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
+      if (invalid) throw new Error(invalid)
+      const size = base.naturalWidth as 64 | 128
+      const persisted: CatalogItem[] = []
+      for (const item of selectedItems) {
+        if (item.assetId && item.fileUrl) { persisted.push(item); continue }
+        const filename = item.category === '披风' ? item.texture : selectStudioOverlayTexture(item, model, size)
+        const uploaded = await uploadAssetFromUrl(item.fileUrl || ASSET_ROOT + filename, toAssetCategory(item.category), item.name)
+        persisted.push({ ...item, assetId: uploaded.id, fileUrl: uploaded.fileUrl })
+      }
+      let skinAssetId = /\/api\/assets\/([^/]+)\/file(?:\?|$)/.exec(skinUrl)?.[1] ?? null
+      if (!skinAssetId && skinUrl.startsWith('data:image/png')) skinAssetId = (await uploadAssetFromUrl(skinUrl, 'SKIN', skinName || '创作项目基础皮肤')).id
+      const assetIds = [...new Set([...persisted.map(item => item.assetId).filter((id): id is string => Boolean(id)), ...(skinAssetId ? [skinAssetId] : [])])]
+      const document = {
+        format: 'cdpc-studio-project', version: 1,
+        workspace: { activeTool: 'WARDROBE', model, pose, background, backgroundScene, skinName },
+        outfit: { name: title, itemAssetIds: persisted.map(item => item.assetId), skinAssetId },
+      }
+      const input: ProjectInput = { title, description: 'CDPC 角色换装与创作项目', visibility: 'PRIVATE', document, assetIds }
+      const saved = selectedProjectId ? await cdpcApi.updateProject(selectedProjectId, input, selectedProjectRevision) : await cdpcApi.createProject(input)
+      setSelectedProjectId(saved.id); setSelectedProjectRevision(saved.revision)
+      setProjects(current => [saved, ...current.filter(item => item.id !== saved.id)])
+      setSelected(current => persisted.reduce<Record<string, CatalogItem>>((next, item) => ({ ...next, [item.category]: item }), current))
+      setSaveNotice(`“${title}”已保存为账号云端项目（版本 ${saved.revision}）；项目素材已绑定，可在其他设备恢复。`)
+    } catch (error) { setSaveNotice(error instanceof Error ? `项目保存失败：${error.message}` : '项目保存失败，请登录后重试') }
+    finally { setSavingProject(false) }
+  }
+
+  async function loadStudioProject() {
+    if (!selectedProjectId) { setSaveNotice('请先选择一个云端项目'); return }
+    try {
+      setSaveNotice('正在从账号云端恢复创作项目…')
+      const project = await cdpcApi.getProject(selectedProjectId), doc = project.document
+      if (doc.format !== 'cdpc-studio-project' || doc.version !== 1 || !doc.workspace || typeof doc.workspace !== 'object' || !doc.outfit || typeof doc.outfit !== 'object') throw new Error('项目文档格式或版本不受支持')
+      const workspace = doc.workspace as Record<string, unknown>, outfit = doc.outfit as Record<string, unknown>
+      const itemIds = Array.isArray(outfit.itemAssetIds) ? outfit.itemAssetIds.filter((id): id is string => typeof id === 'string') : []
+      const skinId = typeof outfit.skinAssetId === 'string' ? outfit.skinAssetId : null
+      const ids = [...new Set([...itemIds, ...(skinId ? [skinId] : [])])]
+      const assets = ids.length ? (await cdpcApi.listAssets({ ids, limit: 100 })).items : []
+      const byId = new Map(assets.map(asset => [asset.id, asset])), restored: Record<string, CatalogItem> = {}
+      for (const id of itemIds) {
+        const asset = byId.get(id), cat = fromAssetCategory(asset?.category ?? null)
+        if (!asset?.fileUrl || !cat) continue
+        restored[cat] = { id: asset.id, assetId: asset.id, fileUrl: asset.fileUrl, texture: asset.fileUrl, name: asset.name || `云端${cat}素材`, category: cat, note: '云端项目素材', attribution: asset.attribution, source: asset.source, visibility: asset.visibility, provenance: asset.provenance, downloadPolicy: asset.downloadPolicy, canDownload: asset.canDownload }
+      }
+      const skin = skinId ? byId.get(skinId) : null
+      if (skinId && (!skin || skin.category !== 'SKIN')) throw new Error('项目基础皮肤不存在或无权访问')
+      setSelected(restored); setSkinUrl(skin?.fileUrl || BASE_SKIN)
+      setSkinName(typeof workspace.skinName === 'string' ? workspace.skinName : skin?.name || 'Steve 默认皮肤')
+      setModel(workspace.model === 'alex' ? 'alex' : 'steve'); setPose(normalizeStudioPose(workspace.pose))
+      if (typeof workspace.background === 'string' && /^#[0-9a-f]{6}$/i.test(workspace.background)) setBackground(workspace.background)
+      const scenes = ['day','night','plains','desert','forest','nether','end','custom']
+      setBackgroundScene(typeof workspace.backgroundScene === 'string' && scenes.includes(workspace.backgroundScene) ? workspace.backgroundScene : 'custom')
+      setOutfitName(typeof outfit.name === 'string' ? outfit.name : project.title); setSelectedProjectRevision(project.revision)
+      const pointer = await cdpcApi.getWorkspace()
+      await cdpcApi.updateWorkspace({ ...pointer, projectId: project.id, activeTool: 'WARDROBE' })
+      setSaveNotice(`已恢复云端项目“${project.title}”（版本 ${project.revision}）`)
+    } catch (error) { setSaveNotice(error instanceof Error ? `项目恢复失败：${error.message}` : '项目恢复失败，请稍后重试') }
   }
 
   function saveLocalOutfit() {
@@ -1301,6 +1380,22 @@ export default function DressUpStudio() {
               <button type="button" onClick={() => skinFileRef.current?.click()}>更换基础皮肤</button>
             </div>
           </details>
+          <div className="dressup-outfit-manager">
+            <label htmlFor="dressup-project-select">云端创作项目（{projects.length}）</label>
+            <select id="dressup-project-select" value={selectedProjectId} onChange={event => {
+              const id = event.target.value; setSelectedProjectId(id)
+              const found = projects.find(project => project.id === id)
+              setSelectedProjectRevision(found?.revision ?? 0)
+              if (found) setOutfitName(found.title)
+            }}>
+              <option value="">新建项目 / 选择项目…</option>
+              {projects.map(project => <option key={project.id} value={project.id}>{project.title} · v{project.revision}</option>)}
+            </select>
+            <div className="dressup-outfit-manager-actions">
+              <button type="button" onClick={() => void saveStudioProject()} disabled={savingProject}>{savingProject ? '项目保存中…' : selectedProjectId ? '保存项目版本' : '保存为云端项目'}</button>
+              <button type="button" onClick={() => void loadStudioProject()} disabled={!selectedProjectId || savingProject}>载入云端项目</button>
+            </div>
+          </div>
           <div className="dressup-outfit-manager">
             <label htmlFor="dressup-outfit-name">穿搭名称</label>
             <input id="dressup-outfit-name" value={outfitName} maxLength={48} onChange={event => setOutfitName(event.target.value)} placeholder="例如：夜行披风套装" />
