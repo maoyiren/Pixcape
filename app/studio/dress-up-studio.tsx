@@ -525,34 +525,39 @@ export default function DressUpStudio() {
     }
     if (pose === 'crouch') {
       animation.addAnimation((player, progress) => {
-        player.skin.body.rotation.x = 0.32
-        player.skin.head.rotation.x = -0.22
-        player.skin.leftArm.rotation.x = -0.48 + Math.sin(progress * 2) * 0.035
-        player.skin.rightArm.rotation.x = -0.48 - Math.sin(progress * 2) * 0.035
-        player.skin.leftLeg.rotation.x = -0.62
-        player.skin.rightLeg.rotation.x = -0.62
+        // Skin variants and partial player objects can omit individual groups.
+        // Guard each part so an animation tick cannot tear down the preview UI.
+        const skin = player.skin as unknown as Record<string, { rotation?: { x: number; y: number; z: number } }>
+        if (skin.body?.rotation) skin.body.rotation.x = 0.32
+        if (skin.head?.rotation) skin.head.rotation.x = -0.22
+        if (skin.leftArm?.rotation) skin.leftArm.rotation.x = -0.48 + Math.sin(progress * 2) * 0.035
+        if (skin.rightArm?.rotation) skin.rightArm.rotation.x = -0.48 - Math.sin(progress * 2) * 0.035
+        if (skin.leftLeg?.rotation) skin.leftLeg.rotation.x = -0.62
+        if (skin.rightLeg?.rotation) skin.rightLeg.rotation.x = -0.62
       })
     }
     if (pose === 'hit') {
       animation.addAnimation((player, progress) => {
         const recoil = Math.sin(progress * 8) * 0.12
-        player.skin.body.rotation.z = recoil
-        player.skin.head.rotation.z = -recoil * 0.6
-        player.skin.leftArm.rotation.x = -1.15 + recoil
-        player.skin.rightArm.rotation.x = -1.15 - recoil
-        player.skin.leftLeg.rotation.x = 0.24
-        player.skin.rightLeg.rotation.x = -0.18
+        const skin = player.skin as unknown as Record<string, { rotation?: { x: number; y: number; z: number } }>
+        if (skin.body?.rotation) skin.body.rotation.z = recoil
+        if (skin.head?.rotation) skin.head.rotation.z = -recoil * 0.6
+        if (skin.leftArm?.rotation) skin.leftArm.rotation.x = -1.15 + recoil
+        if (skin.rightArm?.rotation) skin.rightArm.rotation.x = -1.15 - recoil
+        if (skin.leftLeg?.rotation) skin.leftLeg.rotation.x = 0.24
+        if (skin.rightLeg?.rotation) skin.rightLeg.rotation.x = -0.18
       })
     }
     if (pose === 'swim') {
       animation.addAnimation((player, progress) => {
         const stroke = Math.sin(progress * 5)
-        player.skin.body.rotation.x = -0.72
-        player.skin.head.rotation.x = 0.48
-        player.skin.leftArm.rotation.x = -1.2 + stroke * 0.75
-        player.skin.rightArm.rotation.x = -1.2 - stroke * 0.75
-        player.skin.leftLeg.rotation.x = Math.sin(progress * 5 + Math.PI) * 0.55
-        player.skin.rightLeg.rotation.x = Math.sin(progress * 5) * 0.55
+        const skin = player.skin as unknown as Record<string, { rotation?: { x: number; y: number; z: number } }>
+        if (skin.body?.rotation) skin.body.rotation.x = -0.72
+        if (skin.head?.rotation) skin.head.rotation.x = 0.48
+        if (skin.leftArm?.rotation) skin.leftArm.rotation.x = -1.2 + stroke * 0.75
+        if (skin.rightArm?.rotation) skin.rightArm.rotation.x = -1.2 - stroke * 0.75
+        if (skin.leftLeg?.rotation) skin.leftLeg.rotation.x = Math.sin(progress * 5 + Math.PI) * 0.55
+        if (skin.rightLeg?.rotation) skin.rightLeg.rotation.x = Math.sin(progress * 5) * 0.55
       })
     }
     if (pose === 'fly' && cape && !elytraVisible) {

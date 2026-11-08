@@ -62,6 +62,9 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
   await expect(page.locator('.dressup-real-preview canvas')).toBeVisible({ timeout: 15_000 })
 
+  const pageErrors: string[] = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+
   // Three separate garment types must remain independently selectable.
   await page.getByRole('button', { name: '披肩', exact: true }).click()
   const shawlCard = page.locator('.dressup-item').filter({ hasText: '眼眸花披肩' })
@@ -109,16 +112,19 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   // 3D controls are interactive and do not navigate away from the workspace.
   await page.getByRole('button', { name: 'Alex 细臂' }).click()
   await expect(page.getByRole('button', { name: 'Alex 细臂' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByLabel('切换角色动作').selectOption('walk')
-  await expect(page.getByLabel('切换角色动作')).toHaveValue('walk')
-  await page.getByLabel('切换角色动作').selectOption('fly')
-  await expect(page.getByLabel('切换角色动作')).toHaveValue('fly')
+  const actionGroup = page.getByRole('group', { name: '角色动作与视角' })
+  const actionSelect = actionGroup.getByLabel('切换角色动作')
+  await actionSelect.selectOption('walk')
+  await expect(actionSelect).toHaveValue('walk')
+  await actionSelect.selectOption('fly')
+  await expect(actionSelect).toHaveValue('fly')
   for (const pose of ['run', 'crouch', 'hit', 'swim']) {
-    await page.getByLabel('切换角色动作').selectOption(pose)
-    await expect(page.getByLabel('切换角色动作')).toHaveValue(pose)
+    await actionSelect.selectOption(pose)
+    await expect(actionSelect).toHaveValue(pose)
   }
+  expect(pageErrors).toEqual([])
   // Repeating the action switch must not leave a stale pose animation attached.
-  const autoRotateControl = page.locator('.dressup-top-tools > button').first()
+  const autoRotateControl = actionGroup.locator('button').first()
   await autoRotateControl.click()
   await expect(autoRotateControl).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '显示鞘翅' }).click()
