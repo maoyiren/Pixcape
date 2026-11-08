@@ -1169,11 +1169,13 @@ export default function DressUpStudio() {
       context.imageSmoothingEnabled = false
       context.drawImage(base, 0, 0, textureSize, textureSize)
       for (const item of selectedItems.filter(entry => entry.category !== '披风')) {
-        if (item.category !== '披肩' && item.category !== '外套') {
+        if (!['披肩', '外套', '帽子', '裤子', '鞋子'].includes(item.category)) {
           throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，无法导出`)
         }
-        const uvProfile = getStudioOverlayUvProfile(item.category)
-        if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的服装 UV 导出方式')
+        const uvProfile = getStudioOverlayUvProfile(item.category as StudioOverlayCategory)
+        if (!['full-atlas-alpha', 'outer-layer-parts', 'separate-box-geometry'].includes(uvProfile.composition)) {
+          throw new Error('不支持的服装 UV 导出方式')
+        }
         const textureName = item.fileUrl || ASSET_ROOT + selectStudioOverlayTexture(item, model, textureSize)
         const overlay = await loadImage(textureName)
         const overlayError = validateStudioOverlayMatchesBase(
@@ -1181,7 +1183,9 @@ export default function DressUpStudio() {
           { width: overlay.naturalWidth, height: overlay.naturalHeight },
         )
         if (overlayError) throw new Error(`${item.name}：${overlayError}`)
-        // Export the complete, pre-mapped category UV atlas with its alpha channel.
+        // Each category owns its atlas UV islands; compose the complete alpha map.
+        // Shoes use independent 3D boxes in preview, but remain vanilla-compatible
+        // outer-leg UV pixels in the exported Minecraft skin PNG.
         context.drawImage(overlay, 0, 0)
       }
       const pngBlob = await new Promise<Blob>((resolve, reject) => {
