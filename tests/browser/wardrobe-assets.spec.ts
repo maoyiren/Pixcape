@@ -269,3 +269,71 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
   expect(downloaded.readUInt32BE(16)).toBe(128)
   expect(downloaded.readUInt32BE(20)).toBe(128)
 })
+
+
+test('Studio renders an uploaded shoe as two independent animated meshes and exports its vanilla UV islands', async ({ page }) => {
+  await createAuthenticatedUser(page)
+  const png = await makePng(page, 64)
+  const shoe = {
+    id: 'browser-shoe-asset',
+    ownerId: 'browser-user',
+    kind: 'ACCESSORY_TEXTURE',
+    category: 'SHOES',
+    mimeType: 'image/png',
+    byteSize: png.length,
+    width: 64,
+    height: 64,
+    source: 'UPLOAD',
+    visibility: 'PRIVATE',
+    name: '浏览器独立鞋子素材',
+    attribution: '鞋子测试作者',
+    provenance: 'USER_CREATED',
+    downloadPolicy: 'OWNER_ONLY',
+    canDownload: true,
+    createdAt: '2026-11-08T00:00:00.000Z',
+    isFavorite: false,
+    fileUrl: '/api/assets/browser-shoe-asset/file',
+  }
+
+  await page.route('**/api/outfits', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }),
+  }))
+  await page.route('**/api/assets**', async route => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith('/file')) {
+      await route.fulfill({ status: 200, contentType: 'image/png', body: png })
+      return
+    }
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ items: [shoe], nextCursor: null }),
+    })
+  })
+  await page.route('**/api/workspace', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ item: { projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null } }),
+  }))
+
+  await page.goto('/studio')
+  await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
+  await expect(page.locator('.dressup-real-preview canvas')).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: '鞋子', exact: true }).click()
+  const shoeCard = page.locator('.dressup-item').filter({ hasText: '浏览器独立鞋子素材' })
+  await expect(shoeCard).toBeVisible()
+  await shoeCard.click()
+
+  await expect(page.locator('.dressup-selected-list')).toContainText('浏览器独立鞋子素材')
+  await expect(page.locator('.dressup-real-preview canvas')).toHaveAttribute('data-cdpc-shoe-meshes', '2')
+  await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).toContainText('浏览器独立鞋子素材')
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: '导出皮肤 PNG' }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toBe('cdpc-skin-64x64.png')
+  const outputPath = await download.path()
+  const output = await readFile(outputPath!)
+  expect(output.subarray(1, 4).toString()).toBe('PNG')
+  expect(output.readUInt32BE(16)).toBe(64)
+  expect(output.readUInt32BE(20)).toBe(64)
+})
