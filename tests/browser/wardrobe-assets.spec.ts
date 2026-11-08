@@ -291,6 +291,7 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
 test('Studio renders an uploaded shoe as two independent animated meshes and exports its vanilla UV islands', async ({ page }) => {
   await createAuthenticatedUser(page)
   const png = await makeGarmentOverlayPng(page, 64)
+  const baseSkin = await makePng(page, 64)
   const shoe = {
     id: 'browser-shoe-asset',
     ownerId: 'browser-user',
@@ -315,7 +316,7 @@ test('Studio renders an uploaded shoe as two independent animated meshes and exp
   const pants = { ...shoe, id: 'browser-pants-asset', category: 'PANTS', name: '浏览器独立裤子素材', fileUrl: '/api/assets/browser-pants-asset/file' }
 
   await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
-    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: png,
+    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: baseSkin,
   }))
   await page.route('https://www.minecraft.net/**', route => route.fulfill({
     status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: png,
