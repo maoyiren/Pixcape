@@ -63,7 +63,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(page.locator('.dressup-real-preview canvas')).toBeVisible({ timeout: 15_000 })
 
   const pageErrors: string[] = []
-  page.on('pageerror', error => pageErrors.push(error.message))
+  page.on('pageerror', error => pageErrors.push(error.stack || error.message))
 
   // Three separate garment types must remain independently selectable.
   await page.getByRole('button', { name: '披肩', exact: true }).click()
