@@ -161,3 +161,9 @@ Required automated cases:
 - Imported download permission is always false; a backup cannot grant itself `canDownload` or change server-side authorization. The download endpoint remains the authority.
 - Skin asset references are accepted only as relative CDPC asset-file routes; external absolute URLs, protocol-relative URLs and embedded data URLs are rejected as cloud skin references.
 - Unit coverage: canonicalized URLs, mismatched IDs, unsupported categories, official-asset omission, forged download flags, duplicate/bounded references and skin URL allowlisting.
+
+
+## 12. Outfit backup pose round-trip (2026-11-08)
+
+- Fixed a persistence gap: portable outfit JSON now includes the selected character pose, and importing a backup restores that pose in Studio rather than silently reverting to the default.
+- Playwright regression coverage asserts the exported pose and the restored action selector value.
