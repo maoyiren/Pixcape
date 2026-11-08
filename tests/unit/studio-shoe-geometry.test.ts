@@ -24,11 +24,27 @@ test('left and right shoe meshes use independent, normalized 64px and 128px UV i
     assert.equal(uv64.count, 24)
     assert.equal(uv128.count, 24)
 
+    const faceOrder = ['right', 'left', 'top', 'bottom', 'front', 'back'] as const
     for (let vertex = 0; vertex < uv64.count; vertex++) {
       assert.ok(Math.abs(uv64.getX(vertex) - uv128.getX(vertex)) < 1e-6)
       assert.ok(Math.abs(uv64.getY(vertex) - uv128.getY(vertex)) < 1e-6)
       assert.ok(uv64.getX(vertex) >= 0 && uv64.getX(vertex) <= 1)
       assert.ok(uv64.getY(vertex) >= 0 && uv64.getY(vertex) <= 1)
+    }
+
+    for (let faceIndex = 0; faceIndex < faceOrder.length; faceIndex++) {
+      const rect = regions64[index].faces[faceOrder[faceIndex]]
+      const expected = [
+        [rect.x / 64, 1 - (rect.y + rect.height) / 64],
+        [(rect.x + rect.width) / 64, 1 - (rect.y + rect.height) / 64],
+        [(rect.x + rect.width) / 64, 1 - rect.y / 64],
+        [rect.x / 64, 1 - rect.y / 64],
+      ].map(([x, y]) => `${x.toFixed(6)},${y.toFixed(6)}`).sort()
+      const actual = Array.from({ length: 4 }, (_, corner) => {
+        const vertex = faceIndex * 4 + corner
+        return `${uv64.getX(vertex).toFixed(6)},${uv64.getY(vertex).toFixed(6)}`
+      }).sort()
+      assert.deepEqual(actual, expected, `${regions64[index].side} shoe ${faceOrder[faceIndex]} face uses its declared UV island`)
     }
 
     geometry64.dispose()
