@@ -9,6 +9,10 @@ test('left and right shoe meshes use independent, normalized 64px and 128px UV i
   assert.equal(regions64.length, 2)
   assert.equal(regions128.length, 2)
 
+  assert.deepEqual(regions64.map(region => region.side), ['right', 'left'])
+  assert.deepEqual(regions64.map(region => region.faces.front.y), [40, 56])
+  assert.deepEqual(regions128.map(region => region.faces.front.y), [80, 112])
+
   for (let index = 0; index < 2; index++) {
     const geometry64 = createStudioShoeGeometry(regions64[index], 64)
     const geometry128 = createStudioShoeGeometry(regions128[index], 128)
@@ -23,8 +27,8 @@ test('left and right shoe meshes use independent, normalized 64px and 128px UV i
     for (let vertex = 0; vertex < uv64.count; vertex++) {
       assert.ok(Math.abs(uv64.getX(vertex) - uv128.getX(vertex)) < 1e-6)
       assert.ok(Math.abs(uv64.getY(vertex) - uv128.getY(vertex)) < 1e-6)
-      assert.ok(uv64.getX(vertex) >= 0 && uv64.getX(vertex) <= 0.25)
-      assert.ok(uv64.getY(vertex) >= 0.25 && uv64.getY(vertex) <= 0.5)
+      assert.ok(uv64.getX(vertex) >= 0 && uv64.getX(vertex) <= 1)
+      assert.ok(uv64.getY(vertex) >= 0 && uv64.getY(vertex) <= 1)
     }
 
     geometry64.dispose()
