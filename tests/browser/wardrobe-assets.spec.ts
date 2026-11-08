@@ -294,6 +294,8 @@ test('Studio renders an uploaded shoe as two independent animated meshes and exp
     isFavorite: false,
     fileUrl: '/api/assets/browser-shoe-asset/file',
   }
+  const hat = { ...shoe, id: 'browser-hat-asset', category: 'HAT', name: '浏览器独立帽子素材', fileUrl: '/api/assets/browser-hat-asset/file' }
+  const pants = { ...shoe, id: 'browser-pants-asset', category: 'PANTS', name: '浏览器独立裤子素材', fileUrl: '/api/assets/browser-pants-asset/file' }
 
   await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
     status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: png,
@@ -312,7 +314,7 @@ test('Studio renders an uploaded shoe as two independent animated meshes and exp
     }
     await route.fulfill({
       status: 200, contentType: 'application/json',
-      body: JSON.stringify({ items: [shoe], nextCursor: null }),
+      body: JSON.stringify({ items: [hat, pants, shoe], nextCursor: null }),
     })
   })
   await page.route('**/api/workspace', route => route.fulfill({
@@ -323,17 +325,25 @@ test('Studio renders an uploaded shoe as two independent animated meshes and exp
   await page.goto('/studio')
   await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await expect(page.locator('.dressup-real-preview canvas')).toBeVisible({ timeout: 15_000 })
-  await page.getByRole('button', { name: '鞋子', exact: true }).click()
-  const shoeCard = page.locator('.dressup-item').filter({ hasText: '浏览器独立鞋子素材' })
-  await expect(shoeCard).toBeVisible()
-  await shoeCard.click()
-
-  await expect(page.locator('.dressup-selected-list')).toContainText('浏览器独立鞋子素材')
+  const selected = page.locator('.dressup-selected-list')
+  for (const item of [
+    { category: '帽子', name: '浏览器独立帽子素材', expected: '帽子' },
+    { category: '裤子', name: '浏览器独立裤子素材', expected: '帽子,裤子' },
+    { category: '鞋子', name: '浏览器独立鞋子素材', expected: '帽子,裤子,鞋子' },
+  ]) {
+    await page.getByRole('button', { name: item.category, exact: true }).click()
+    const card = page.locator('.dressup-item').filter({ hasText: item.name })
+    await expect(card).toBeVisible()
+    await card.click()
+    await expect(selected).toContainText(item.name)
+    await expect(page.locator('.dressup-real-preview canvas')).toHaveAttribute('data-cdpc-garment-categories', item.expected)
+    await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).toContainText(item.name)
+  }
   await expect(page.locator('.dressup-real-preview canvas')).toHaveAttribute('data-cdpc-shoe-meshes', '2')
-  await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).toContainText('浏览器独立鞋子素材')
   await page.getByRole('button', { name: 'Alex 细臂' }).click()
   await expect(page.locator('.dressup-real-preview canvas')).toHaveAttribute('data-cdpc-shoe-meshes', '2')
+  await expect(page.locator('.dressup-real-preview canvas')).toHaveAttribute('data-cdpc-garment-categories', '帽子,裤子,鞋子')
 
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出皮肤 PNG' }).click()
