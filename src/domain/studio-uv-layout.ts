@@ -45,6 +45,27 @@ export function getStudioShoeUvRegions(textureSize: 64 | 128): readonly StudioSh
   }))
 }
 
+export type StudioUvRect = { x: number; y: number; width: number; height: number }
+
+/** Atlas rectangles containing only the UV islands owned by each outer-layer category. */
+export function getStudioOverlayUvRegions(
+  category: '帽子' | '裤子' | '鞋子',
+  textureSize: 64 | 128,
+): readonly StudioUvRect[] {
+  const scale = textureSize / 64
+  const regions: Record<'帽子' | '裤子' | '鞋子', readonly StudioUvRect[]> = {
+    帽子: [{ x: 32, y: 0, width: 24, height: 16 }],
+    裤子: [{ x: 0, y: 32, width: 16, height: 16 }, { x: 0, y: 48, width: 16, height: 16 }],
+    鞋子: [{ x: 0, y: 40, width: 16, height: 8 }, { x: 0, y: 56, width: 16, height: 8 }],
+  }
+  return regions[category].map(region => ({
+    x: region.x * scale,
+    y: region.y * scale,
+    width: region.width * scale,
+    height: region.height * scale,
+  }))
+}
+
 export function getStudioOverlayUvProfile(category: StudioOverlayCategory): StudioUvProfile {
   const profile = STUDIO_OVERLAY_UV_PROFILES[category]
   if (!profile) throw new Error('该服装分类尚未定义真实 UV 布局。')
