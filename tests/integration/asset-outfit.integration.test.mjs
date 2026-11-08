@@ -25,15 +25,17 @@ test('asset visibility, outfit ownership, distinct clothing categories, and casc
     ])
     createdUserIds.push(owner.id, other.id, creator.id)
 
-    const [skin, shawl, coat, cape, publicShoes, foreignPrivate] = await Promise.all([
+    const [skin, shawl, coat, cape, hat, pants, publicShoes, foreignPrivate] = await Promise.all([
       prisma.asset.create({ data: { ownerId: owner.id, kind: 'SKIN_TEXTURE', category: 'SKIN', storageKey: storageKey('skin'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD' } }),
       prisma.asset.create({ data: { ownerId: owner.id, kind: 'CLOTHING_TEXTURE', category: 'SHAWL', storageKey: storageKey('shawl'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD' } }),
       prisma.asset.create({ data: { ownerId: owner.id, kind: 'CLOTHING_TEXTURE', category: 'COAT', storageKey: storageKey('coat'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD' } }),
       prisma.asset.create({ data: { ownerId: owner.id, kind: 'CLOTHING_TEXTURE', category: 'CAPE', storageKey: storageKey('cape'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD' } }),
+      prisma.asset.create({ data: { ownerId: owner.id, kind: 'ACCESSORY_TEXTURE', category: 'HAT', storageKey: storageKey('hat'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD' } }),
+      prisma.asset.create({ data: { ownerId: owner.id, kind: 'CLOTHING_TEXTURE', category: 'PANTS', storageKey: storageKey('pants'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD' } }),
       prisma.asset.create({ data: { ownerId: creator.id, kind: 'ACCESSORY_TEXTURE', category: 'SHOES', storageKey: storageKey('public-shoes'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD', visibility: 'PUBLIC' } }),
       prisma.asset.create({ data: { ownerId: creator.id, kind: 'ACCESSORY_TEXTURE', category: 'HAT', storageKey: storageKey('private-hat'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD', visibility: 'PRIVATE' } }),
     ])
-    createdAssetIds.push(skin.id, shawl.id, coat.id, cape.id, publicShoes.id, foreignPrivate.id)
+    createdAssetIds.push(skin.id, shawl.id, coat.id, cape.id, hat.id, pants.id, publicShoes.id, foreignPrivate.id)
 
     const visibleToOther = await prisma.asset.findMany({
       where: { id: { in: createdAssetIds }, OR: [{ ownerId: other.id }, { visibility: 'PUBLIC' }] },
@@ -49,10 +51,12 @@ test('asset visibility, outfit ownership, distinct clothing categories, and casc
         { assetId: shawl.id, category: 'SHAWL', sortOrder: 0, equipped: true },
         { assetId: coat.id, category: 'COAT', sortOrder: 1, equipped: true },
         { assetId: cape.id, category: 'CAPE', sortOrder: 2, equipped: true },
-        { assetId: publicShoes.id, category: 'SHOES', sortOrder: 3, equipped: true },
+        { assetId: hat.id, category: 'HAT', sortOrder: 3, equipped: true },
+        { assetId: pants.id, category: 'PANTS', sortOrder: 4, equipped: true },
+        { assetId: publicShoes.id, category: 'SHOES', sortOrder: 5, equipped: true },
       ],
     })
-    assert.deepEqual(input.items.map((item) => item.category), ['SHAWL', 'COAT', 'CAPE', 'SHOES'])
+    assert.deepEqual(input.items.map((item) => item.category), ['SHAWL', 'COAT', 'CAPE', 'HAT', 'PANTS', 'SHOES'])
 
     const outfit = await prisma.outfit.create({
       data: {
@@ -70,8 +74,8 @@ test('asset visibility, outfit ownership, distinct clothing categories, and casc
       include: { items: { orderBy: { sortOrder: 'asc' } } },
     })
     outfitId = outfit.id
-    assert.equal(outfit.items.length, 4)
-    assert.deepEqual(outfit.items.map((item) => item.category), ['SHAWL', 'COAT', 'CAPE', 'SHOES'])
+    assert.equal(outfit.items.length, 6)
+    assert.deepEqual(outfit.items.map((item) => item.category), ['SHAWL', 'COAT', 'CAPE', 'HAT', 'PANTS', 'SHOES'])
 
     assert.equal(await prisma.outfit.findFirst({ where: { id: outfit.id, ownerId: other.id } }), null, 'outfit reads must be owner-scoped')
     const foreignUpdate = await prisma.outfit.updateMany({
@@ -88,7 +92,7 @@ test('asset visibility, outfit ownership, distinct clothing categories, and casc
       include: { items: { orderBy: { sortOrder: 'asc' } } },
     })
     assert.ok(afterAssetDelete, 'deleting a referenced asset must not delete the outfit')
-    assert.deepEqual(afterAssetDelete.items.map((item) => item.category), ['COAT', 'CAPE', 'SHOES'], 'asset deletion must cascade only the matching outfit item')
+    assert.deepEqual(afterAssetDelete.items.map((item) => item.category), ['COAT', 'CAPE', 'HAT', 'PANTS', 'SHOES'], 'asset deletion must cascade only the matching outfit item')
   } finally {
     if (outfitId) await prisma.outfit.deleteMany({ where: { id: outfitId } })
     if (createdAssetIds.length) await prisma.asset.deleteMany({ where: { id: { in: createdAssetIds } } })
