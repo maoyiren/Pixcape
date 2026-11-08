@@ -18,6 +18,8 @@ test('shawl and coat use separately identified source atlas profiles', () => {
   assert.equal(coat.composition, 'full-atlas-alpha')
   assert.equal(shawl.mutuallyExclusiveWith, '外套')
   assert.equal(coat.mutuallyExclusiveWith, '披肩')
+  assert.equal(shawl.targetParts, null)
+  assert.equal(coat.targetParts, null)
 })
 
 test('overlapping shawl and coat atlases cannot silently overwrite one another', () => {
@@ -28,8 +30,20 @@ test('overlapping shawl and coat atlases cannot silently overwrite one another',
   assert.equal(canEquipStudioOverlayTogether(['披肩', '外套'], '披肩'), false)
 })
 
-test('cape and unverified accessory categories are not assigned skin overlay UV profiles', () => {
-  for (const category of ['披风', '帽子', '裤子', '鞋子']) {
-    assert.throws(() => getStudioOverlayUvProfile(category as never))
-  }
+test('hat and pants use native Minecraft outer-layer model UV surfaces', () => {
+  const hat = getStudioOverlayUvProfile('帽子')
+  const pants = getStudioOverlayUvProfile('裤子')
+  assert.equal(hat.assetCategory, 'HAT')
+  assert.equal(hat.composition, 'outer-layer-parts')
+  assert.deepEqual(hat.targetParts, ['head'])
+  assert.equal(pants.assetCategory, 'PANTS')
+  assert.equal(pants.composition, 'outer-layer-parts')
+  assert.deepEqual(pants.targetParts, ['leftLeg', 'rightLeg'])
+  assert.equal(canEquipStudioOverlayTogether(['披肩'], '帽子'), true)
+  assert.equal(canEquipStudioOverlayTogether(['帽子'], '裤子'), true)
+  assert.equal(canEquipStudioOverlayTogether(['外套'], '裤子'), true)
+})
+
+test('cape and shoes are not assigned fabricated skin overlay UV profiles', () => {
+  for (const category of ['披风', '鞋子']) assert.throws(() => getStudioOverlayUvProfile(category as never))
 })
