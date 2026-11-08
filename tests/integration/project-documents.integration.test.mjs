@@ -74,6 +74,23 @@ test('project documents persist with owner isolation, asset ownership, and optim
       data: { title: 'Unauthorized', revision: { increment: 1 } },
     })
     assert.equal(unauthorizedWrite.count, 0, 'foreign account cannot overwrite the project even with the current revision')
+
+    const sharedAsset = await prisma.asset.create({
+      data: { ownerId: owner.id, kind: 'ACCESSORY_TEXTURE', category: 'HAT', storageKey: storageKey('shared'), mimeType: 'image/png', byteSize: 128, width: 64, height: 64, source: 'UPLOAD' },
+    })
+    assetIds.push(sharedAsset.id)
+    const [candidateA, candidateB] = await Promise.all([
+      prisma.project.create({ data: { ownerId: owner.id, title: 'Asset claim A' } }),
+      prisma.project.create({ data: { ownerId: owner.id, title: 'Asset claim B' } }),
+    ])
+    projectIds.push(candidateA.id, candidateB.id)
+    const claims = await Promise.all([
+      prisma.asset.updateMany({ where: { id: sharedAsset.id, ownerId: owner.id, projectId: null }, data: { projectId: candidateA.id } }),
+      prisma.asset.updateMany({ where: { id: sharedAsset.id, ownerId: owner.id, projectId: null }, data: { projectId: candidateB.id } }),
+    ])
+    assert.deepEqual(claims.map((claim) => claim.count).sort(), [0, 1], 'a single asset cannot be claimed by two projects concurrently')
+    const finalClaim = await prisma.asset.findUnique({ where: { id: sharedAsset.id }, select: { projectId: true } })
+    assert.ok([candidateA.id, candidateB.id].includes(finalClaim.projectId))
   } finally {
     if (projectIds.length) await prisma.project.deleteMany({ where: { id: { in: projectIds } } })
     if (assetIds.length) await prisma.asset.deleteMany({ where: { id: { in: assetIds } } })
