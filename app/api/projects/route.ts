@@ -45,15 +45,6 @@ async function readInput(request: Request) {
   }
 }
 
-async function assetsBelongToActor(assetIds: string[], ownerId: string, projectId?: string) {
-  if (!assetIds.length) return true
-  const assets = await prisma.asset.findMany({
-    where: { id: { in: assetIds }, ownerId, OR: [{ projectId: null }, ...(projectId ? [{ projectId }] : [])] },
-    select: { id: true },
-  })
-  return assets.length === assetIds.length
-}
-
 export async function GET() {
   const resolved = await actorOrResponse()
   if ('response' in resolved) return resolved.response
@@ -73,10 +64,9 @@ export async function POST(request: Request) {
   if ('response' in parsed) return parsed.response
   if (!parsed.input) return NextResponse.json({ error: '项目标题、可见性、文档或素材引用无效。' }, { status: 400 })
   const input = parsed.input
-  if (!(await assetsBelongToActor(input.assetIds, resolved.actor.id))) {
-    return NextResponse.json({ error: '项目只能引用当前账号拥有且尚未归属其他项目的素材。' }, { status: 400 })
-  }
-  const item = await prisma.$transaction(async tx => {
+  let item
+  try {
+    item = await prisma.$transaction(async tx => {
     const project = await tx.project.create({
       data: {
         ownerId: resolved.actor.id,
@@ -88,9 +78,19 @@ export async function POST(request: Request) {
       select: { id: true, title: true, description: true, visibility: true, revision: true, createdAt: true, updatedAt: true },
     })
     if (input.assetIds.length) {
-      await tx.asset.updateMany({ where: { id: { in: input.assetIds }, ownerId: resolved.actor.id, projectId: null }, data: { projectId: project.id } })
+      const attached = await tx.asset.updateMany({
+        where: { id: { in: input.assetIds }, ownerId: resolved.actor.id, projectId: null },
+        data: { projectId: project.id },
+      })
+      if (attached.count !== input.assetIds.length) throw new Error('PROJECT_ASSET_CONFLICT')
     }
     return project
-  })
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'PROJECT_ASSET_CONFLICT') {
+      return NextResponse.json({ error: '部分素材已被其他项目占用，请刷新素材列表后重试。' }, { status: 409 })
+    }
+    throw error
+  }
   return NextResponse.json({ item }, { status: 201, headers: { 'Cache-Control': 'private, no-store' } })
 }
