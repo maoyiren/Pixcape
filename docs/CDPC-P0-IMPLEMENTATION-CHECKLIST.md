@@ -165,3 +165,14 @@
 - 已补充 E2E：匿名下载拒绝、未知来源默认拒绝、原创披风作者可下载、私有披风跨用户拒绝、OFFICIAL 原始文件与下载拒绝。新 migration / API / browser test 均待 CI 验证。
 - JSON 备份不嵌入纹理字节；仍需完成备份引用过滤与其他批量接口绕过专项审计，不能提前标记整个版权闭环完成。
 - PR #64 继续 Draft；不合并、不发布、不部署生产。
+
+
+## 最新验证与修复记录（2026-11-08 08:50 +0800）
+
+- PR #64 当前 head：`f18487ea395e8e050a4e294fe6e2867273a24c83`。
+- 前一提交 `5bbcaa1` 的 CI #1094：`npm ci`、PostgreSQL migration、unit、PostgreSQL integration、依赖安全检查和 Next.js production build 通过；Playwright 37 项通过、1 项失败。失败发生在 Studio 动作切换（`hit`）期间，浏览器报告 `Cannot read properties of null (reading 'trim')`，不能把该次 CI 计为通过。
+- Preview/Security #883 与 Docker smoke #1093 在 `5bbcaa1` 上成功；它们不替代失败的完整浏览器回归。
+- 已在 `f18487e` 将 Studio 的 wave / crouch / hit / swim / run 动作改为 skinview3d 3.4.2 原生动画类，移除向 IdleAnimation 注入自定义回调的路径；保留 idle / walk / fly 及动作速度控制。该修复是针对运行时错误的产品代码修复，不是跳过测试或放宽断言。
+- `f18487e` 的新 CI 尚未取得运行结果；必须等待 Playwright、Preview/Security、Docker workflow 完成后，才能更新验收状态。
+- 帽子 / 裤子 / 鞋子的真实 UV / 几何和有效素材 fixture、完整项目保存恢复的故障恢复测试、移动端人工验收、生产数据库备份恢复演练仍未完成；不得标记 P0 全部完成。
+- 未合并 PR、未发布镜像、未部署 1Panel、未执行生产迁移或生产数据变更。
