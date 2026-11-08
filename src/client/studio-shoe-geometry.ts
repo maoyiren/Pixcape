@@ -49,7 +49,7 @@ function setShoeUv(geometry: BoxGeometry, region: ReturnType<typeof getStudioSho
  * Minecraft outer-leg atlas; it does not reuse the full-leg outer-layer mesh.
  */
 export function attachStudioShoeGeometry(
-  skinObject: Object3D,
+  skinObject: unknown,
   image: HTMLImageElement,
   textureSize: 64 | 128,
 ): () => void {
