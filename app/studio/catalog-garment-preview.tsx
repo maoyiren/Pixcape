@@ -77,10 +77,10 @@ async function renderCatalogItem(item: Item, model: 'steve' | 'alex', skinUrl: s
     makeSkinSurfaceTransparent(viewer)
     await viewer.loadCape(item.fileUrl || ASSET_ROOT + item.texture, { backEquipment: 'cape' })
   } else {
-    if (item.category !== '披肩' && item.category !== '外套') {
+    if (!['披肩', '外套', '帽子', '裤子'].includes(item.category)) {
       throw new Error('该分类尚无独立 UV 规范')
     }
-    const profile = getStudioOverlayUvProfile(item.category)
+    const profile = getStudioOverlayUvProfile(item.category as '披肩' | '外套' | '帽子' | '裤子')
     if (profile.composition !== 'full-atlas-alpha' && profile.composition !== 'outer-layer-parts') throw new Error('不支持的贴图格式')
     const base = await loadImage(skinUrl)
     const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
