@@ -804,7 +804,13 @@ export default function DressUpStudio() {
       setSaveNotice(workspaceSyncFailed
         ? `“${title}”已保存为账号云端项目（版本 ${saved.revision}），但工作区快捷入口同步失败；项目内容已保存。`
         : `“${title}”已保存为账号云端项目（版本 ${saved.revision}）；项目素材已绑定，可在其他设备恢复。`)
-    } catch (error) { setSaveNotice(error instanceof Error ? `项目保存失败：${error.message}` : '项目保存失败，请登录后重试') }
+    } catch (error) {
+      if (error instanceof Error && 'status' in error && error.status === 409) {
+        setSaveNotice('云端项目版本冲突：其他设备已保存更新版本。请重新载入云端项目后再继续，当前内容不会覆盖远端版本。')
+      } else {
+        setSaveNotice(error instanceof Error ? `项目保存失败：${error.message}` : '项目保存失败，请登录后重试')
+      }
+    }
     finally { setSavingProject(false) }
   }
 
