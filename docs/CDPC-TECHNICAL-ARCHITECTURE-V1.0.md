@@ -157,7 +157,8 @@ Workbench 复用 Skin、Asset、Wardrobe 和统一渲染服务，不重复建立
 | `/` | 首页与创作入口 |
 | `/ai` | AI 生成入口 |
 | `/editor` | 单项皮肤/纹理编辑入口 |
-| `/studio` | 唯一创作工作台，通过 mode/project 参数进入不同工作模式 |
+| `/workbench` | 创作入口中心：汇总 AI、单张编辑和 Studio 入口，不承载第二套编辑器状态 |
+| `/studio` | 唯一换装、试穿、搭配和项目工作区，通过 mode/project 参数进入不同工作模式 |
 | `/studio?mode=wardrobe` | 换装与衣橱模式 |
 | `/studio?mode=edit` | 单件/纹理编辑模式 |
 | `/studio?mode=outfit` | 完整搭配模式 |
@@ -177,7 +178,7 @@ Workbench 复用 Skin、Asset、Wardrobe 和统一渲染服务，不重复建立
 | `/admin/user` | 用户管理 |
 | `/admin/stat` | 数据统计 |
 
-旧的 `/workbench`、`/wardrobe`、`/dress-up` 及其他历史路径仅作为兼容重定向入口；迁移时必须保留必要的 mode、project 和资源 ID 参数，不能维护第二套编辑器或工作台。用户空间使用 `/u/[username]`，不得另行创建 `/@username`、`/profile/[username]` 或重复的个人主页路由。
+旧的 `/workbench/ai`、`/workbench/edit`、`/workbench/dress` 分别重定向到 `/ai`、`/editor`、`/studio`；`/dress-up` 重定向到 `/studio`；`/wardrobe` 根据当前用户转到 `/u/[username]/wardrobe`。`/workbench` 保留为创作入口中心，不承载编辑器状态；迁移时必须保留必要的 mode、project 和资源 ID 参数，不能维护第二套编辑器或工作台。用户空间使用 `/u/[username]`，不得另行创建 `/@username`、`/profile/[username]` 或重复的个人主页路由。
 
 以上为统一目标路由契约，不代表所有路由已经在当前代码中落地。实际迁移前必须核对仓库路由、深链接、旧路径引用和生产入口。所有正式页面由 Next.js App Router 管理，不保留独立 Vite 页面运行时。
 
