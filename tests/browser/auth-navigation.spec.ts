@@ -280,7 +280,7 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   const catalogPreview = page.locator('.dressup-item-render').first()
   await expect(catalogPreview).toBeVisible()
   await expect(catalogPreview.locator('img')).toBeVisible({ timeout: 15_000 })
-  await expect(catalogPreview.locator('img')).toHaveAttribute('src', /^data:image\\/png;base64,/)
+  await expect.poll(async () => (await catalogPreview.locator('img').getAttribute('src'))?.startsWith('data:image/png;base64,')).toBe(true)
   await page.getByRole('button', { name: /我的衣橱披肩/ }).click()
   await expect(page.locator('.dressup-selected-list')).toContainText('我的披肩素材')
   await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：我的衣橱披肩')
