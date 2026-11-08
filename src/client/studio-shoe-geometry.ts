@@ -8,7 +8,7 @@ import {
   SRGBColorSpace,
   type Object3D,
 } from 'three'
-import { getStudioShoeUvRegions } from '@/src/domain/studio-uv-layout'
+import { getStudioShoeUvRegions } from '../domain/studio-uv-layout.ts'
 
 type SkinLeg = Object3D & { outerLayer: Object3D }
 type SkinParts = Object3D & { leftLeg: SkinLeg; rightLeg: SkinLeg }
