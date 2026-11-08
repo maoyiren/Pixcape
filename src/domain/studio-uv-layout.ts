@@ -1,9 +1,17 @@
-export type StudioOverlayCategory = '披肩' | '外套' | '帽子' | '裤子'
+export type StudioOverlayCategory = '披肩' | '外套' | '帽子' | '裤子' | '鞋子'
+export type StudioShoeUvRegion = {
+  side: 'left' | 'right'
+  u: number
+  v: number
+  width: 4
+  height: 4
+  depth: 4
+}
 export type StudioUvProfile = {
   category: StudioOverlayCategory
-  assetCategory: 'SHAWL' | 'COAT' | 'HAT' | 'PANTS'
+  assetCategory: 'SHAWL' | 'COAT' | 'HAT' | 'PANTS' | 'SHOES'
   atlas: 'minecraft-skin'
-  composition: 'full-atlas-alpha' | 'outer-layer-parts'
+  composition: 'full-atlas-alpha' | 'outer-layer-parts' | 'separate-box-geometry'
   targetParts: readonly ('head' | 'leftLeg' | 'rightLeg')[] | null
   mutuallyExclusiveWith: StudioOverlayCategory | null
 }
@@ -14,6 +22,27 @@ export const STUDIO_OVERLAY_UV_PROFILES: Record<StudioOverlayCategory, StudioUvP
   外套: { category: '外套', assetCategory: 'COAT', atlas: 'minecraft-skin', composition: 'full-atlas-alpha', targetParts: null, mutuallyExclusiveWith: '披肩' },
   帽子: { category: '帽子', assetCategory: 'HAT', atlas: 'minecraft-skin', composition: 'outer-layer-parts', targetParts: ['head'], mutuallyExclusiveWith: null },
   裤子: { category: '裤子', assetCategory: 'PANTS', atlas: 'minecraft-skin', composition: 'outer-layer-parts', targetParts: ['leftLeg', 'rightLeg'], mutuallyExclusiveWith: null },
+  鞋子: { category: '鞋子', assetCategory: 'SHOES', atlas: 'minecraft-skin', composition: 'separate-box-geometry', targetParts: null, mutuallyExclusiveWith: null },
+}
+
+/**
+ * Minecraft outer-leg UVs are 4×12×4. Shoes occupy the bottom four texture
+ * rows of each outer-leg island and are rendered as independent 4.5-unit boxes.
+ * Coordinates are expressed in the canonical 64×64 atlas and scaled for 128px.
+ */
+export function getStudioShoeUvRegions(textureSize: 64 | 128): readonly StudioShoeUvRegion[] {
+  const scale = textureSize / 64
+  return [
+    { side: 'right', u: 0, v: 40, width: 4, height: 4, depth: 4 },
+    { side: 'left', u: 0, v: 56, width: 4, height: 4, depth: 4 },
+  ].map(region => ({
+    ...region,
+    u: region.u * scale,
+    v: region.v * scale,
+    width: 4 as const,
+    height: 4 as const,
+    depth: 4 as const,
+  }))
 }
 
 export function getStudioOverlayUvProfile(category: StudioOverlayCategory): StudioUvProfile {
