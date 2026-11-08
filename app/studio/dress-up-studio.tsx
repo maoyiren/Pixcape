@@ -915,6 +915,7 @@ export default function DressUpStudio() {
       name: outfitName.trim().slice(0, 48) || '我的穿搭',
       itemIds: selectedItems.map(item => item.id),
       model,
+      pose,
       background,
       backgroundScene,
       skinUrl: skinUrl.startsWith('data:image/png') ? skinUrl : undefined,
@@ -965,6 +966,7 @@ export default function DressUpStudio() {
         name: (typeof outfit.name === 'string' ? outfit.name.trim().slice(0, 48) : '') || '导入的穿搭',
         itemIds,
         model: outfit.model === 'alex' ? 'alex' : 'steve',
+        pose: normalizeStudioPose(outfit.pose),
         background: typeof outfit.background === 'string' && /^#[0-9a-f]{6}$/i.test(outfit.background) ? outfit.background : '#182437',
         backgroundScene: outfit.backgroundScene === 'day' || outfit.backgroundScene === 'night' || outfit.backgroundScene === 'plains' || outfit.backgroundScene === 'desert' || outfit.backgroundScene === 'forest' || outfit.backgroundScene === 'nether' || outfit.backgroundScene === 'end' ? outfit.backgroundScene : 'custom',
         skinUrl: nextSkinUrl,
@@ -986,6 +988,7 @@ export default function DressUpStudio() {
         return items
       }, {}))
       setModel(restored.model)
+      setPose(normalizeStudioPose(restored.pose))
       setBackgroundScene(restored.backgroundScene || 'custom')
       setBackground(restored.background)
       setSkinUrl(restored.skinAssetUrl || restored.skinUrl || BASE_SKIN)
