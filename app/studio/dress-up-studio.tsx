@@ -642,7 +642,8 @@ export default function DressUpStudio() {
           const incoming = item.category as StudioOverlayCategory
           const equipped = Object.keys(next).filter(key => key === '披肩' || key === '外套') as StudioOverlayCategory[]
           if (!canEquipStudioOverlayTogether(equipped, incoming)) {
-            delete next[getStudioOverlayUvProfile(incoming).mutuallyExclusiveWith]
+            const conflictingCategory = getStudioOverlayUvProfile(incoming).mutuallyExclusiveWith
+            if (conflictingCategory) delete next[conflictingCategory]
           }
         }
         next[item.category] = item
