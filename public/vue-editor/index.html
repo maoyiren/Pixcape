@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111318"><title>CDPC Skin Editor · Vue</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#111318;--panel:#191c23;--panel2:#20242d;--line:#303642;--muted:#929baa;--text:#edf0f5;--accent:#a5e35b;--accent2:#c7f28d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}button{font:inherit;color:inherit;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 11px;cursor:pointer}button:hover{border-color:#687487;background:#292f3a}button:disabled{opacity:.35;cursor:not-allowed}.app{min-height:100vh;display:flex;flex-direction:column}.top{height:58px;display:flex;align-items:center;gap:12px;padding:0 18px;border-bottom:1px solid var(--line);background:#15181e}.brand{font-weight:800;letter-spacing:.02em;font-size:16px}.brand b{color:var(--accent)}.file-name{color:var(--muted);margin-left:10px}.spacer{flex:1}.toolbar{display:flex;align-items:center;gap:7px}.primary{background:var(--accent);color:#17200d;border-color:var(--accent);font-weight:700}.primary:hover{background:var(--accent2);color:#17200d}.layout{display:grid;grid-template-columns:66px minmax(360px,1fr) 290px;gap:12px;padding:12px;flex:1;min-height:0}.tools,.inspector,.workarea{background:var(--panel);border:1px solid var(--line);border-radius:12px}.tools{padding:8px;display:flex;flex-direction:column;gap:6px}.tool{height:44px;padding:4px;display:grid;place-items:center;font-size:18px}.tool.active{background:#334128;border-color:var(--accent);color:var(--accent)}.workarea{display:flex;flex-direction:column;min-width:0;overflow:hidden}.canvas-head,.canvas-foot{height:44px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--line);color:var(--muted)}.canvas-foot{border-top:1px solid var(--line);border-bottom:0;justify-content:space-between}.canvas-stage{flex:1;min-height:440px;display:grid;place-items:center;overflow:auto;padding:28px;background-color:#15181e;background-image:linear-gradient(45deg,#1d2129 25%,transparent 25%),linear-gradient(-45deg,#1d2129 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#1d2129 75%),linear-gradient(-45deg,transparent 75%,#1d2129 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}.canvas-wrap{position:relative;box-shadow:0 14px 50px #0009;touch-action:none}canvas{display:block;image-rendering:pixelated;cursor:crosshair}.inspector{padding:14px;overflow:auto}.section{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--line)}.section:last-child{border:0}.section-title{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 12px}.row{display:flex;align-items:center;gap:8px}.row+.row{margin-top:8px}.row>*{min-width:0}.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.swatch{height:28px;padding:0;border-radius:6px;border:2px solid #ffffff22}.swatch.selected{outline:2px solid var(--accent);outline-offset:2px}.color-input{width:100%;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:3px}.layer{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid var(--line);border-radius:8px;margin-top:7px;background:var(--panel2)}.layer.active{border-color:var(--accent)}.layer-name{flex:1}.muted{color:var(--muted)}.small{font-size:12px}.badge{padding:3px 7px;border-radius:5px;background:#2b313b;color:#c8d0dc;font-size:11px}.status{display:flex;gap:12px}.kbd{font:11px ui-monospace,monospace;color:#aab3c2;border:1px solid #3a414d;border-radius:4px;padding:2px 5px}.mobile-label{display:none}
+@media(max-width:900px){.layout{grid-template-columns:54px minmax(0,1fr);}.inspector{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.section{margin:0}.canvas-stage{min-height:380px}.top{padding:0 10px}.file-name{display:none}}
+@media(max-width:560px){.top{height:auto;min-height:56px;flex-wrap:wrap;padding:9px}.toolbar{width:100%;overflow:auto}.layout{padding:7px;gap:7px;grid-template-columns:48px minmax(0,1fr)}.tools{padding:5px}.tool{height:40px}.canvas-stage{min-height:320px;padding:10px}.inspector{grid-template-columns:1fr}.brand{font-size:14px}.toolbar button{padding:7px 9px;font-size:12px}}
+</style>
+</head>
+<body>
+<div id="app" class="app">
+<header class="top">
+  <div class="brand"><b>CDPC</b> / SKIN EDITOR</div><span class="file-name">未命名皮肤.png</span>
+  <div class="spacer"></div>
+  <div class="toolbar">
+    <button @click="triggerImport">导入 PNG</button><button @click="undo" :disabled="historyIndex<=0">↶ 撤销</button><button @click="redo" :disabled="historyIndex>=history.length-1">↷ 重做</button><button @click="toggleGrid">{{showGrid?'隐藏网格':'显示网格'}}</button><button class="primary" @click="exportPng">导出 PNG</button>
+  </div>
+  <input ref="fileInput" type="file" accept="image/png,image/*" hidden @change="importPng">
+</header>
+<main class="layout">
+  <nav class="tools" aria-label="编辑工具">
+    <button v-for="t in tools" :key="t.id" class="tool" :class="{active:tool===t.id}" :title="t.name" @click="tool=t.id">{{t.icon}}</button>
+    <div class="spacer"></div><span class="muted small" style="text-align:center">工具</span>
+  </nav>
+  <section class="workarea">
+    <div class="canvas-head"><strong>2D 皮肤画布</strong><span class="badge">64 × 64</span><span class="spacer"></span><button @click="zoom=Math.max(4,zoom-2)">−</button><span class="small">{{zoom*10}}%</span><button @click="zoom=Math.min(16,zoom+2)">＋</button></div>
+    <div class="canvas-stage">
+      <div class="canvas-wrap" :style="{width:(64*zoom)+'px',height:(64*zoom)+'px'}">
+        <canvas ref="canvas" :width="64*zoom" :height="64*zoom" :style="{width:(64*zoom)+'px',height:(64*zoom)+'px'}" @pointerdown="pointerDown" @pointermove="pointerMove" @pointerup="drawing=false" @pointerleave="drawing=false"></canvas>
+      </div>
+    </div>
+    <div class="canvas-foot"><div class="status"><span>坐标：{{cursor.x}}, {{cursor.y}}</span><span>工具：{{toolName}}</span></div><span class="muted small">PNG · 64×64 · {{modelType}}</span></div>
+  </section>
+  <aside class="inspector">
+    <section class="section">
+      <h3 class="section-title">颜色</h3>
+      <div class="row"><input class="color-input" type="color" v-model="color"><span class="small">{{color.toUpperCase()}}</span><button @click="tool='eyedropper'" title="吸管">⌁</button></div>
+      <div class="swatches" style="margin-top:12px"><button v-for="c in palette" :key="c" class="swatch" :class="{selected:color===c}" :style="{background:c}" :title="c" @click="color=c"></button></div>
+    </section>
+    <section class="section">
+      <h3 class="section-title">图层</h3>
+      <div class="row"><button @click="addLayer">＋ 新建图层</button><button @click="clearLayer">清空当前层</button></div>
+      <div v-for="(layer,i) in layers" :key="layer.id" class="layer" :class="{active:activeLayer===i}" @click="activeLayer=i">
+        <button style="padding:2px 6px" @click.stop="layer.visible=!layer.visible">{{layer.visible?'◉':'○'}}</button><span class="layer-name">{{layer.name}}</span><span class="badge">{{i+1}}</span>
+      </div>
+      <p class="muted small">图层按从下到上合成；隐藏图层不会导出。</p>
+    </section>
+    <section class="section">
+      <h3 class="section-title">画布设置</h3>
+      <div class="row"><label class="small">模型类型</label><span class="spacer"></span><select v-model="modelType" style="background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:7px;border-radius:7px"><option>Steve（宽手臂）</option><option>Alex（细手臂）</option></select></div>
+      <div class="row"><label class="small">像素网格</label><span class="spacer"></span><input type="checkbox" v-model="showGrid"></div>
+      <p class="muted small">当前版本先完成真实 2D 像素编辑；3D 人物实时预览与部位 UV 编辑将在下一阶段接入。</p>
+    </section>
+    <section>
+      <h3 class="section-title">快捷操作</h3>
+      <div class="row small"><span>撤销 / 重做</span><span class="spacer"></span><span class="kbd">Ctrl Z</span><span class="kbd">Ctrl Y</span></div>
+      <div class="row small"><span>导出 PNG</span><span class="spacer"></span><span class="kbd">Ctrl S</span></div>
+    </section>
+  </aside>
+</main>
+</div>
+<script>
+const {createApp}=Vue;
+createApp({
+ data(){return{zoom:10,showGrid:true,tool:'pencil',color:'#a5e35b',modelType:'Steve（宽手臂）',cursor:{x:0,y:0},drawing:false,activeLayer:0,nextLayerId:2,layers:[{id:1,name:'基础皮肤',visible:true,pixels:Array(4096).fill(null)}],history:[],historyIndex:-1,palette:['#17191f','#343b48','#596579','#8d9bad','#d9e0e8','#ffffff','#7c3f2c','#bd6b45','#e6a16c','#f0d3a4','#4c783e','#83b95b','#b8df7c','#294d83','#477fba','#83b9e8','#653f85','#a36ab8','#d98bb7','#e7a6b0','#3f252c','#80535a','#c48a86','#e8c1b1']}},
+ watch:{zoom(){this.$nextTick(()=>this.render())},showGrid(){this.$nextTick(()=>this.render())}},
+ computed:{tools(){return[{id:'pencil',icon:'✎',name:'画笔'},{id:'eraser',icon:'▱',name:'橡皮擦'},{id:'bucket',icon:'▨',name:'油漆桶'},{id:'eyedropper',icon:'⌁',name:'吸管'}]},toolName(){return({pencil:'画笔',eraser:'橡皮擦',bucket:'油漆桶',eyedropper:'吸管'})[this.tool]}},
+ mounted(){this.saveHistory();this.render();window.addEventListener('keydown',this.keydown)},
+ beforeUnmount(){window.removeEventListener('keydown',this.keydown)},
+ methods:{
+  active(){return this.layers[this.activeLayer]},
+  saveHistory(){const snap=JSON.stringify(this.layers);if(this.historyIndex<this.history.length-1)this.history=this.history.slice(0,this.historyIndex+1);this.history.push(snap);if(this.history.length>80)this.history.shift();this.historyIndex=this.history.length-1},
+  restore(){this.layers=JSON.parse(this.history[this.historyIndex]);this.activeLayer=Math.min(this.activeLayer,this.layers.length-1);this.render()},
+  undo(){if(this.historyIndex>0){this.historyIndex--;this.restore()}},redo(){if(this.historyIndex<this.history.length-1){this.historyIndex++;this.restore()}},
+  addLayer(){this.layers.push({id:this.nextLayerId++,name:'图层 '+this.nextLayerId,visible:true,pixels:Array(4096).fill(null)});this.activeLayer=this.layers.length-1;this.saveHistory();this.render()},
+  clearLayer(){this.active().pixels=Array(4096).fill(null);this.saveHistory();this.render()},
+  render(){const c=this.$refs.canvas;if(!c)return;const ctx=c.getContext('2d');const s=this.zoom;ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#d5d9df';ctx.fillRect(0,0,c.width,c.height);for(const l of this.layers){if(!l.visible)continue;for(let i=0;i<4096;i++){const col=l.pixels[i];if(col){ctx.fillStyle=col;ctx.fillRect((i%64)*s,Math.floor(i/64)*s,s,s)}}}if(this.showGrid){ctx.beginPath();ctx.strokeStyle='rgba(20,25,32,.25)';ctx.lineWidth=1;for(let i=0;i<=64;i++){const p=i*s+.5;ctx.moveTo(p,0);ctx.lineTo(p,64*s);ctx.moveTo(0,p);ctx.lineTo(64*s,p)}ctx.stroke()}},
+  point(e){const r=this.$refs.canvas.getBoundingClientRect();return{x:Math.max(0,Math.min(63,Math.floor((e.clientX-r.left)/r.width*64))),y:Math.max(0,Math.min(63,Math.floor((e.clientY-r.top)/r.height*64)))}},
+  pointerDown(e){e.preventDefault();this.$refs.canvas.setPointerCapture(e.pointerId);this.drawing=true;const p=this.point(e);this.cursor=p;if(this.tool==='bucket'){this.flood(p.x,p.y);this.saveHistory();this.render()}else this.paint(p.x,p.y)},
+  pointerMove(e){const p=this.point(e);this.cursor=p;if(this.drawing&&this.tool!=='bucket'&&this.tool!=='eyedropper')this.paint(p.x,p.y)},
+  paint(x,y){const i=y*64+x,l=this.active();if(this.tool==='eyedropper'){const c=this.composite()[i];if(c)this.color=c;this.drawing=false;return}const v=this.tool==='eraser'?null:this.color;if(l.pixels[i]===v)return;l.pixels[i]=v;this.render();if(!this.drawing||!this._stroke){this._stroke=true}clearTimeout(this._historyTimer);this._historyTimer=setTimeout(()=>{this.saveHistory();this._stroke=false},180)},
+  flood(x,y){const p=this.active().pixels,start=y*64+x,target=p[start],replacement=this.color;if(target===replacement)return;const stack=[[x,y]],seen=new Uint8Array(4096);while(stack.length){const [cx,cy]=stack.pop();if(cx<0||cy<0||cx>=64||cy>=64)continue;const i=cy*64+cx;if(seen[i]||p[i]!==target)continue;seen[i]=1;p[i]=replacement;stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1])}},
+  composite(){const out=Array(4096).fill(null);for(const l of this.layers)if(l.visible)for(let i=0;i<4096;i++)if(l.pixels[i])out[i]=l.pixels[i];return out},
+  toggleGrid(){this.showGrid=!this.showGrid;this.render()},
+  triggerImport(){this.$refs.fileInput.click()},
+  importPng(e){const f=e.target.files?.[0];if(!f)return;const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=64;c.height=64;const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(img,0,0,64,64);const d=x.getImageData(0,0,64,64).data;this.active().pixels=Array.from({length:4096},(_,i)=>d[i*4+3]===0?null:'#'+[d[i*4],d[i*4+1],d[i*4+2]].map(v=>v.toString(16).padStart(2,'0')).join(''));this.saveHistory();this.render();URL.revokeObjectURL(img.src)};img.src=URL.createObjectURL(f);e.target.value=''},
+  exportPng(){const c=document.createElement('canvas');c.width=64;c.height=64;const x=c.getContext('2d'),d=x.createImageData(64,64),px=this.composite();px.forEach((col,i)=>{if(!col)return;const n=parseInt(col.slice(1),16);d.data[i*4]=(n>>16)&255;d.data[i*4+1]=(n>>8)&255;d.data[i*4+2]=n&255;d.data[i*4+3]=255});x.putImageData(d,0,0);c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='cdpc-skin-64x64.png';a.click();URL.revokeObjectURL(a.href)})},
+  keydown(e){if(e.ctrlKey&&e.key.toLowerCase()==='z'){e.preventDefault();this.undo()}else if(e.ctrlKey&&e.key.toLowerCase()==='y'){e.preventDefault();this.redo()}else if(e.ctrlKey&&e.key.toLowerCase()==='s'){e.preventDefault();this.exportPng()}}
+ }
+}).mount('#app');
+</script>
+</body></html>
