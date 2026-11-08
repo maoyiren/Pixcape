@@ -490,6 +490,15 @@ export default function DressUpStudio() {
           await viewer.loadSkin(overlay, { model: model === 'alex' ? 'slim' : 'default' })
           if (cancelled) return
           makeTransparentSkinSurface()
+          if (uvProfile.targetParts) {
+            const skinParts = viewer.playerObject.skin as unknown as Record<string, { innerLayer?: { visible: boolean }; outerLayer?: { visible: boolean } }>
+            const targets = new Set(uvProfile.targetParts)
+            for (const [partName, part] of Object.entries(skinParts)) {
+              if (!part || typeof part !== 'object') continue
+              if (part.innerLayer) part.innerLayer.visible = false
+              if (part.outerLayer) part.outerLayer.visible = targets.has(partName as 'head' | 'leftLeg' | 'rightLeg')
+            }
+          }
           viewer.playerObject.backEquipment = null
         }
         if (!cancelled) viewer.controls.autoRotate = true
