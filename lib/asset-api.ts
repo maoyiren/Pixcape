@@ -53,6 +53,11 @@ export async function saveAssetFile(input: {
   if (input.category === 'SKIN') {
     const textureError = validateStudioSkinTexture(dimensions, 'base-skin')
     if (textureError) throw new AssetInputError(textureError)
+  } else if (['SHAWL', 'COAT', 'HAT', 'PANTS', 'SHOES'].includes(input.category)) {
+    // These categories use the Minecraft 64×64 / 128×128 skin atlas.
+    // Cape is separate back equipment and has its own 64×32 texture contract.
+    const textureError = validateStudioSkinTexture(dimensions, 'clothing-overlay')
+    if (textureError) throw new AssetInputError(textureError)
   }
 
   const actor = await loadAssetActor(input.actorId)
