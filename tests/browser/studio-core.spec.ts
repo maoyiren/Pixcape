@@ -155,6 +155,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByTestId('studio-load-saved-outfit').click()
   await expect(page.getByLabel('穿搭名称')).toHaveValue('Studio 浏览器验收搭配（已重命名）')
   await page.locator('.dressup-more-actions > summary').click()
+  await actionSelect.selectOption('hit')
   const backupDownloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出穿搭备份 JSON' }).click()
   const backupDownload = await backupDownloadPromise
@@ -164,8 +165,10 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   expect(backupJson.format).toBe('cdpc-outfit')
   expect(backupJson.version).toBe(1)
   expect(backupJson.outfit.name).toBe('Studio 浏览器验收搭配（已重命名）')
+  expect(backupJson.outfit.pose).toBe('hit')
   await page.locator('input[type="file"]').nth(1).setInputFiles({ name: 'studio-backup.json', mimeType: 'application/json', buffer: Buffer.from(backupText) })
   await expect(page.getByRole('status')).toContainText('已导入“Studio 浏览器验收搭配（已重命名）”')
+  await expect(actionSelect).toHaveValue('hit')
   await expect(outfitSelect.locator('option')).toHaveCount(4)
   await page.reload()
   await expect(page.locator('.dressup-selected-list')).not.toContainText('眼眸花披肩')
