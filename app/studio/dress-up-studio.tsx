@@ -788,7 +788,22 @@ export default function DressUpStudio() {
       setSelectedProjectId(saved.id); setSelectedProjectRevision(saved.revision)
       setProjects(current => [saved, ...current.filter(item => item.id !== saved.id)])
       setSelected(current => persisted.reduce<Record<string, CatalogItem>>((next, item) => ({ ...next, [item.category]: item }), current))
-      setSaveNotice(`“${title}”已保存为账号云端项目（版本 ${saved.revision}）；项目素材已绑定，可在其他设备恢复。`)
+      let workspaceSyncFailed = false
+      try {
+        const pointer = await cdpcApi.getWorkspace()
+        await cdpcApi.updateWorkspace({
+          ...pointer,
+          projectId: saved.id,
+          activeTool: 'WARDROBE',
+          activeAssetId: null,
+          activeOutfitId: null,
+        })
+      } catch {
+        workspaceSyncFailed = true
+      }
+      setSaveNotice(workspaceSyncFailed
+        ? `“${title}”已保存为账号云端项目（版本 ${saved.revision}），但工作区快捷入口同步失败；项目内容已保存。`
+        : `“${title}”已保存为账号云端项目（版本 ${saved.revision}）；项目素材已绑定，可在其他设备恢复。`)
     } catch (error) { setSaveNotice(error instanceof Error ? `项目保存失败：${error.message}` : '项目保存失败，请登录后重试') }
     finally { setSavingProject(false) }
   }
@@ -820,7 +835,7 @@ export default function DressUpStudio() {
       setBackgroundScene(typeof workspace.backgroundScene === 'string' && scenes.includes(workspace.backgroundScene) ? workspace.backgroundScene : 'custom')
       setOutfitName(typeof outfit.name === 'string' ? outfit.name : project.title); setSelectedProjectRevision(project.revision)
       const pointer = await cdpcApi.getWorkspace()
-      await cdpcApi.updateWorkspace({ ...pointer, projectId: project.id, activeTool: 'WARDROBE' })
+      await cdpcApi.updateWorkspace({ ...pointer, projectId: project.id, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null })
       setSaveNotice(`已恢复云端项目“${project.title}”（版本 ${project.revision}）`)
     } catch (error) { setSaveNotice(error instanceof Error ? `项目恢复失败：${error.message}` : '项目恢复失败，请稍后重试') }
   }
