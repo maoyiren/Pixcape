@@ -3,9 +3,9 @@ export type StudioShoeUvRegion = {
   side: 'left' | 'right'
   u: number
   v: number
-  width: 4
-  height: 4
-  depth: 4
+  width: number
+  height: number
+  depth: number
 }
 export type StudioUvProfile = {
   category: StudioOverlayCategory
@@ -39,9 +39,9 @@ export function getStudioShoeUvRegions(textureSize: 64 | 128): readonly StudioSh
     ...region,
     u: region.u * scale,
     v: region.v * scale,
-    width: 4 as const,
-    height: 4 as const,
-    depth: 4 as const,
+    width: region.width * scale,
+    height: region.height * scale,
+    depth: region.depth * scale,
   }))
 }
 
