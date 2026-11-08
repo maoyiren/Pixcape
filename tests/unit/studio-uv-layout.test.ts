@@ -4,6 +4,7 @@ import {
   canEquipStudioOverlayTogether,
   getStudioOverlayUvProfile,
   getStudioShoeUvRegions,
+  getStudioOverlayUvRegions,
 } from '../../src/domain/studio-uv-layout.ts'
 
 test('shawl and coat use separately identified source atlas profiles', () => {
@@ -61,6 +62,24 @@ test('shoes use independent left/right lower-leg UV islands at 64px and 128px', 
   ])
   assert.equal(canEquipStudioOverlayTogether(['裤子'], '鞋子'), true)
   assert.equal(canEquipStudioOverlayTogether(['鞋子'], '裤子'), true)
+})
+
+test('hat, pants and shoes composite only their own atlas UV islands', () => {
+  assert.deepEqual(getStudioOverlayUvRegions('帽子', 64), [
+    { x: 32, y: 0, width: 24, height: 16 },
+  ])
+  assert.deepEqual(getStudioOverlayUvRegions('裤子', 64), [
+    { x: 0, y: 32, width: 16, height: 16 },
+    { x: 0, y: 48, width: 16, height: 16 },
+  ])
+  assert.deepEqual(getStudioOverlayUvRegions('鞋子', 64), [
+    { x: 0, y: 40, width: 16, height: 8 },
+    { x: 0, y: 56, width: 16, height: 8 },
+  ])
+  assert.deepEqual(getStudioOverlayUvRegions('鞋子', 128), [
+    { x: 0, y: 80, width: 32, height: 16 },
+    { x: 0, y: 112, width: 32, height: 16 },
+  ])
 })
 
 test('cape remains separate back equipment and has no skin UV profile', () => {
