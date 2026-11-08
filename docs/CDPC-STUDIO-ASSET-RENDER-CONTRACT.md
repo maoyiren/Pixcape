@@ -22,9 +22,9 @@ The shared domain and PostgreSQL enum are the source of truth:
 | Shawl / 披肩 | `SHAWL` | Existing Studio path; verify texture contract |
 | Coat / 外套 | `COAT` | Existing Studio path; verify texture contract |
 | Cape / 披风 | `CAPE` | Separate back equipment; never merge into the skin PNG |
-| Hat / 帽子 | `HAT` | Not enabled until its UV/layer contract is defined and tested |
-| Pants / 裤子 | `PANTS` | Not enabled until its UV/layer contract is defined and tested |
-| Shoes / 鞋子 | `SHOES` | Not enabled until its UV/layer contract is defined and tested |
+| Hat / 帽子 | `HAT` | Native head outer-layer mesh; isolated head UV atlas region; fixture review pending |
+| Pants / 裤子 | `PANTS` | Native left/right leg outer-layer meshes; isolated leg UV atlas regions; fixture review pending |
+| Shoes / 鞋子 | `SHOES` | Two independent boot box meshes attached to animated leg pivots; dedicated lower-leg UV islands; fixture review pending |
 | Other accessory | `OTHER_ACCESSORY` | Not enabled until a concrete renderer contract exists |
 
 披肩、外套、披风 are distinct product concepts and must remain distinct storage categories. In particular, a cape is independent back equipment and is excluded from skin PNG export.
@@ -60,7 +60,24 @@ The per-category UV coordinates are authored into the corresponding source PNG. 
 
 Reference implementation and source asset catalogue: https://github.com/lonelyang/CapeSkinImage
 
-This profile does **not** authorize hats, pants, shoes, or arbitrary user PNGs to be treated as a shawl/coat atlas. Those categories remain disabled until independent geometry/UV fixtures exist.
+This profile does **not** authorize hats, pants, shoes, or arbitrary user PNGs to be treated as a shawl/coat atlas. Hat, pants, and shoes now use separate category render paths and UV regions described below; a category-specific known-good asset fixture and visual review are still required before production acceptance.
+
+
+### 3.2 Native outer-layer and independent shoe geometry
+
+The P0 implementation now separates the remaining three garment classes from the SHAWL / COAT full-atlas compositor:
+
+| Category | 64×64 atlas region | Geometry / preview | Standard skin PNG |
+|---|---|---|---|
+| HAT | Head outer-layer island: x=32, y=0, w=24, h=16 | skinview3d head outer-layer mesh; single-item preview hides inner skin and all non-head outer layers | Copy only the head outer-layer UV island |
+| PANTS | Right leg outer-layer island: x=0, y=32, w=16, h=16; left leg: x=0, y=48, w=16, h=16 | Native right/left leg outer-layer meshes; single-item preview isolates both legs | Copy only the two leg outer-layer UV islands |
+| SHOES | Right lower-leg island: x=0, y=40, w=16, h=8; left lower-leg island: x=0, y=56, w=16, h=8 | Two independent 4.75-unit box meshes, each attached to its own animated leg pivot; each mesh samples only its own 4×4×4 lower-leg UV island | Copy only the shoe UV islands into the standard outer-leg atlas |
+
+All coordinates and region dimensions scale by 2 for 128×128 textures. Shoe geometry is separate in the live preview so it can be sized and animated independently; the exported PNG still uses standard Minecraft outer-leg UV pixels and does not contain custom mesh data. Hat and pants use skinview3d's existing native outer-layer meshes rather than creating duplicate character rigs.
+
+The upload and backup paths recognize HAT, PANTS, and SHOES; outfit validation accepts those canonical asset categories. The compositor clips hat/pants/shoe overlays to their own UV regions so unrelated pixels in an uploaded atlas cannot overwrite other skin regions. Shoes are excluded from the character's base skin-map composite and rendered with their own texture material.
+
+**Verification boundary:** unit tests cover the 64/128 UV region coordinates and compatibility rules. A browser regression now uploads a controlled shoe fixture, checks that two shoe meshes are attached to the live Studio canvas, opens the isolated preview, and exports a 64×64 vanilla skin PNG. This does not yet replace visual inspection of real artist-authored shoe, hat, and pants textures in both Classic and Slim models.
 
 ## 4. Runtime architecture
 
@@ -108,7 +125,7 @@ The same normalized descriptor must be consumed by preview and export. Do not ma
 
 ## 8. Current source audit (2026-11-07)
 
-The current P0 branch maps only `SHAWL`, `COAT`, and `CAPE` to the Studio renderer. Hat, pants, and shoes remain unavailable.
+The P0 branch maps SHAWL, COAT, CAPE, HAT, PANTS, and SHOES to distinct Studio render paths. Hat and pants use native outer-layer model geometry with category-clipped UV composition; shoes use two custom box meshes attached to the animated leg pivots. The catalog still has no bundled hat/pants/shoe preset pack: those categories are available for user-uploaded assets. Production acceptance remains pending real asset fixtures and visual review.
 
 The non-cape preview and export paths now composite the full category-authored skin atlas with alpha; the former shared six-rectangle crop has been removed. SHAWL and COAT have separate category profiles and are mutually exclusive because their source atlases overlap on upper-body surfaces. Cape remains a separate back-equipment texture.
 
