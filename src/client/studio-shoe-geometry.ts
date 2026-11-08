@@ -43,6 +43,16 @@ function setShoeUv(geometry: BoxGeometry, region: ReturnType<typeof getStudioSho
   attribute.needsUpdate = true
 }
 
+/** Build one standalone shoe box with UVs constrained to a single leg atlas island. */
+export function createStudioShoeGeometry(
+  region: ReturnType<typeof getStudioShoeUvRegions>[number],
+  textureSize: 64 | 128,
+): BoxGeometry {
+  const geometry = new BoxGeometry(4.75, 4.75, 4.75)
+  setShoeUv(geometry, region, textureSize)
+  return geometry
+}
+
 /**
  * Adds two independent boot meshes to the animated left/right leg pivots.
  * Each mesh samples only the lower 4×4×4 UV island of its corresponding
@@ -81,8 +91,7 @@ export function attachStudioShoeGeometry(
       texture.dispose()
       throw new Error('角色腿部模型尚未初始化，无法安装独立鞋子几何。')
     }
-    const geometry = new BoxGeometry(4.75, 4.75, 4.75)
-    setShoeUv(geometry, region, textureSize)
+    const geometry = createStudioShoeGeometry(region, textureSize)
     const shoe = new Mesh(geometry, material)
     shoe.name = `cdpc-shoe-${region.side}`
     shoe.position.set(0, -4, 0)
