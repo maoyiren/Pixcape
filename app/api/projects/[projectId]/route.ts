@@ -79,7 +79,9 @@ export async function PUT(request: Request, context: RouteContext) {
     return NextResponse.json({ error: '项目版本号无效。' }, { status: 400 })
   }
   const input = parsed.input
-  const result = await prisma.$transaction(async tx => {
+  let result
+  try {
+    result = await prisma.$transaction(async tx => {
     const current = await tx.project.findFirst({ where: { id: projectId, ownerId: resolved.actor.id }, select: { id: true, revision: true } })
     if (!current) return { kind: 'missing' as const }
     const assets = input.assetIds.length ? await tx.asset.findMany({
@@ -96,16 +98,25 @@ export async function PUT(request: Request, context: RouteContext) {
     })
     if (updated.count !== 1) return { kind: 'conflict' as const }
     await tx.asset.updateMany({ where: { projectId, ownerId: resolved.actor.id, id: { notIn: input.assetIds } }, data: { projectId: null } })
-    if (input.assetIds.length) await tx.asset.updateMany({
-      where: { id: { in: input.assetIds }, ownerId: resolved.actor.id, OR: [{ projectId: null }, { projectId }] },
-      data: { projectId },
-    })
+    if (input.assetIds.length) {
+      const attached = await tx.asset.updateMany({
+        where: { id: { in: input.assetIds }, ownerId: resolved.actor.id, OR: [{ projectId: null }, { projectId }] },
+        data: { projectId },
+      })
+      if (attached.count !== input.assetIds.length) throw new Error('PROJECT_ASSET_CONFLICT')
+    }
     const item = await tx.project.findFirst({
       where: { id: projectId, ownerId: resolved.actor.id },
       select: { id: true, title: true, description: true, visibility: true, revision: true, createdAt: true, updatedAt: true },
     })
     return { kind: 'updated' as const, item }
-  })
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'PROJECT_ASSET_CONFLICT') {
+      return NextResponse.json({ error: '部分素材已被其他项目占用，请刷新素材列表后重试。' }, { status: 409 })
+    }
+    throw error
+  }
   if (result.kind === 'missing') return NextResponse.json({ error: '项目不存在或无权访问。' }, { status: 404 })
   if (result.kind === 'assets') return NextResponse.json({ error: '项目只能引用当前账号拥有且未归属其他项目的素材。' }, { status: 400 })
   if (result.kind === 'conflict') {
