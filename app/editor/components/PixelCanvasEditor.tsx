@@ -276,6 +276,7 @@ export default function PixelCanvasEditor() {
     setStatus('已重做')
   }
   const addLayer = () => {
+    if (layers.length >= 24) { setStatus('最多支持 24 个图层'); return }
     checkpoint()
     const layer = newLayer('图层 ' + (layers.length + 1), size)
     setLayers(current => [...current, layer])
