@@ -1,4 +1,4 @@
-import { getStudioOverlayUvRegions } from '@/src/domain/studio-uv-layout'
+import { getStudioOverlayUvRegions } from '../domain/studio-uv-layout.ts'
 
 export type StudioUvOverlayCategory = '帽子' | '裤子' | '鞋子'
 
