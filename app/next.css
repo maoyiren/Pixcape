@@ -583,7 +583,3 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
 /* Keep Studio form actions deterministic: smooth document scrolling makes browser auto-scroll
    continuously move lower controls while Playwright/user click targets are being resolved. */
 html:has(.dressup-page){scroll-behavior:auto}
-
-/* Keep Studio form actions deterministic: smooth document scrolling makes browser auto-scroll
-   continuously move lower controls while click targets are being resolved. */
-html:has(.dressup-page){scroll-behavior:auto}
