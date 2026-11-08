@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   canEquipStudioOverlayTogether,
   getStudioOverlayUvProfile,
+  getStudioShoeUvRegions,
 } from '../../src/domain/studio-uv-layout.ts'
 
 test('shawl and coat use separately identified source atlas profiles', () => {
@@ -44,6 +45,24 @@ test('hat and pants use native Minecraft outer-layer model UV surfaces', () => {
   assert.equal(canEquipStudioOverlayTogether(['外套'], '裤子'), true)
 })
 
-test('cape and shoes are not assigned fabricated skin overlay UV profiles', () => {
-  for (const category of ['披风', '鞋子']) assert.throws(() => getStudioOverlayUvProfile(category as never))
+test('shoes use independent left/right lower-leg UV islands at 64px and 128px', () => {
+  const shoes = getStudioOverlayUvProfile('鞋子')
+  assert.equal(shoes.assetCategory, 'SHOES')
+  assert.equal(shoes.composition, 'separate-box-geometry')
+  assert.equal(shoes.targetParts, null)
+  assert.equal(shoes.mutuallyExclusiveWith, null)
+  assert.deepEqual(getStudioShoeUvRegions(64), [
+    { side: 'right', u: 0, v: 40, width: 4, height: 4, depth: 4 },
+    { side: 'left', u: 0, v: 56, width: 4, height: 4, depth: 4 },
+  ])
+  assert.deepEqual(getStudioShoeUvRegions(128), [
+    { side: 'right', u: 0, v: 80, width: 4, height: 4, depth: 4 },
+    { side: 'left', u: 0, v: 112, width: 4, height: 4, depth: 4 },
+  ])
+  assert.equal(canEquipStudioOverlayTogether(['裤子'], '鞋子'), true)
+  assert.equal(canEquipStudioOverlayTogether(['鞋子'], '裤子'), true)
+})
+
+test('cape remains separate back equipment and has no skin UV profile', () => {
+  assert.throws(() => getStudioOverlayUvProfile('披风' as never))
 })
