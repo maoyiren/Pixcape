@@ -14,7 +14,7 @@ export function normalizePixelEditorDocument(value: unknown): PixelEditorDocumen
     width = pixels === 4096 ? 64 : pixels === 16384 ? 128 : undefined
     height = width
   }
-  if (typeof width !== 'number' || (width !== 64 && width !== 128) || typeof height !== 'number' || height !== width || (input.version !== undefined && input.version !== 1) || !Array.isArray(input.layers) || input.layers.length < 1 || input.layers.length > 64) return null
+  if (typeof width !== 'number' || (width !== 64 && width !== 128) || typeof height !== 'number' || height !== width || (input.version !== undefined && input.version !== 1) || !Array.isArray(input.layers) || input.layers.length < 1 || input.layers.length > 24) return null
 
   const ids = new Set<string>()
   const layers: PixelEditorLayer[] = []
