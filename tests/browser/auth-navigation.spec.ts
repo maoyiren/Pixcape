@@ -322,6 +322,9 @@ test('authenticated avatar menu supports hover, click, outside dismissal and Esc
   // close that state first so this assertion exercises a fresh hover transition.
   await page.keyboard.press('Escape')
   await expect(page.locator('.site-account-links')).toHaveCount(0)
+  // Escape closes the menu but leaves the pointer over the trigger. Move away
+  // first so Playwright dispatches a fresh pointer-enter transition on hover.
+  await page.mouse.move(0, 0)
   await trigger.hover()
   const accountLinks = page.locator('.site-account-links')
   await expect(accountLinks.getByRole('link', { name: '个人主页' })).toBeVisible()
