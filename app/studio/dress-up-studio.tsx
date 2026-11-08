@@ -9,7 +9,7 @@ import { attachStudioShoeGeometry } from '@/src/client/studio-shoe-geometry'
 import { drawStudioOverlayUvRegions } from '@/src/client/studio-overlay-compositor'
 import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
 import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
-import { canEquipStudioOverlayTogether, getStudioOverlayUvProfile, getStudioOverlayUvRegions, type StudioOverlayCategory } from '@/src/domain/studio-uv-layout'
+import { canEquipStudioOverlayTogether, getStudioOverlayUvProfile, type StudioOverlayCategory } from '@/src/domain/studio-uv-layout'
 import { normalizeOutfitBackupAssets, normalizeOutfitBackupSkinUrl } from '@/src/domain/outfit-backup'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
