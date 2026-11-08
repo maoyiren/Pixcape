@@ -228,3 +228,16 @@
 - 项目保存现状：`Project` 没有正文与 revision 字段；`WorkspaceState` 仅保存当前工作区指针；`EditorDocument` API 仅覆盖编辑器文档。尚未建立 Project CRUD / revision / 跨设备恢复事务，因此完整创作项目保存恢复仍未闭环。
 - 真实 OAuth / 邮件 provider、生产服务端权限环境验收、移动端人工验收、PostgreSQL 生产备份恢复演练均未执行。CI / 测试环境通过不代表这些真实环境验收通过。
 - 本轮继续保持 PR #64 Draft；不合并、不发布、不部署生产、不执行生产数据库迁移。
+
+
+## P0 再次复验（2026-11-08 03:06 UTC，head `53f814d`）
+
+- Preview Build / Security：`42441007217` 成功。
+- Docker image workflow：`42441007238` 成功；该 workflow 成功不等于已部署，本轮未执行生产部署。
+- CI：`42441007223` 失败，Playwright 为 36 passed / 2 failed。
+- Studio 主流程失败点：`tests/browser/studio-core.spec.ts` 在动作/视角操作后选择场景背景 `forest` 时，Playwright 等待背景 select 可见且 enabled 超时；重试又在本地草稿条目数量断言失败。当前证据不足以将其归因为单纯的 3D GPU 卡顿，必须进一步检查页面状态、DOM 与 trace。
+- 云端素材场景失败点：`tests/browser/auth-navigation.spec.ts` 的衣橱披风点击后，`.dressup-selected-list` 未出现；测试在断言选择结果时失败，尚未到达后续本地草稿保存步骤。因此这不是“保存按钮卡住”的直接证据。应先核查衣橱分页加载、测试路由响应与分类按钮状态。
+- 上一提交 `ed5a6c8` 的视角重置代码修复已进入构建，但主流程仍失败在后续场景背景选择；视角 reset 断言已通过到达下一步，不能据此宣布完整 Studio 通过。
+- 当前 UV 证据不变：`studio-uv-layout.ts` 只定义披肩与外套两个 overlay profile；帽子、裤子、鞋子虽在数据库枚举中存在，但没有对应 UV/几何 profile 和 3D 预览实现。不要仅把数据库分类存在当作功能完成。
+- 当前 Project schema 不含项目正文 / revision；WorkspaceState 仅保存活动指针；EditorDocument API 只服务像素编辑器文档。下一步 Project 持久化应作为独立的 schema + migration + owner-scoped CRUD + 乐观锁 + 资源引用校验工作包实施，不应将本地 localStorage 草稿或 Outfit 记录冒充完整项目同步。
+- OAuth、邮件、真实服务端权限、移动端真机和 PostgreSQL 备份恢复仍需要独立环境/人工验收；本轮未执行这些生产操作。
