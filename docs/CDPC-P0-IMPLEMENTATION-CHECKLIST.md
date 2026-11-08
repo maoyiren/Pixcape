@@ -199,3 +199,14 @@
 - Docker smoke #1106：PostgreSQL-only image build、容器启动与路由 smoke 成功；`publish` 与 `Deploy to 1Panel V2` job 均为 skipped。未发布镜像、未部署生产。此前工作流显示 success 指的是 smoke job 成功，不是 publish。
 - 修复提交后必须等待新 head 的 CI、Preview/Security 和 Docker smoke 结果；本次没有手动重跑旧 workflow，也没有触发生产发布。
 - 帽子 / 裤子 / 鞋子的真实 UV / 几何、完整项目保存恢复和故障恢复、真实 OAuth / 邮件、移动端人工验收、生产 PostgreSQL 备份恢复演练仍未完成。
+
+## 最新 CI 复核与下一轮诊断（2026-11-08 01:27 UTC）
+
+- PR #64 head 已推进至 `11c75b734a69b714a8415cd6be0fefd2f015c3ba`，PR 仍为 Draft。
+- `0849da1` 的 CI #1111 实际结果为失败：36 项通过、Studio 浏览器用例 1 项失败、头像菜单 hover 用例 1 项 flaky。失败不再只是早先记录的 `null.trim`：当前日志显示动作选择 `run/crouch/hit/swim` 时 Playwright 的 `selectOption` 超时 30 秒，导致后续本地穿搭保存断言也未完成；本次不能认定动作系统已修复。
+- 同一 head 的 Preview/Security #900 通过；Docker smoke #1110 通过，publish 和 1Panel deploy 均 skipped。没有发布镜像或部署生产。
+- 为定位 Studio 页面挂起，在 `tests/browser/studio-core.spec.ts` 中让 pageerror 同时输出完整堆栈到 CI 日志，提交 `3723060`；这只是诊断增强，不是产品 bug 修复。
+- 头像菜单测试 helper 已先点击账户按钮验证会话，导致后续 hover 用例可能从已打开状态开始。本轮测试在 hover 前显式 Escape 关闭菜单，确保验证新的 hover 进入状态，提交 `11c75b7`。仍需 CI 复验。
+- 项目数据层现状复核：Prisma 有 `Project`（标题/描述/可见性/资源关联）、`WorkspaceState`（当前项目/工具/素材/穿搭指针）和带 revision 的 `EditorDocument`；编辑器文档 API 已实现用户隔离、8 MiB/24 层校验及乐观并发冲突检测。但尚未发现 `/api/projects` CRUD 路由，且 Project 模型本身没有文档正文/revision。因此“完整创作项目跨设备保存/恢复”仍未形成闭环，不能将编辑器文档 API 或穿搭 JSON 备份等同于项目保存。
+- 当前下一项阻塞是获取 Studio 动作切换超时对应的浏览器 pageerror/trace 证据并修复真实原因；不应通过跳过动作断言、放宽超时或吞掉异常来制造绿灯。
+- 帽子/裤子/鞋子的真实 UV 与独立几何、完整项目持久化、真实 OAuth/邮件、移动端人工验收、PostgreSQL 备份恢复演练仍未完成。未合并 PR、未发布镜像、未部署生产、未执行生产迁移。
