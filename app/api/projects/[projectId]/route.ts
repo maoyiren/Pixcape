@@ -36,7 +36,9 @@ async function actorOrResponse() {
 async function readInput(request: Request) {
   try {
     const raw = await readRequestBodyWithLimit(request.body, MAX_REQUEST_BYTES)
-    return { input: parseInput(JSON.parse(raw.toString('utf8'))) }
+    const value: unknown = JSON.parse(raw.toString('utf8'))
+    const revision = value && typeof value === 'object' ? (value as Record<string, unknown>).revision : undefined
+    return { input: parseInput(value), revision }
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) return { response: NextResponse.json({ error: '项目文档请求不能超过 8 MB。' }, { status: 413 }) }
     return { response: NextResponse.json({ error: '项目 JSON 格式无效。' }, { status: 400 }) }
@@ -72,8 +74,7 @@ export async function PUT(request: Request, context: RouteContext) {
   const parsed = await readInput(request)
   if ('response' in parsed) return parsed.response
   if (!parsed.input) return NextResponse.json({ error: '项目标题、可见性、文档或素材引用无效。' }, { status: 400 })
-  const rawBody = await request.clone().json().catch(() => null) as Record<string, unknown> | null
-  const revision = rawBody?.revision
+  const revision = parsed.revision
   if (typeof revision !== 'number' || !Number.isInteger(revision) || revision < 1) {
     return NextResponse.json({ error: '项目版本号无效。' }, { status: 400 })
   }
