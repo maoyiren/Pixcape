@@ -113,6 +113,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.getByRole('button', { name: 'Alex 细臂' }).click()
   await expect(page.getByRole('button', { name: 'Alex 细臂' })).toHaveAttribute('aria-pressed', 'true')
   const actionGroup = page.getByRole('group', { name: '角色动作与视角' })
+  await expect(actionGroup).toBeVisible()
   const actionSelect = actionGroup.getByLabel('切换角色动作')
   await actionSelect.selectOption('walk')
   await expect(actionSelect).toHaveValue('walk')
@@ -124,9 +125,9 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   }
   expect(pageErrors).toEqual([])
   // Repeating the action switch must not leave a stale pose animation attached.
-  const autoRotateControl = actionGroup.locator('button').first()
+  const autoRotateControl = page.getByRole('button', { name: '自动旋转', exact: true })
   await autoRotateControl.click()
-  await expect(autoRotateControl).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: '停止旋转', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '显示鞘翅' }).click()
   await expect(page.getByRole('button', { name: '显示披风' })).toBeVisible()
   await page.getByLabel('切换角色视角').selectOption('back')
