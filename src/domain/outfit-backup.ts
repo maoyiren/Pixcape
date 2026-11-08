@@ -37,7 +37,10 @@ export function normalizeOutfitBackupAssets(value: unknown): OutfitBackupAsset[]
   if (!Array.isArray(value)) return []
   const result: OutfitBackupAsset[] = []
   const seen = new Set<string>()
-  for (const raw of value.slice(0, 64)) {
+  // Bound work on untrusted JSON while allowing duplicate entries to collapse
+  // without reducing the number of distinct assets restored (max 64).
+  for (const raw of value.slice(0, 256)) {
+    if (result.length >= 64) break
     const item = record(raw)
     if (!item) continue
     const id = safeId(item.id)
