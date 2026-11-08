@@ -33,6 +33,19 @@ test('rejects mismatched ids, unsupported categories and malformed records', () 
   ]), [])
 })
 
+test('restores hat, pants and shoes using canonical same-origin asset routes', () => {
+  const result = normalizeOutfitBackupAssets([
+    asset({ id: 'hat_1', assetId: 'hat_1', category: '帽子' }),
+    asset({ id: 'pants_1', assetId: 'pants_1', category: '裤子' }),
+    asset({ id: 'shoes_1', assetId: 'shoes_1', category: '鞋子' }),
+  ])
+  assert.deepEqual(result.map(item => item.category), ['帽子', '裤子', '鞋子'])
+  assert.deepEqual(result.map(item => item.fileUrl), [
+    '/api/assets/hat_1/file', '/api/assets/pants_1/file', '/api/assets/shoes_1/file',
+  ])
+  assert.ok(result.every(item => item.canDownload === false))
+})
+
 test('never imports official assets or trusts client download flags', () => {
   const result = normalizeOutfitBackupAssets([
     asset({ id: 'official_1', assetId: 'official_1', provenance: 'OFFICIAL', canDownload: true }),
