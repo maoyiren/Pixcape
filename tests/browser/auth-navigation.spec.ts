@@ -835,6 +835,10 @@ test('3D studio saves and restores a complete private cloud project across reloa
       }] : [] }) })
       return
     }
+    if (request.method() === 'PUT' && url.pathname === `/api/projects/${projectId}`) {
+      await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ error: '项目已在其他设备更新，请重新载入。', revision: projectRevision + 1 }) })
+      return
+    }
     if (request.method() === 'GET' && url.pathname === `/api/projects/${projectId}`) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
         id: projectId, title: '跨设备角色项目', description: 'CDPC 角色换装与创作项目',
@@ -871,4 +875,7 @@ test('3D studio saves and restores a complete private cloud project across reloa
   await page.getByRole('button', { name: '载入云端项目' }).click()
   await expect(page.getByRole('status')).toContainText('已恢复云端项目“跨设备角色项目”（版本 1）')
   expect(workspacePointer).toMatchObject({ projectId, activeTool: 'WARDROBE' })
+  await page.getByRole('button', { name: '保存项目版本' }).click()
+  await expect(page.getByRole('status')).toContainText('云端项目版本冲突')
+  await expect(page.getByRole('status')).toContainText('不会覆盖远端版本')
 })
