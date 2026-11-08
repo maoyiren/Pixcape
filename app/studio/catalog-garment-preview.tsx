@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { SkinViewer } from 'skinview3d'
 import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
 import { getStudioOverlayUvProfile } from '@/src/domain/studio-uv-layout'
+import { attachStudioShoeGeometry } from '@/src/client/studio-shoe-geometry'
 
 type Item = { id?: string; name: string; category: string; texture: string; fileUrl?: string; modelTexture?: string; texture128?: string; modelTexture128?: string }
 type Props = { item: Item; model: 'steve' | 'alex'; skinUrl: string }
@@ -69,6 +70,7 @@ async function renderCatalogItem(item: Item, model: 'steve' | 'alex', skinUrl: s
   viewer.playerObject.backEquipment = null
   viewer.background = null
 
+  let cleanupShoes: (() => void) | null = null
   if (item.category === '披风') {
     const emptySkin = document.createElement('canvas')
     emptySkin.width = 64
@@ -76,6 +78,16 @@ async function renderCatalogItem(item: Item, model: 'steve' | 'alex', skinUrl: s
     await viewer.loadSkin(emptySkin, { model: model === 'alex' ? 'slim' : 'default' })
     makeSkinSurfaceTransparent(viewer)
     await viewer.loadCape(item.fileUrl || ASSET_ROOT + item.texture, { backEquipment: 'cape' })
+  } else if (item.category === '鞋子') {
+    const shoe = await loadImage(item.fileUrl || ASSET_ROOT + item.texture)
+    if (shoe.naturalWidth !== 64 && shoe.naturalWidth !== 128) throw new Error('鞋子贴图必须为 64×64 或 128×128 PNG')
+    if (shoe.naturalWidth !== shoe.naturalHeight) throw new Error('鞋子贴图必须为正方形皮肤图集')
+    const emptySkin = document.createElement('canvas')
+    emptySkin.width = shoe.naturalWidth
+    emptySkin.height = shoe.naturalHeight
+    await viewer.loadSkin(emptySkin, { model: model === 'alex' ? 'slim' : 'default' })
+    makeSkinSurfaceTransparent(viewer)
+    cleanupShoes = attachStudioShoeGeometry(viewer.playerObject.skin, shoe, shoe.naturalWidth as 64 | 128)
   } else {
     if (!['披肩', '外套', '帽子', '裤子'].includes(item.category)) {
       throw new Error('该分类尚无独立 UV 规范')
@@ -109,7 +121,9 @@ async function renderCatalogItem(item: Item, model: 'steve' | 'alex', skinUrl: s
   // renderPaused prevents an animation loop per catalog item; render exactly one
   // frame after the item texture and model have been applied, then keep a PNG.
   viewer.render()
-  return viewer.canvas.toDataURL('image/png')
+  const image = viewer.canvas.toDataURL('image/png')
+  cleanupShoes?.()
+  return image
 }
 
 function enqueueCatalogRender(item: Item, model: 'steve' | 'alex', skinUrl: string): Promise<string> {
@@ -124,7 +138,7 @@ export default function CatalogGarmentPreview({ item, model, skinUrl }: Props) {
   const [visible, setVisible] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [error, setError] = useState('')
-  const supported = item.category === '披肩' || item.category === '外套' || item.category === '披风' || item.category === '帽子' || item.category === '裤子'
+  const supported = item.category === '披肩' || item.category === '外套' || item.category === '披风' || item.category === '帽子' || item.category === '裤子' || item.category === '鞋子'
 
   useEffect(() => {
     const host = hostRef.current
