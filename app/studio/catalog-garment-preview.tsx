@@ -71,5 +71,5 @@ export default function CatalogGarmentPreview({ item, model, skinUrl }: Props) {
     })()
     return () => { cancelled = true; resizeObserver?.disconnect(); viewer.dispose() }
   }, [item, model, skinUrl, visible, supported])
-  return <div className="dressup-item-render" ref={hostRef} aria-label={(typeof item.name === 'string' ? item.name : '服装素材') + ' 3D 单件预览'}>{!supported ? <span className="dressup-item-render-placeholder">3D 渲染开发中</span> : !visible ? <span>3D 预览</span> : null}{error && <span role="status">{error}</span>}</div>
+  return <div className="dressup-item-render" aria-label={(typeof item.name === 'string' ? item.name : '服装素材') + ' 3D 单件预览'}><div ref={hostRef} aria-hidden="true" style={{ width: '100%', height: 116 }} />{!supported ? <span className="dressup-item-render-placeholder">3D 渲染开发中</span> : !visible ? <span>3D 预览</span> : null}{error && <span role="status">{error}</span>}</div>
 }
