@@ -3,28 +3,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { bresenhamLine } from '@/src/domain/skin-paint'
 import { CdpcApiError, cdpcApi } from '@/src/client/cdpc-api'
+import { normalizePixelEditorDocument } from '@/src/domain/pixel-editor-document'
 
 type Layer = { id: string; name: string; visible: boolean; opacity: number; pixels: string[] }
 type Tool = 'pencil' | 'eraser' | 'fill' | 'eyedropper'
-const SIZE = 64
-const blank = () => Array<string>(SIZE * SIZE).fill('')
-const newLayer = (name: string): Layer => ({ id: crypto.randomUUID(), name, visible: true, opacity: 100, pixels: blank() })
-const cloudSnapshot = (name: string, activeId: string, layers: Layer[]) => JSON.stringify({ name, document: { version: 1, width: 64, height: 64, activeId, layers } })
+const DEFAULT_SIZE = 64
+const blank = (size = DEFAULT_SIZE) => Array<string>(size * size).fill('')
+const newLayer = (name: string, size = DEFAULT_SIZE): Layer => ({ id: crypto.randomUUID(), name, visible: true, opacity: 100, pixels: blank(size) })
+const cloudSnapshot = (name: string, size: number, activeId: string, layers: Layer[]) => JSON.stringify({ name, document: { version: 1, width: size, height: size, activeId, layers } })
 
-function floodFill(source: string[], start: number, replacement: string) {
+function floodFill(source: string[], start: number, replacement: string, size: number) {
   const target = source[start]
   if (target === replacement) return source
   const result = [...source]
   const queue = [start]
-  const visited = new Uint8Array(SIZE * SIZE)
+  const visited = new Uint8Array(size * size)
   visited[start] = 1
   for (let cursor = 0; cursor < queue.length; cursor++) {
     const index = queue[cursor]
     if (result[index] !== target) continue
     result[index] = replacement
-    const x = index % SIZE
-    const y = Math.floor(index / SIZE)
-    const neighbors = [x ? index - 1 : -1, x < SIZE - 1 ? index + 1 : -1, y ? index - SIZE : -1, y < SIZE - 1 ? index + SIZE : -1]
+    const x = index % size
+    const y = Math.floor(index / size)
+    const neighbors = [x ? index - 1 : -1, x < size - 1 ? index + 1 : -1, y ? index - size : -1, y < size - 1 ? index + size : -1]
     for (const next of neighbors) if (next >= 0 && !visited[next] && result[next] === target) {
       visited[next] = 1
       queue.push(next)
@@ -35,6 +36,7 @@ function floodFill(source: string[], start: number, replacement: string) {
 
 export default function PixelCanvasEditor() {
   const [layers, setLayers] = useState<Layer[]>(() => [newLayer('基础图层')])
+  const size = Math.sqrt(layers[0]?.pixels.length ?? DEFAULT_SIZE * DEFAULT_SIZE)
   const [activeId, setActiveId] = useState('')
   const [tool, setTool] = useState<Tool>('pencil')
   const [color, setColor] = useState('#263b56')
@@ -58,16 +60,17 @@ export default function PixelCanvasEditor() {
   const lastIndex = useRef(-1)
   const hasLocalDraft = useRef(false)
   const workspaceActionStarted = useRef(false)
+  const opacityGesture = useRef(false)
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem('cdpc-pixel-editor-v1')
       if (raw) {
-        const value = JSON.parse(raw)
-        if (Array.isArray(value.layers) && value.layers.length && value.layers.every((layer: Layer) => Array.isArray(layer.pixels) && layer.pixels.length === SIZE * SIZE)) {
+        const value = normalizePixelEditorDocument(JSON.parse(raw))
+        if (value) {
           hasLocalDraft.current = true
           setLayers(value.layers)
-          setActiveId(value.activeId || value.layers[0].id)
+          setActiveId(value.activeId)
           setStatus('已恢复上次本地编辑草稿')
         }
       }
@@ -110,18 +113,18 @@ export default function PixelCanvasEditor() {
         }
         const bitmap = await createImageBitmap(await assetResponse.blob())
         try {
-          if (bitmap.width !== SIZE || bitmap.height !== SIZE) {
-            if (!cancelled && !workspaceActionStarted.current) setStatus('当前素材不是 64×64 皮肤，不能载入皮肤像素画布')
+          if ((bitmap.width !== 64 && bitmap.width !== 128) || bitmap.height !== bitmap.width) {
+            if (!cancelled && !workspaceActionStarted.current) setStatus('当前素材必须为 64×64 或 128×128 皮肤')
             return
           }
           const source = document.createElement('canvas')
-          source.width = SIZE
-          source.height = SIZE
+          source.width = bitmap.width
+          source.height = bitmap.height
           const context = source.getContext('2d', { willReadFrequently: true })
           if (!context) throw new Error('无法读取皮肤像素')
           context.drawImage(bitmap, 0, 0)
-          const rgba = context.getImageData(0, 0, SIZE, SIZE).data
-          const pixels = Array.from({ length: SIZE * SIZE }, (_, index) => {
+          const rgba = context.getImageData(0, 0, bitmap.width, bitmap.height).data
+          const pixels = Array.from({ length: bitmap.width * bitmap.height }, (_, index) => {
             const offset = index * 4
             if (rgba[offset + 3] === 0) return ''
             return '#' + [rgba[offset], rgba[offset + 1], rgba[offset + 2]]
@@ -148,15 +151,15 @@ export default function PixelCanvasEditor() {
 
   useEffect(() => {
     if (loaded) {
-      try { localStorage.setItem('cdpc-pixel-editor-v1', JSON.stringify({ layers, activeId })) }
+      try { localStorage.setItem('cdpc-pixel-editor-v1', JSON.stringify({ version: 1, width: size, height: size, layers, activeId })) }
       catch { setStatus('本地空间不足，请及时导出 PNG') }
     }
-  }, [layers, activeId, loaded])
+  }, [layers, activeId, loaded, size])
 
-  const currentCloudSnapshot = useMemo(() => cloudSnapshot(cloudName, activeId, layers), [cloudName, activeId, layers])
+  const currentCloudSnapshot = useMemo(() => cloudSnapshot(cloudName, size, activeId, layers), [cloudName, size, activeId, layers])
   const cloudDirty = cloudDocumentLoaded && cloudBaseline !== null && currentCloudSnapshot !== cloudBaseline
   const composite = useMemo(() => {
-    const result = blank()
+    const result = blank(size)
     layers.forEach(layer => {
       if (!layer.visible || layer.opacity <= 0) return
       layer.pixels.forEach((pixel, index) => {
@@ -175,19 +178,19 @@ export default function PixelCanvasEditor() {
       })
     })
     return result
-  }, [layers])
+  }, [layers, size])
 
   const render = useCallback((pixels: string[]) => {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
-    ctx.clearRect(0, 0, SIZE, SIZE)
+    ctx.clearRect(0, 0, size, size)
     pixels.forEach((pixel, index) => {
       if (!pixel) return
       ctx.fillStyle = pixel
-      ctx.fillRect(index % SIZE, Math.floor(index / SIZE), 1, 1)
+      ctx.fillRect(index % size, Math.floor(index / size), 1, 1)
     })
-  }, [])
+  }, [size])
   useEffect(() => render(composite), [composite, render])
 
   const checkpoint = () => {
@@ -196,7 +199,7 @@ export default function PixelCanvasEditor() {
   }
 
   const paint = (index: number) => {
-    if (index < 0 || index >= SIZE * SIZE || index === lastIndex.current) return
+    if (index < 0 || index >= size * size || index === lastIndex.current) return
     lastIndex.current = index
     if (tool === 'eyedropper') {
       const pixel = composite[index]
@@ -218,7 +221,7 @@ export default function PixelCanvasEditor() {
     if (!target) return
     setLayers(current => current.map(layer => {
       if (layer.id !== activeId) return layer
-      if (tool === 'fill') return { ...layer, pixels: floodFill(layer.pixels, index, color) }
+      if (tool === 'fill') return { ...layer, pixels: floodFill(layer.pixels, index, color, size) }
       const pixels = [...layer.pixels]
       pixels[index] = tool === 'eraser' ? '' : color
       return { ...layer, pixels }
@@ -228,9 +231,9 @@ export default function PixelCanvasEditor() {
 
   const getIndex = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    const x = Math.max(0, Math.min(63, Math.floor((event.clientX - rect.left) / rect.width * SIZE)))
-    const y = Math.max(0, Math.min(63, Math.floor((event.clientY - rect.top) / rect.height * SIZE)))
-    return y * SIZE + x
+    const x = Math.max(0, Math.min(size - 1, Math.floor((event.clientX - rect.left) / rect.width * size)))
+    const y = Math.max(0, Math.min(size - 1, Math.floor((event.clientY - rect.top) / rect.height * size)))
+    return y * size + x
   }
   const start = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return
@@ -248,8 +251,8 @@ export default function PixelCanvasEditor() {
       return
     }
     const from = lastIndex.current
-    for (const point of bresenhamLine(from % SIZE, Math.floor(from / SIZE), next % SIZE, Math.floor(next / SIZE))) {
-      paint(point.y * SIZE + point.x)
+    for (const point of bresenhamLine(from % size, Math.floor(from / size), next % size, Math.floor(next / size))) {
+      paint(point.y * size + point.x)
     }
   }
   const stop = () => { drawing.current = false; lastIndex.current = -1 }
@@ -273,8 +276,9 @@ export default function PixelCanvasEditor() {
     setStatus('已重做')
   }
   const addLayer = () => {
+    if (layers.length >= 24) { setStatus('最多支持 24 个图层'); return }
     checkpoint()
-    const layer = newLayer('图层 ' + (layers.length + 1))
+    const layer = newLayer('图层 ' + (layers.length + 1), size)
     setLayers(current => [...current, layer])
     setActiveId(layer.id)
   }
@@ -297,48 +301,50 @@ export default function PixelCanvasEditor() {
         img.onerror = reject
         img.src = url
       })
-      if (image.width !== SIZE || image.height !== SIZE) { setStatus('PNG 必须为 64 × 64 像素'); return }
+      if ((image.width !== 64 && image.width !== 128) || image.height !== image.width) { setStatus('PNG 必须为 64 × 64 或 128 × 128 像素'); return }
       const temp = document.createElement('canvas')
-      temp.width = SIZE
-      temp.height = SIZE
+      temp.width = image.width
+      temp.height = image.height
       const ctx = temp.getContext('2d')
       if (!ctx) return
       ctx.drawImage(image, 0, 0)
-      const data = ctx.getImageData(0, 0, SIZE, SIZE).data
-      const pixels = Array.from({ length: SIZE * SIZE }, (_, index) => {
+      const data = ctx.getImageData(0, 0, image.width, image.height).data
+      const pixels = Array.from({ length: image.width * image.height }, (_, index) => {
         const offset = index * 4
         if (data[offset + 3] < 8) return ''
         return '#' + [data[offset], data[offset + 1], data[offset + 2]].map(value => value.toString(16).padStart(2, '0')).join('')
       })
       checkpoint()
-      const layer = { ...newLayer(file.name.replace(/\.png$/i, '') || '导入皮肤'), pixels }
-      setLayers(current => [...current, layer])
+      const layer = { ...newLayer(file.name.replace(/\.png$/i, '') || '导入皮肤', image.width), pixels }
+      setLayers([layer])
       setActiveId(layer.id)
-      setStatus('已导入 PNG，新图层可独立编辑')
+      // checkpoint() above keeps the previous document as the undo target.
+      // Do not clear history here: importing a new-sized canvas is reversible.
+      setStatus('已导入 PNG，可在新画布中继续编辑')
     } catch { setStatus('无法读取 PNG 文件') }
     finally { URL.revokeObjectURL(url) }
   }
 
   const exportPng = async () => {
     const output = document.createElement('canvas')
-    output.width = SIZE
-    output.height = SIZE
+    output.width = size
+    output.height = size
     const ctx = output.getContext('2d')
     if (!ctx) return
     composite.forEach((pixel, index) => {
       if (!pixel) return
       ctx.fillStyle = pixel
-      ctx.fillRect(index % SIZE, Math.floor(index / SIZE), 1, 1)
+      ctx.fillRect(index % size, Math.floor(index / size), 1, 1)
     })
     const blob = await new Promise<Blob | null>(resolve => output.toBlob(resolve, 'image/png'))
     if (!blob) { setStatus('PNG 导出失败'); return }
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'cdpc-pixel-skin-64x64.png'
+    link.download = 'cdpc-pixel-skin-' + size + 'x' + size + '.png'
     link.click()
     URL.revokeObjectURL(url)
-    setStatus('已导出 64 × 64 PNG')
+    setStatus('已导出 ' + size + ' × ' + size + ' PNG')
   }
 
   const saveCloudDocument = async () => {
@@ -351,8 +357,8 @@ export default function PixelCanvasEditor() {
       return
     }
     setCloudBusy(true)
-    const document = { version: 1 as const, width: 64 as const, height: 64 as const, activeId, layers }
-    const savedSnapshot = cloudSnapshot(cloudName, activeId, layers)
+    const document = { version: 1 as const, width: size as 64 | 128, height: size as 64 | 128, activeId, layers }
+    const savedSnapshot = cloudSnapshot(cloudName, size, activeId, layers)
     try {
       const saved = cloudDocumentId && cloudDocumentLoaded
         ? await cdpcApi.updateEditorDocument(cloudDocumentId, cloudName, document, cloudRevision)
@@ -379,8 +385,8 @@ export default function PixelCanvasEditor() {
   const saveCloudCopy = async () => {
     setCloudBusy(true)
     const copyName = `${cloudName.trim() || '未命名作品'}（副本）`.slice(0, 80)
-    const document = { version: 1 as const, width: 64 as const, height: 64 as const, activeId, layers }
-    const savedSnapshot = cloudSnapshot(copyName, activeId, layers)
+    const document = { version: 1 as const, width: size as 64 | 128, height: size as 64 | 128, activeId, layers }
+    const savedSnapshot = cloudSnapshot(copyName, size, activeId, layers)
     try {
       const saved = await cdpcApi.createEditorDocument(copyName, document)
       setCloudName(copyName)
@@ -431,13 +437,15 @@ export default function PixelCanvasEditor() {
     setCloudBusy(true)
     try {
       const item = await cdpcApi.getEditorDocument(cloudDocumentId)
-      const nextActiveId = item.document.activeId || item.document.layers[0]?.id || ''
-      setLayers(item.document.layers)
+      const normalized = normalizePixelEditorDocument(item.document)
+      if (!normalized) throw new Error('云端文档尺寸或图层数据无效')
+      const nextActiveId = normalized.activeId
+      setLayers(normalized.layers)
       setActiveId(nextActiveId)
       setCloudName(item.name)
       setCloudRevision(item.revision)
       setCloudDocumentLoaded(true)
-      setCloudBaseline(cloudSnapshot(item.name, nextActiveId, item.document.layers))
+      setCloudBaseline(cloudSnapshot(item.name, normalized.width, nextActiveId, normalized.layers))
       setCloudConflict(false)
       setHistory([])
       setFuture([])
@@ -463,17 +471,17 @@ export default function PixelCanvasEditor() {
     setSaving(true)
     try {
       const output = document.createElement('canvas')
-      output.width = SIZE
-      output.height = SIZE
+      output.width = size
+      output.height = size
       const ctx = output.getContext('2d')
       if (!ctx) throw new Error('无法创建画布')
       composite.forEach((pixel, index) => {
         if (!pixel) return
         ctx.fillStyle = pixel
-        ctx.fillRect(index % SIZE, Math.floor(index / SIZE), 1, 1)
+        ctx.fillRect(index % size, Math.floor(index / size), 1, 1)
       })
       const blob = await new Promise<Blob>((resolve, reject) => output.toBlob(value => value ? resolve(value) : reject(new Error('PNG 编码失败')), 'image/png'))
-      const file = new File([blob], 'cdpc-pixel-skin-64x64.png', { type: 'image/png' })
+      const file = new File([blob], 'cdpc-pixel-skin-' + size + 'x' + size + '.png', { type: 'image/png' })
       const asset = await cdpcApi.uploadAsset(file, 'SKIN', {
         visibility: 'PRIVATE',
         attribution: 'CDPC Pixel Editor',
@@ -496,9 +504,9 @@ export default function PixelCanvasEditor() {
 
   const active = layers.find(layer => layer.id === activeId)
   return (
-    <section className="cdpc-pixel-editor" aria-label="64×64 像素编辑器">
+    <section className="cdpc-pixel-editor" aria-label={size + '×' + size + ' 像素编辑器'}>
       <header className="cdpc-pixel-header">
-        <div><h2>64 × 64 像素编辑器</h2><p>原尺寸编辑 · 多图层 · 撤销重做 · PNG 导入导出</p></div>
+        <div><h2>{size} × {size} 像素编辑器</h2><p>原尺寸编辑 · 多图层 · 撤销重做 · PNG 导入导出</p></div>
         <div className="cdpc-pixel-actions">
           <button type="button" onClick={() => fileRef.current?.click()}>导入 PNG</button>
           <input ref={fileRef} hidden type="file" accept="image/png" onChange={event => { void importPng(event.target.files?.[0]); event.currentTarget.value = '' }} />
@@ -536,21 +544,26 @@ export default function PixelCanvasEditor() {
           <button type="button" onClick={redo} disabled={!future.length}>重做</button>
         </aside>
         <div className="cdpc-pixel-stage">
-          <canvas ref={canvasRef} width={SIZE} height={SIZE} aria-label="64 乘 64 像素画布"
-            style={{ width: SIZE * zoom + 'px', height: SIZE * zoom + 'px' }}
+          <canvas ref={canvasRef} width={size} height={size} aria-label={size + ' 乘 ' + size + ' 像素画布'}
+            style={{ width: size * zoom + 'px', height: size * zoom + 'px' }}
             onPointerDown={start} onPointerMove={move} onPointerUp={stop} onPointerCancel={stop} onLostPointerCapture={stop} />
-          <small>透明背景 · 64 × 64 · {status}</small>
+          <small>透明背景 · {size} × {size} · {status}</small>
         </div>
         <aside className="cdpc-pixel-layers" aria-label="图层面板">
           <div><strong>图层</strong><button type="button" onClick={addLayer}>＋ 新建</button></div>
           {[...layers].reverse().map(layer => (
             <div key={layer.id} className={layer.id === activeId ? 'cdpc-pixel-layer active' : 'cdpc-pixel-layer'}>
               <button type="button" onClick={() => setActiveId(layer.id)}>{layer.name}</button>
-              <button type="button" aria-label={layer.visible ? '隐藏' + layer.name : '显示' + layer.name} onClick={() => setLayers(current => current.map(item => item.id === layer.id ? { ...item, visible: !item.visible } : item))}>{layer.visible ? '显示' : '隐藏'}</button>
+              <button type="button" aria-label={layer.visible ? '隐藏' + layer.name : '显示' + layer.name} onClick={() => { checkpoint(); setLayers(current => current.map(item => item.id === layer.id ? { ...item, visible: !item.visible } : item)) }}>{layer.visible ? '显示' : '隐藏'}</button>
               <button type="button" aria-label={'删除' + layer.name} onClick={() => removeLayer(layer.id)}>×</button>
             </div>
           ))}
-          {active && <label>图层不透明度<input type="range" min="0" max="100" value={active.opacity} onChange={event => setLayers(current => current.map(item => item.id === activeId ? { ...item, opacity: Number(event.target.value) } : item))} /></label>}
+          {active && <label>图层不透明度<input type="range" min="0" max="100" value={active.opacity}
+            onPointerDown={() => { if (!opacityGesture.current) { checkpoint(); opacityGesture.current = true } }}
+            onPointerUp={() => { opacityGesture.current = false }} onPointerCancel={() => { opacityGesture.current = false }} onBlur={() => { opacityGesture.current = false }}
+            onKeyDown={event => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key) && !opacityGesture.current) { checkpoint(); opacityGesture.current = true } }}
+            onKeyUp={() => { opacityGesture.current = false }}
+            onChange={event => { if (!opacityGesture.current) { checkpoint(); opacityGesture.current = true } setLayers(current => current.map(item => item.id === activeId ? { ...item, opacity: Number(event.target.value) } : item)) }} /></label>}
           <p>草稿自动保存在本机浏览器；保存到衣橱需要登录。</p>
         </aside>
       </div>

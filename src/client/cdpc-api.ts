@@ -30,7 +30,12 @@ export type ApiAsset = {
   height: number | null
   source: string
   visibility: string
+  name: string | null
   attribution: string | null
+  licenseId: string | null
+  provenance: 'USER_CREATED' | 'OFFICIAL' | 'LICENSED' | 'THIRD_PARTY' | 'UNKNOWN'
+  downloadPolicy: 'DENY' | 'OWNER_ONLY' | 'LICENSED_PUBLIC'
+  canDownload: boolean
   createdAt: string
   updatedAt?: string
   isFavorite?: boolean
@@ -80,10 +85,14 @@ export type ApiOutfit = {
   skinAsset?: Pick<ApiAsset, 'id' | 'category' | 'kind' | 'width' | 'height'> | null
 }
 
+export type ApiProjectSummary = { id: string; title: string; description: string; visibility: string; revision: number; createdAt: string; updatedAt: string }
+export type ApiProject = ApiProjectSummary & { document: Record<string, unknown>; assets: Array<Pick<ApiAsset, 'id' | 'category' | 'kind' | 'name' | 'mimeType' | 'byteSize'>> }
+export type ProjectInput = { title: string; description?: string; visibility?: 'PRIVATE' | 'PUBLIC'; document: Record<string, unknown>; assetIds: string[] }
+
 export type EditorDocumentPayload = {
   version: 1
-  width: 64
-  height: 64
+  width: 64 | 128
+  height: 64 | 128
   activeId: string | null
   layers: Array<{ id: string; name: string; visible: boolean; opacity: number; pixels: string[] }>
 }
@@ -144,14 +153,22 @@ export const cdpcApi = {
     return request<AssetList>(`/api/assets${query ? `?${query}` : ''}`)
   },
 
-  uploadAsset: async (file: File, category: AssetCategory, options: { visibility?: string; attribution?: string } = {}) => {
+  uploadAsset: async (file: File, category: AssetCategory, options: { visibility?: string; name?: string; attribution?: string; rightsDeclaration?: boolean } = {}) => {
     const form = new FormData()
     form.set('file', file)
     form.set('category', category)
     form.set('visibility', options.visibility || 'PRIVATE')
+    if (options.name) form.set('name', options.name)
     if (options.attribution) form.set('attribution', options.attribution)
+    if (options.rightsDeclaration) form.set('rightsDeclaration', 'I_OWN_THE_RIGHTS')
     return (await request<{ item: ApiAsset }>('/api/assets', { method: 'POST', body: form })).item
   },
+
+  listProjects: async () => (await request<{ items: ApiProjectSummary[] }>('/api/projects')).items,
+  getProject: async (id: string) => (await request<{ item: ApiProject }>(`/api/projects/${encodeURIComponent(id)}`)).item,
+  createProject: async (input: ProjectInput) => (await request<{ item: ApiProjectSummary }>('/api/projects', { method: 'POST', body: JSON.stringify(input) })).item,
+  updateProject: async (id: string, input: ProjectInput, revision: number) => (await request<{ item: ApiProjectSummary }>(`/api/projects/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ ...input, revision }) })).item,
+  deleteProject: (id: string) => request<void>(`/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
   listOutfits: async () => (await request<{ items: ApiOutfit[] }>('/api/outfits')).items,
 
@@ -179,6 +196,7 @@ export const cdpcApi = {
     }),
 
   assetFileUrl: (assetId: string) => `/api/assets/${encodeURIComponent(assetId)}/file`,
+  assetDownloadUrl: (assetId: string) => `/api/assets/${encodeURIComponent(assetId)}/download`,
 
   listEditorDocuments: async () =>
     (await request<{ items: ApiEditorDocumentSummary[] }>('/api/editor-documents')).items,

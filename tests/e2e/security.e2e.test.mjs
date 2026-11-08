@@ -22,6 +22,32 @@ function pngChunk(type, data) {
   return Buffer.concat([length, typeBytes, data, checksum])
 }
 
+function createSkinPng(size = 64) {
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(size, 0)
+  header.writeUInt32BE(size, 4)
+  header[8] = 8
+  header[9] = 6
+  const scanlines = Buffer.alloc(size * (1 + size * 4))
+  for (let y = 0; y < size; y++) {
+    const row = y * (1 + size * 4)
+    scanlines[row] = 0
+    for (let x = 0; x < size; x++) {
+      const pixel = row + 1 + x * 4
+      scanlines[pixel] = 52
+      scanlines[pixel + 1] = 86
+      scanlines[pixel + 2] = 120
+      scanlines[pixel + 3] = 255
+    }
+  }
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk('IHDR', header),
+    pngChunk('IDAT', deflateSync(scanlines)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ])
+}
+
 function createTinyPng() {
   const header = Buffer.alloc(13)
   header.writeUInt32BE(1, 0)
@@ -110,6 +136,7 @@ for (const [method, path, body, headers] of [
   ['GET', '/api/assets'],
   ['POST', '/api/assets', new FormData()],
   ['GET', '/api/assets/test-asset/file'],
+  ['GET', '/api/assets/test-asset/download'],
   ['DELETE', '/api/assets/test-asset'],
   ['GET', '/api/outfits'],
   ['POST', '/api/outfits', JSON.stringify({ name: 'unauthenticated' }), { 'content-type': 'application/json' }],
@@ -189,13 +216,15 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     otherSession = await login(emails[1], '198.51.100.92')
 
     const uploadForm = new FormData()
-    uploadForm.set('file', new File([createTinyPng()], 'shawl.png', { type: 'image/png' }))
+    uploadForm.set('file', new File([createSkinPng()], 'shawl.png', { type: 'image/png' }))
     uploadForm.set('category', 'SHAWL')
+    uploadForm.set('name', 'E2E 原创披肩')
     uploadForm.set('visibility', 'PRIVATE')
     const upload = await fetch(new URL('/api/assets', base), { method: 'POST', headers: { cookie: ownerSession }, body: uploadForm })
     assert.equal(upload.status, 201, `authenticated owner can upload PNG (got ${upload.status})`)
     const { item: asset } = await upload.json()
     assert.ok(asset.id)
+    assert.equal(asset.name, 'E2E 原创披肩')
 
     const ownerAssets = await fetch(new URL('/api/assets', base), { headers: { cookie: ownerSession } })
     assert.equal(ownerAssets.status, 200, 'authenticated owner can list own assets')
@@ -218,10 +247,13 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     })
     assert.equal(otherFavoritePrivate.status, 404, 'another user cannot favorite a private asset')
 
+    const ownerUnknownDownload = await fetch(new URL(`/api/assets/${asset.id}/download`, base), { headers: { cookie: ownerSession } })
+    assert.equal(ownerUnknownDownload.status, 404, 'unknown provenance is not downloadable even by the uploader')
+
     const ownerFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
     assert.equal(ownerFile.status, 200, 'owner can read uploaded PNG')
     const ownerFileBytes = Buffer.from(await ownerFile.arrayBuffer())
-    assert.equal(ownerFileBytes.length, createTinyPng().length, 'owner receives the complete PNG bytes')
+    assert.equal(ownerFileBytes.length, createSkinPng().length, 'owner receives the complete PNG bytes')
 
     const otherAssets = await fetch(new URL('/api/assets', base), { headers: { cookie: otherSession } })
     assert.equal(otherAssets.status, 200)
@@ -230,6 +262,30 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     assert.equal(otherFile.status, 404)
     const otherAssetDelete = await fetch(new URL(`/api/assets/${asset.id}`, base), { method: 'DELETE', headers: { cookie: otherSession } })
     assert.equal(otherAssetDelete.status, 404)
+
+    const originalCapeForm = new FormData()
+    originalCapeForm.set('file', new File([createTinyPng()], 'original-cape.png', { type: 'image/png' }))
+    originalCapeForm.set('category', 'CAPE')
+    originalCapeForm.set('name', 'E2E 原创披风')
+    originalCapeForm.set('visibility', 'PRIVATE')
+    originalCapeForm.set('rightsDeclaration', 'I_OWN_THE_RIGHTS')
+    const originalCapeUpload = await fetch(new URL('/api/assets', base), { method: 'POST', headers: { cookie: ownerSession }, body: originalCapeForm })
+    assert.equal(originalCapeUpload.status, 201, 'owner can upload an explicitly declared original cape')
+    const { item: originalCape } = await originalCapeUpload.json()
+    assert.equal(originalCape.name, 'E2E 原创披风')
+    assert.equal(originalCape.provenance, 'USER_CREATED')
+    assert.equal(originalCape.downloadPolicy, 'OWNER_ONLY')
+    const ownerCapeDownload = await fetch(new URL(`/api/assets/${originalCape.id}/download`, base), { headers: { cookie: ownerSession } })
+    assert.equal(ownerCapeDownload.status, 200, 'original cape owner can download their own asset')
+    assert.match(ownerCapeDownload.headers.get('content-disposition') || '', /attachment/)
+    const otherCapeDownload = await fetch(new URL(`/api/assets/${originalCape.id}/download`, base), { headers: { cookie: otherSession } })
+    assert.equal(otherCapeDownload.status, 404, 'another user cannot download a private original cape')
+
+    await prisma.asset.update({ where: { id: originalCape.id }, data: { provenance: 'OFFICIAL', downloadPolicy: 'DENY' } })
+    const officialCapeDownload = await fetch(new URL(`/api/assets/${originalCape.id}/download`, base), { headers: { cookie: ownerSession } })
+    assert.equal(officialCapeDownload.status, 404, 'official cape bytes are never downloadable')
+    const officialCapeFile = await fetch(new URL(`/api/assets/${originalCape.id}/file`, base), { headers: { cookie: ownerSession } })
+    assert.equal(officialCapeFile.status, 404, 'official cape bytes are not served from the asset file endpoint')
 
     const create = await fetch(new URL('/api/outfits', base), {
       method: 'POST',
@@ -285,7 +341,7 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     const oversizedEditorDocument = await fetch(new URL('/api/editor-documents', base), {
       method: 'POST',
       headers: { cookie: ownerSession, 'content-type': 'application/json' },
-      body: 'x'.repeat(2 * 1024 * 1024 + 8192),
+      body: 'x'.repeat(9 * 1024 * 1024 + 8192),
     })
     assert.equal(oversizedEditorDocument.status, 413, 'oversized streamed editor requests are rejected before JSON parsing')
 

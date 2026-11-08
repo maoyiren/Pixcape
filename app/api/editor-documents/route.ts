@@ -6,19 +6,21 @@ import { loadAssetActor } from '@/lib/asset-api'
 import { readRequestBodyWithLimit, RequestBodyTooLargeError } from '@/lib/request-body'
 
 export const runtime = 'nodejs'
-const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
+const MAX_DOCUMENT_BYTES = 8 * 1024 * 1024
 const MAX_REQUEST_BYTES = MAX_DOCUMENT_BYTES + 4096
 
 function validateDocument(value: unknown): value is {
   version: 1
-  width: 64
-  height: 64
+  width: 64 | 128
+  height: 64 | 128
   activeId?: string | null
   layers: Array<{ id: string; name: string; visible: boolean; opacity: number; pixels: string[] }>
 } {
   if (!value || typeof value !== 'object') return false
   const document = value as Record<string, unknown>
-  if (document.version !== 1 || document.width !== 64 || document.height !== 64) return false
+  const width = document.width
+  const height = document.height
+  if (document.version !== 1 || typeof width !== 'number' || (width !== 64 && width !== 128) || typeof height !== 'number' || height !== width) return false
   if (!Array.isArray(document.layers) || document.layers.length < 1 || document.layers.length > 24) return false
   if (document.activeId !== undefined && document.activeId !== null && typeof document.activeId !== 'string') return false
   return document.layers.every((entry) => {
@@ -28,7 +30,7 @@ function validateDocument(value: unknown): value is {
       && typeof layer.name === 'string' && layer.name.length <= 80
       && typeof layer.visible === 'boolean'
       && typeof layer.opacity === 'number' && Number.isInteger(layer.opacity) && layer.opacity >= 0 && layer.opacity <= 100
-      && Array.isArray(layer.pixels) && layer.pixels.length === 4096
+      && Array.isArray(layer.pixels) && layer.pixels.length === width * height
       && layer.pixels.every((pixel) => typeof pixel === 'string' && (pixel === '' || /^#[0-9a-f]{6}$/i.test(pixel)))
   })
 }
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
     const raw = await readRequestBodyWithLimit(request.body, MAX_REQUEST_BYTES)
     body = JSON.parse(raw.toString('utf8'))
   } catch (error) {
-    if (error instanceof RequestBodyTooLargeError) return NextResponse.json({ error: '编辑文档请求不能超过 2 MB。' }, { status: 413 })
+    if (error instanceof RequestBodyTooLargeError) return NextResponse.json({ error: '编辑文档请求不能超过 8 MB。' }, { status: 413 })
     return NextResponse.json({ error: '请求 JSON 格式无效。' }, { status: 400 })
   }
   if (!body || typeof body !== 'object') return NextResponse.json({ error: '编辑文档内容无效。' }, { status: 400 })
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
   if (!validateDocument(input.document)) return NextResponse.json({ error: '编辑文档结构无效。' }, { status: 400 })
   const serialized = JSON.stringify(input.document)
   if (new TextEncoder().encode(serialized).byteLength > MAX_DOCUMENT_BYTES) {
-    return NextResponse.json({ error: '编辑文档超过 2 MB 限制。' }, { status: 413 })
+    return NextResponse.json({ error: '编辑文档超过 8 MB 限制。' }, { status: 413 })
   }
   const item = await prisma.editorDocument.create({
     data: { ownerId: resolved.actor.id, name: name || '未命名作品', document: serialized },

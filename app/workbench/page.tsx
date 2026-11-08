@@ -8,21 +8,21 @@ export const metadata = { title: '创作工作台 | CDPC' }
 
 const entries = [
   {
-    href: '/workbench/ai',
+    href: '/ai',
     title: 'AI 生成',
     description: '从文字描述或参考图片开始构思皮肤。',
     action: '开始生成',
     category: '创作',
   },
   {
-    href: '/workbench/edit',
+    href: '/editor',
     title: '单品编辑器',
     description: '导入皮肤，编辑像素贴图并检查角色预览。',
     action: '打开编辑器',
     category: '编辑',
   },
   {
-    href: '/workbench/dress',
+    href: '/studio',
     title: '衣橱选装',
     description: '试穿披肩、外套、披风与其他服装，继续调整角色搭配。',
     action: '开始搭配',

@@ -55,6 +55,18 @@ enum AssetVisibility {
   UNLISTED
   PUBLIC
 }
+enum AssetProvenance {
+  USER_CREATED
+  OFFICIAL
+  LICENSED
+  THIRD_PARTY
+  UNKNOWN
+}
+enum AssetDownloadPolicy {
+  DENY
+  OWNER_ONLY
+  LICENSED_PUBLIC
+}
 enum SkinModel {
   CLASSIC
   SLIM
@@ -113,6 +125,8 @@ model Project {
   description String   @default("")
   visibility  String   @default("PRIVATE")
   assetKey    String?
+  document    String   @default("{}") @db.Text
+  revision    Int      @default(1)
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -137,7 +151,10 @@ model Asset {
   source      AssetSource
   visibility  AssetVisibility @default(PRIVATE)
   licenseId   String?
+  name        String?
   attribution String?
+  provenance  AssetProvenance     @default(UNKNOWN)
+  downloadPolicy AssetDownloadPolicy @default(DENY)
   owner       User?           @relation("AssetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   project     Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
   skinOutfits Outfit[]        @relation("OutfitSkin")

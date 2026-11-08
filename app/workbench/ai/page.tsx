@@ -1,7 +1,10 @@
-import AiStudio from '../../ai/ai-studio'
+import { redirect } from 'next/navigation'
+import { legacyRedirectUrl, type LegacySearchParams } from '@/lib/legacy-route'
 
-export const metadata = { title: 'AI 生成 | 创作工作台 | CDPC' }
-
-export default function WorkbenchRoute() {
-  return <AiStudio />
+export default async function LegacyWorkbenchAiRoute({
+  searchParams,
+}: {
+  searchParams?: Promise<LegacySearchParams>
+}) {
+  redirect(legacyRedirectUrl('/ai', searchParams ? await searchParams : {}))
 }

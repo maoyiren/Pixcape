@@ -1,0 +1,243 @@
+# CDPC P0 完成实施清单
+
+> 对应总架构：`docs/CDPC-TECHNICAL-ARCHITECTURE-V1.0.md`
+> 执行方式：单一 P0 跟踪 PR，按可独立验收的阶段持续提交
+> 状态：进行中；本文件是执行清单，不代表功能已经完成
+
+## 目标
+
+完成 CDPC 的最小可用生产闭环：用户能够安全登录，导入或创建 Minecraft 皮肤，进入唯一 Next.js Studio，选择素材并即时试穿，保存项目，重新打开并导出可用 PNG；服务端数据持久化在 PostgreSQL，生产 Docker 镜像可构建、启动并通过健康检查。
+
+## P0-0：基线与安全前置
+
+- [x] 从最新 `main` 创建独立实施分支，避免覆盖现有 PR。
+- [x] 核对现有 PostgreSQL Only PR #61，记录其 lockfile / npm ci 阻塞。
+- [ ] 更新本 PR 到最新 `main`，每阶段开始前检查上游变更。
+- [ ] 确认生产 `DATABASE_URL` 的数据库类型、版本、备份状态和现存数据；未确认前禁止执行生产迁移或清理旧数据库文件。
+- [ ] 对 PR #63 的产品实施主计划与架构 V1.0 做一次路由和验收口径对齐。
+
+## P0-1：唯一 Next.js 运行入口与数据库
+
+- [ ] Next.js App Router 是所有正式产品页面的唯一运行入口。
+- [x] `/workbench` 保留为创作入口中心，链接到 `/ai`、`/editor`、`/studio`，不维护第二套编辑器状态（PR #64；CI #955 通过）。
+- [x] `/studio` 是唯一换装/试穿/搭配工作区；`/workbench/ai`、`/workbench/edit`、`/workbench/dress` 与 `/dress-up`、`/bench` 只做保留查询参数的兼容重定向（PR #64 `tests/browser/legacy-routes.spec.ts`；CI #955 通过）。
+- [ ] PostgreSQL 是唯一运行时数据库；只保留一份活动 Prisma Schema 和 Migration 路径。
+- [ ] 移除运行时的 MySQL / SQLite provider 分支、驱动和测试矩阵；历史 migration 只有在生产数据库确认、备份与迁移策略通过后才可清理。
+- [x] PR #61 head 上 lock-refresh #30 成功，`npm ci`、Prisma generate/migrate、PostgreSQL integration、unit、browser regression、Next.js build 均通过（CI #939；尚待同步 main 并合入）。
+- [x] PR #61 head 上 Prisma generate、migration deploy、PostgreSQL 集成测试通过（CI #939、Preview/Security #736；尚待同步 main 并合入）。
+
+## P0-2：认证、会话与权限
+
+- [ ] 邮箱登录 / 注册 / 验证流程可用，错误反馈可理解。
+- [ ] 已配置的 OAuth Provider 回调与账号绑定流程可用；未配置 Provider 必须明确显示不可用，不能伪装成功。
+- [ ] 服务端会话校验、角色权限和资源所有权校验覆盖页面与 API。
+- [ ] 管理员路由和管理 API 均由服务端授权；普通用户无法通过直接请求访问管理功能。
+- [ ] 登录限流、密码重置和敏感操作审计有自动化测试。
+
+## P0-3：皮肤编辑与项目保存闭环
+
+- [ ] PNG 导入、尺寸 / 格式校验、Classic / Slim 模型识别。
+- [ ] 皮肤编辑、撤销 / 重做、未保存状态提示和 PNG 导出。
+- [ ] 项目、皮肤原件、编辑版本和导出结果有清晰的数据边界。
+- [ ] 登录用户可保存、重新打开和删除自己的项目；游客本地项目登录后显式迁移，不静默覆盖。
+- [ ] 数据库写入失败、网络中断和版本冲突有明确恢复提示。
+
+## P0-4：素材与即时换装
+
+> 渲染实现契约见 [docs/CDPC-STUDIO-ASSET-RENDER-CONTRACT.md](./CDPC-STUDIO-ASSET-RENDER-CONTRACT.md)。未定义并验证各类别 UV / 纹理契约前，不得把帽子、裤子、鞋子等类别接入现有通用 UV 合成路径。
+
+- [ ] 素材分类区分披肩、帽子、裤子、上衣、外套、鞋子、披风、鞘翅；披肩 / 外套 / 披风不能混为一类。
+- [ ] 素材库卡片预览显示渲染后的单件素材，不强制渲染完整人物。
+- [ ] 在 Studio 中选择一件素材后立即看到人物穿戴效果；未导入皮肤时使用默认人物，导入皮肤后保留穿戴并切换用户皮肤。
+- [ ] 替换、隐藏、移除素材后，人物预览即时更新。
+- [ ] 保存 / 恢复搭配，刷新页面后状态一致。
+- [ ] PNG 导出符合 Minecraft 皮肤纹理规范；明确区分皮肤 PNG 与非原生披风等平台展示内容。
+
+### 素材来源与下载权限（P0-4 必须覆盖）
+
+- [ ] 区分预览 / 试穿权限与下载 / 导出 / 再分发权限。
+- [ ] 官方 Mojang / Microsoft 披风不提供应用内下载、导出或 JSON 纹理备份。
+- [ ] 用户原创披风允许作者本人下载；其他用户仅在明确授权后下载，私有素材始终受所有权限制。
+- [ ] 授权社区素材按 license scope 执行；来源未知的第三方素材默认禁止下载。
+- [ ] 服务端下载 API、文件接口、批量导出和 JSON 备份统一执行权限校验，不能只隐藏前端按钮。
+- [ ] 自动化覆盖官方披风拒绝下载、原创披风作者可下载、私有素材跨用户拒绝、未知来源默认拒绝及 JSON/API 绕过测试。
+
+## P0-5：统一 Studio 体验
+
+- [ ] Studio 支持项目打开、编辑、换装、搭配和预览，不出现重复工作台。
+- [ ] 动作切换、视角切换和待机 / 播放控制采用精简交互，不堆叠大量按钮和二级弹窗。
+- [ ] 3D 角色旋转、相机、动作与服装渲染使用统一状态，不由多个页面重复维护。
+- [ ] 桌面端和移动端关键操作可用；加载、空、错误、离线、无权限状态完整。
+- [ ] 动画不阻塞编辑、拖动、3D 帧率或 reduced-motion 用户。
+
+## P0-6：生产构建与发布门禁
+
+- [ ] TypeScript、lint、unit、PostgreSQL integration、核心 Playwright E2E 通过。
+- [ ] Next.js production build 通过。
+- [ ] Docker 镜像构建、容器启动、健康检查和关键路由 smoke test 通过。
+- [ ] 部署文档、环境变量说明、数据库备份 / 恢复与回滚步骤准确。
+- [ ] 发布后验证登录、导入、即时试穿、保存、重新打开和 PNG 导出。
+
+## 必须通过的端到端验收旅程
+
+1. 游客进入首页并打开 Studio。
+2. 导入 64×64 皮肤 PNG，识别模型并在 3D 视图显示。
+3. 选择一件服装素材，立即看到角色穿戴效果。
+4. 替换或移除素材，3D 预览立即同步。
+5. 保存项目 / 搭配，刷新页面后重新打开，状态保持一致。
+6. 导出 PNG，并验证文件尺寸、透明通道和纹理结构。
+7. 登录用户只能读取和修改自己的私有项目；普通用户不能访问后台管理 API。
+8. 生产 Docker 容器连通 PostgreSQL，健康检查和关键路由正常。
+
+## 当前已知阻塞与依赖
+
+- PR #61（PostgreSQL Only）当前为 Draft；仓库 lock-refresh workflow 已重新生成根 `package-lock.json`，`npm ci` 已通过。首轮 Docker 检查发现 Next.js build 阶段没有 `DATABASE_URL`，已在两个 Dockerfile 的 build stage 加入仅用于构建的 PostgreSQL placeholder；最新 CI 正在重新验证。此 PR 不重复实现同一数据库切换。
+- PR #60 是产品 / 交互主计划文档 PR；其中清单可作为需求来源，但文档合并不代表代码功能完成。
+- 生产数据库实际类型、备份和现存数据尚未在本次执行中得到独立确认；生产迁移、数据删除和历史 migration 清理均为受保护步骤。
+- OAuth、邮件、对象存储等外部 Provider 需要真实环境变量与回调配置；代码可以验证配置处理，但不能虚构密钥或声称外部服务已联通。
+
+## PR 更新纪律
+
+每次提交都更新本清单：将任务标记为完成前，必须附上对应代码位置、测试命令 / CI 运行链接或人工验收证据。未执行的测试标记为“未验证”，失败项记录错误与下一步。所有 P0 项通过后，才把本 PR 转为 Ready for review；合并和生产发布仍需单独确认数据安全与部署结果。
+
+
+## 最新进度更新（2026-11-06 16:55 UTC）
+
+- PR #61 head `aa6c4253a04c9a6ef35507e9f904a63d988326e9`：CI #939、Preview/Security #736、Docker smoke #946 均成功；Docker 的 publish / 1Panel deploy job 为 skipped，因此没有发布镜像或部署生产。
+- PR #61 相对当前 main 落后 2 个提交（compare status: diverged），合并前必须同步并重跑检查；PR 仍为 Draft。
+- PR #64 head `4d8d039d833a156a49580a69824eca4d973d0130`：CI #955、Preview/Security #745、Docker smoke #955 均成功。该 PR 当前 workflow 基于 main 的旧多数据库 CI/Docker 流程；不能把这些绿色结果误当成 PostgreSQL-only 集成验收。PR #61 合入后必须在新 main 上重跑。
+- PR #64 仅完成旧路由查询参数保留重定向和工作台入口回归；不代表 Studio 核心换装、保存恢复或 PNG 导出闭环完成。
+- 当前仍未确认生产 DATABASE_URL、生产数据库版本、备份可恢复性；不执行生产迁移、不触发 1Panel 发布。
+
+
+## 最新进度更新（2026-11-07）
+
+- PR #64 当前 head 的 CI #957、Preview/Security #746、Docker smoke #956 均成功；Docker publish 与 1Panel deploy 均 skipped。该组 workflow 仍基于旧多数据库基线，不构成 PostgreSQL-only 验收。
+- 新增 [docs/CDPC-STUDIO-ASSET-RENDER-CONTRACT.md](./CDPC-STUDIO-ASSET-RENDER-CONTRACT.md)，明确单件预览、人物即时试穿、完整搭配预览 / 导出的边界，以及逐类别纹理契约和 P0 验收条件。
+- Studio 静态审计确认：当前 UI 映射仅覆盖 SHAWL / COAT / CAPE；HAT / PANTS / SHOES 尚未接入；非披风素材共用一组 UV 矩形；素材卡片仍为 PNG 缩略图。上述项目继续保持未完成状态。
+- PR #61 与 main 的差异仅涉及新增技术架构文档，没有与 PostgreSQL 实现文件发生重叠；但 PR #61 仍落后 main 两个提交。当前 GitHub 操作未提供安全的 Update branch 能力，因此没有伪造 merge commit 或强行移动分支。
+- 本轮未合并 PR、未发布镜像、未执行生产迁移或部署。新增提交必须重新获得 CI 结果后才能计入验收。
+
+
+## 最新验证更新（2026-11-07 10:35 UTC）
+
+- PR #64 当前提交 `3a267a0201841a563ca507f8df71f79b95ab1a42` 的 CI #1029、Next.js Preview/Security #818、Docker smoke #1028 均成功。
+- CI #1029 的 unit tests、PostgreSQL integration、MySQL integration、SQLite integration、Next.js production build、Playwright browser regression、AI API tests、AI API container build 和完整 CDPC Docker image build 均通过。
+- Preview/Security #818 的 Prisma schema validation、PostgreSQL/MySQL/SQLite migrations、RBAC/ownership unit tests、PostgreSQL integration、Next.js production build、三种数据库 runtime image build 与 security E2E 均通过。
+- Docker smoke #1028 的单一 runtime-switchable image build，以及 PostgreSQL/MySQL/SQLite 容器启动 smoke 均通过；publish 与 1Panel V2 deploy job 为 skipped，未发布镜像、未部署生产。
+- 本轮修正 `tests/browser/studio-core.spec.ts`：在披肩仍处于选中状态时先验证独立预览，再切换外套并验证同槽位互斥；避免测试先切换外套、再错误要求已被移除的披肩仍可预览。提交为 `3a267a0`。
+- `tests/browser/auth-navigation.spec.ts` 中已登录头像菜单到 `/u/[username]` 的端到端测试本轮通过，验证了个人主页链接 href、点击后 URL，以及菜单悬停、Escape 和外部点击关闭行为。此项有本轮 Playwright 通过证据；真实生产账号与生产域名仍未人工验收。
+- 注意：以上 #1029/#818/#1028 仍使用当前 main 的多数据库测试矩阵，不是 PostgreSQL-only 最终基线。PR #61 仍为 Draft 且未合并；其 PostgreSQL-only 变更需在同步 main 后重跑并完成生产数据库/备份确认。
+- 本轮未合并 PR、未发布镜像、未触发 1Panel 部署、未执行生产迁移。Studio 的单件真实渲染、完整分类 UV、皮肤导入/编辑/保存恢复/导出完整旅程仍未完成验收，不能因 CI 绿灯标记为完成。
+
+
+## 最新验证更新（2026-11-07 13:30 UTC）
+
+- PR #64 已将 PR #61 的 PostgreSQL-only 基线同步进 `feat/p0-core-completion`，当前分支提交为 `9ee7930bf5237dd9b589c914dd76acd35ac7c8bd`；相对 main 的同步关系与分支状态以 PR 当前 compare 为准。该变更尚未合并 main。
+- PostgreSQL-only 基线变更包括：单一 PostgreSQL Prisma schema / migration 路径、移除 MySQL / SQLite 专用 schema 与集成测试、更新 CI 和 Docker 构建流程；`playwright.config.ts` 保留 PostgreSQL 测试连接与下载测试支持。
+- 新 head 的 CI #1036（run `42376966382`）成功：PostgreSQL migration、unit / integration、依赖安全检查、Next.js production build、Playwright browser regression、AI API tests、AI API container build、完整 Pixcape + Blockbench Docker image build 均通过。
+- Preview/Security #825（run `42376966431`）成功：PostgreSQL migration、RBAC / ownership、PostgreSQL integration、Next.js build、安全 E2E 与 PostgreSQL runtime image 均通过。
+- PostgreSQL Docker smoke #1035（run `42376966372`）成功：PostgreSQL-only image build、容器启动、health / route smoke 均通过。
+- Lockfile refresh #33（run `42376966379`）成功。
+- 本轮 CI 曾发现 128×128 PNG 导出浏览器测试在导入后立即点击导出按钮失败。证据显示按钮当时处于 disabled（Studio 正在异步刷新 3D 皮肤预览），属于测试未等待异步状态完成；提交 `9ee7930` 增加按钮 enabled 等待后，完整 browser regression 通过。没有移除产品侧禁用保护，也没有降低 PNG 文件名和像素尺寸断言。
+- 当前渲染能力边界仍为：SHAWL / COAT 使用各自完整 Minecraft skin alpha atlas；CAPE 是独立背部装备；HAT / PANTS / SHOES 仍未启用。实际源素材 Classic / Slim、64 / 128px 的视觉检查与像素级 fixture/hash 审核仍未完成，不能据此标记完整 UV 验收通过。
+- PR 继续保持 Draft。CI 成功不等于真实 OAuth / 邮件配置、生产账号、移动端视觉验收、生产 PostgreSQL 数据库确认、备份恢复演练或回滚方案已通过。Docker publish 与 1Panel deploy 未执行；没有发布镜像、生产迁移或生产部署。
+
+
+## 最新验证更新（2026-11-07 14:28 UTC）
+
+- PR #64 提交 `91fda2806dae2ba32c8f897a03f62b7df5e29d63`：新增目录卡片独立、懒加载 3D 预览组件 `app/studio/catalog-garment-preview.tsx`，目录卡片不再显示平面 PNG 缩略图；披肩 / 外套使用透明皮肤 UV 图集，披风使用独立背部装备渲染。
+- 为避免目录重构后浏览器回归仍定位旧 PNG 缩略图，`tests/browser/auth-navigation.spec.ts` 已改为检查 `.dressup-item-render`。
+- PNG 导出改为 `canvas.toBlob()` + object URL 下载，避免大尺寸 canvas 使用 data URL 的内存峰值；下载后延迟回收 object URL。
+- 提交 `c23ec891` 首次 CI 发现新预览组件未进入 Git tree（构建报 module not found）；随后提交 `91fda28` 补回组件文件并重跑完整 workflow。不得把该次失败隐藏或算作通过。
+- 最终 head `91fda28` 的 CI #1044（run `42381456139`）成功，包含 Playwright browser regression；Preview / Security #833（run `42381456158`）成功；PostgreSQL Docker smoke #1042（run `42381456137`）成功；Lockfile refresh #39（run `42381456162`）成功。
+- 目录 3D 预览当前只支持已验证的披肩、外套、披风。帽子 / 裤子 / 鞋子仍显示未接入状态；没有为其虚构 UV。实际素材 Classic / Slim、64 / 128px 的像素级视觉验收仍未完成。
+- 以上 CI 只证明构建和自动化回归通过，不代表真实素材视觉验收、移动端体验、生产 OAuth / 邮件配置、生产 PostgreSQL 备份恢复或回滚演练完成。PR 继续保持 Draft；publish 与 1Panel deploy 均 skipped，未发布镜像、未迁移或部署生产。
+
+
+## 最新实施更新（2026-11-07 15:30 UTC）
+
+- 修复最新 CI #1059 的两个浏览器回归定位问题：素材卡片点击改用 `.dressup-item`，避免误匹配独立收藏按钮；待最新 CI #1060 验证。
+- 增加 PostgreSQL 素材权利迁移：`Asset.provenance` 与 `Asset.downloadPolicy`，历史素材默认 `UNKNOWN` / `DENY`。
+- 增加独立下载 API `/api/assets/:assetId/download`。上传默认禁止下载；只有显式声明原创权利后，作者本人可下载。LICENSED 公共素材必须同时具备 `licenseId`、PUBLIC 可见性和 `LICENSED_PUBLIC` 策略。
+- 官方素材标记为 `OFFICIAL` 时，存储文件预览接口与下载接口均拒绝返回原始纹理；官方披风预览如需支持，应使用独立授权的展示来源。
+- 衣橱增加原创权利声明控件，并根据服务端返回的 `canDownload` 显示下载入口；不再通过预览文件接口直接触发下载。
+- 已补充 E2E：匿名下载拒绝、未知来源默认拒绝、原创披风作者可下载、私有披风跨用户拒绝、OFFICIAL 原始文件与下载拒绝。新 migration / API / browser test 均待 CI 验证。
+- JSON 备份不嵌入纹理字节；仍需完成备份引用过滤与其他批量接口绕过专项审计，不能提前标记整个版权闭环完成。
+- PR #64 继续 Draft；不合并、不发布、不部署生产。
+
+
+## 最新验证与修复记录（2026-11-08 08:50 +0800）
+
+- PR #64 当前 head：`f18487ea395e8e050a4e294fe6e2867273a24c83`。
+- 前一提交 `5bbcaa1` 的 CI #1094：`npm ci`、PostgreSQL migration、unit、PostgreSQL integration、依赖安全检查和 Next.js production build 通过；Playwright 37 项通过、1 项失败。失败发生在 Studio 动作切换（`hit`）期间，浏览器报告 `Cannot read properties of null (reading 'trim')`，不能把该次 CI 计为通过。
+- Preview/Security #883 与 Docker smoke #1093 在 `5bbcaa1` 上成功；它们不替代失败的完整浏览器回归。
+- 已在 `f18487e` 将 Studio 的 wave / crouch / hit / swim / run 动作改为 skinview3d 3.4.2 原生动画类，移除向 IdleAnimation 注入自定义回调的路径；保留 idle / walk / fly 及动作速度控制。该修复是针对运行时错误的产品代码修复，不是跳过测试或放宽断言。
+- `f18487e` 的新 CI 尚未取得运行结果；必须等待 Playwright、Preview/Security、Docker workflow 完成后，才能更新验收状态。
+- 帽子 / 裤子 / 鞋子的真实 UV / 几何和有效素材 fixture、完整项目保存恢复的故障恢复测试、移动端人工验收、生产数据库备份恢复演练仍未完成；不得标记 P0 全部完成。
+- 未合并 PR、未发布镜像、未部署 1Panel、未执行生产迁移或生产数据变更。
+
+
+## 最新功能推进记录（2026-11-08 00:55 UTC）
+
+- PR #64 head：`0071dfe16e43863425aa141793a795b79abd128a`；保持 Draft，不合并、不发布、不部署。
+- Studio 动作系统：在 `f18487e` 改为 skinview3d 原生动作类，修复此前浏览器回归中 hit 动作切换时的 `null.trim` 异常；该修复尚待新一轮完整 CI 证据。
+- 编辑器图层：本地文档校验、编辑器新建图层和云端文档 API 统一为最多 24 层，新增 24 / 25 层边界单测。
+- 穿搭备份安全：新增 `src/domain/outfit-backup.ts`，导入时仅接受披肩 / 外套 / 披风且 ID 一致的素材引用；重建同源 `/api/assets/:id/file` 路径，不信任 JSON 中的外部 URL；排除官方来源资产，不接受备份伪造的下载权限；皮肤云端引用同样只接受同源相对路径。
+- 穿搭备份完整性：修复导出遗漏 pose、导入不恢复 pose 的问题；备份 JSON 现在保留角色动作，导入后恢复动作状态；Playwright 增加导出 / 恢复 pose 断言。
+- 新增单测：`tests/unit/outfit-backup.test.ts` 覆盖同源路径重建、伪造 ID / 类别、官方资产排除、下载权限伪造、重复 / 数量边界和皮肤 URL allowlist。
+- 最新代码和文档提交触发的 CI / Preview / Docker workflow 曾因 PR concurrency 取消旧 run；旧 run 的取消不计为通过。不得重跑带有 1Panel deploy / publish 的工作流任务。需要以当前最新 head 的新一轮 CI、Preview/Security 和 Docker PR smoke 结果作为验收证据。
+- 当前仍未完成：帽子 / 裤子 / 鞋子独立 UV / 几何及有效素材 fixture；完整项目（而非仅穿搭）保存恢复和失败恢复；真实 OAuth / 邮件；移动端人工验收；生产 PostgreSQL 备份恢复演练。
+
+
+## 最新 CI 诊断与修复（2026-11-08 01:05 UTC）
+
+- PR #64 head `20f130f50f55c4f3267216c001da46dc033547be` 的 CI #1107 与 Preview/Security #896 均在单元测试阶段失败；两者定位到同一断言：`tests/unit/outfit-backup.test.ts` 期望恢复 64 个不同素材，实际只恢复 63 个。
+- 根因：备份规范化器先对原始输入 `slice(0, 64)`，再去重；前两条重复记录占用了输入配额，导致有效唯一素材数少于 64。属于实现边界与测试预期不一致，不是渲染或数据库故障。
+- 已修复 `src/domain/outfit-backup.ts`：最多扫描 256 条不可信输入，最多恢复 64 个唯一有效资产；重复、非法和官方资产不再消耗 64 个有效资产名额，同时保留输入扫描上限。
+- 已更新 `tests/unit/outfit-backup.test.ts`：覆盖前置重复记录后仍可恢复 64 个唯一素材，以及超大输入仍最多输出 64 条。
+- Docker smoke #1106：PostgreSQL-only image build、容器启动与路由 smoke 成功；`publish` 与 `Deploy to 1Panel V2` job 均为 skipped。未发布镜像、未部署生产。此前工作流显示 success 指的是 smoke job 成功，不是 publish。
+- 修复提交后必须等待新 head 的 CI、Preview/Security 和 Docker smoke 结果；本次没有手动重跑旧 workflow，也没有触发生产发布。
+- 帽子 / 裤子 / 鞋子的真实 UV / 几何、完整项目保存恢复和故障恢复、真实 OAuth / 邮件、移动端人工验收、生产 PostgreSQL 备份恢复演练仍未完成。
+
+## 最新 CI 复核与下一轮诊断（2026-11-08 01:27 UTC）
+
+- PR #64 head 已推进至 `11c75b734a69b714a8415cd6be0fefd2f015c3ba`，PR 仍为 Draft。
+- `0849da1` 的 CI #1111 实际结果为失败：36 项通过、Studio 浏览器用例 1 项失败、头像菜单 hover 用例 1 项 flaky。失败不再只是早先记录的 `null.trim`：当前日志显示动作选择 `run/crouch/hit/swim` 时 Playwright 的 `selectOption` 超时 30 秒，导致后续本地穿搭保存断言也未完成；本次不能认定动作系统已修复。
+- 同一 head 的 Preview/Security #900 通过；Docker smoke #1110 通过，publish 和 1Panel deploy 均 skipped。没有发布镜像或部署生产。
+- 为定位 Studio 页面挂起，在 `tests/browser/studio-core.spec.ts` 中让 pageerror 同时输出完整堆栈到 CI 日志，提交 `3723060`；这只是诊断增强，不是产品 bug 修复。
+- 头像菜单测试 helper 已先点击账户按钮验证会话，导致后续 hover 用例可能从已打开状态开始。本轮测试在 hover 前显式 Escape 关闭菜单，确保验证新的 hover 进入状态，提交 `11c75b7`。仍需 CI 复验。
+- 项目数据层现状复核：Prisma 有 `Project`（标题/描述/可见性/资源关联）、`WorkspaceState`（当前项目/工具/素材/穿搭指针）和带 revision 的 `EditorDocument`；编辑器文档 API 已实现用户隔离、8 MiB/24 层校验及乐观并发冲突检测。但尚未发现 `/api/projects` CRUD 路由，且 Project 模型本身没有文档正文/revision。因此“完整创作项目跨设备保存/恢复”仍未形成闭环，不能将编辑器文档 API 或穿搭 JSON 备份等同于项目保存。
+- 当前下一项阻塞是获取 Studio 动作切换超时对应的浏览器 pageerror/trace 证据并修复真实原因；不应通过跳过动作断言、放宽超时或吞掉异常来制造绿灯。
+- 帽子/裤子/鞋子的真实 UV 与独立几何、完整项目持久化、真实 OAuth/邮件、移动端人工验收、PostgreSQL 备份恢复演练仍未完成。未合并 PR、未发布镜像、未部署生产、未执行生产迁移。
+## 3D 预览性能与 hover 回归诊断（2026-11-08 02:45 UTC）
+
+- 最新 CI #1112（head 1b88d20）失败项已从日志确认：Studio 测试在动作切换与多项 3D 控件操作后，点击“保存本地草稿”卡在 Playwright click 阶段；动作选择本身通过，且该测试在卡住前的 pageErrors 断言通过。因此本轮证据不支持“动作选择仍触发 pageerror”的结论。
+- 初步根因指向目录卡片 3D 预览生命周期：每个可见卡片都启动独立 SkinViewer 并持续自动旋转；旧 IntersectionObserver 逻辑一旦进入可视区便不再跟踪离开，导致滚出屏幕的 WebGL renderer 仍持续运行。主预览、单件预览和卡片预览叠加时可能造成浏览器主线程/GPU 负载过高。这是基于源码与失败位置的根因判断，仍需新 CI 证实。
+- 已提交 e19eafe：目录卡片预览现在持续跟踪 IntersectionObserver 的进入/离开状态，离开可视区时触发 cleanup/dispose；卡片不再自动旋转，pixelRatio 固定为 1。保留真实 SkinViewer 3D 预览，不退化为 PNG 放大图。
+- 头像 hover 用例失败原因也已定位：共享登录 helper 通过点击账户按钮确认会话，随后 Escape 关闭菜单但鼠标仍停留在按钮上；Playwright 再次 hover 不会产生新的 pointer-enter。已提交 19cde50，在 hover 前把鼠标移出按钮，再验证新 hover 转换。这是测试起始状态修正，不改变账户菜单功能。
+- 两项修复均等待最新 head CI 复验；在通过前不宣称 Studio 浏览器回归已解决。动作切换的 pageErrors 断言通过，但端到端完整场景仍因后续保存按钮点击超时而失败。
+
+## P0 最新 CI 复核与修复（2026-11-08 03:00 UTC）
+
+- PR #64 head `3bfacc172dc2c165454d92931337da28db636e0a` 的 CI run `42439908220` 失败：36 项 Playwright 通过、2 项失败；失败分别为 Studio 视角重置后选择器仍为 `side`，以及云端素材保存场景在点击“保存本地草稿”时超时。不能将本轮 Studio 全场景或动作切换验收标记为通过。
+- 同一 head 的 Preview/Security run `42439908204` 成功；PostgreSQL Docker smoke run `42439908225` 的 smoke-test 成功，publish 与 Deploy to 1Panel V2 均 skipped。没有发布镜像或部署生产。
+- 视角重置根因已由代码确认：`resetPreviewCamera()` 在 `viewerRef.current` 尚未就绪时提前 return，导致 React 的 `viewAngle` 状态不更新，选择器继续显示旧角度。提交 `ed5a6c8` 将 UI 状态重置移到 WebGL viewer 可用性判断之前；viewer 存在时再同步重置模型旋转和 controls。该修复尚待 CI 复验。
+- 保存本地草稿超时：日志定位在 Playwright click 阶段，未捕获到该处 pageerror；此前目录 3D viewer 的可视区释放、关闭卡片自动旋转和 pixelRatio=1 已提交 `e19eafe`，但这次 CI 仍未证明性能问题解决。下一轮需要检查 trace / 浏览器负载和保存前后页面状态，不以延长超时或跳过断言代替修复。
+- 帽子、裤子、鞋子当前在目录卡片仍显示“3D 渲染开发中”；`src/domain/studio-uv-layout.ts` 仅声明披肩 / 外套的 full-atlas-alpha UV profile，`app/studio/catalog-garment-preview.tsx` 的 supported gate 也只允许披肩 / 外套 / 披风。三类服装真实 UV、对应几何和独立 3D 预览仍未实现。
+- 项目保存现状：`Project` 没有正文与 revision 字段；`WorkspaceState` 仅保存当前工作区指针；`EditorDocument` API 仅覆盖编辑器文档。尚未建立 Project CRUD / revision / 跨设备恢复事务，因此完整创作项目保存恢复仍未闭环。
+- 真实 OAuth / 邮件 provider、生产服务端权限环境验收、移动端人工验收、PostgreSQL 生产备份恢复演练均未执行。CI / 测试环境通过不代表这些真实环境验收通过。
+- 本轮继续保持 PR #64 Draft；不合并、不发布、不部署生产、不执行生产数据库迁移。
+
+
+## P0 再次复验（2026-11-08 03:06 UTC，head `53f814d`）
+
+- Preview Build / Security：`42441007217` 成功。
+- Docker image workflow：`42441007238` 成功；该 workflow 成功不等于已部署，本轮未执行生产部署。
+- CI：`42441007223` 失败，Playwright 为 36 passed / 2 failed。
+- Studio 主流程失败点：`tests/browser/studio-core.spec.ts` 在动作/视角操作后选择场景背景 `forest` 时，Playwright 等待背景 select 可见且 enabled 超时；重试又在本地草稿条目数量断言失败。当前证据不足以将其归因为单纯的 3D GPU 卡顿，必须进一步检查页面状态、DOM 与 trace。
+- 云端素材场景失败点：`tests/browser/auth-navigation.spec.ts` 的衣橱披风点击后，`.dressup-selected-list` 未出现；测试在断言选择结果时失败，尚未到达后续本地草稿保存步骤。因此这不是“保存按钮卡住”的直接证据。应先核查衣橱分页加载、测试路由响应与分类按钮状态。
+- 上一提交 `ed5a6c8` 的视角重置代码修复已进入构建，但主流程仍失败在后续场景背景选择；视角 reset 断言已通过到达下一步，不能据此宣布完整 Studio 通过。
+- 当前 UV 证据不变：`studio-uv-layout.ts` 只定义披肩与外套两个 overlay profile；帽子、裤子、鞋子虽在数据库枚举中存在，但没有对应 UV/几何 profile 和 3D 预览实现。不要仅把数据库分类存在当作功能完成。
+- 当前 Project schema 不含项目正文 / revision；WorkspaceState 仅保存活动指针；EditorDocument API 只服务像素编辑器文档。下一步 Project 持久化应作为独立的 schema + migration + owner-scoped CRUD + 乐观锁 + 资源引用校验工作包实施，不应将本地 localStorage 草稿或 Outfit 记录冒充完整项目同步。
+- OAuth、邮件、真实服务端权限、移动端真机和 PostgreSQL 备份恢复仍需要独立环境/人工验收；本轮未执行这些生产操作。

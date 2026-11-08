@@ -277,10 +277,14 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
   await page.getByRole('button', { name: '披肩', exact: true }).click()
   await expect(page.getByRole('button', { name: /我的衣橱披肩/ })).toBeVisible()
-  await expect(page.locator('.dressup-item-thumbnail').first()).toBeVisible()
+  const catalogPreview = page.locator('.dressup-item-render').first()
+  await expect(catalogPreview).toBeVisible()
+  await expect(catalogPreview.locator('img')).toBeVisible({ timeout: 15_000 })
+  await expect.poll(async () => (await catalogPreview.locator('img').getAttribute('src'))?.startsWith('data:image/png;base64,')).toBe(true)
   await page.getByRole('button', { name: /我的衣橱披肩/ }).click()
-  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披肩')
-  await page.getByRole('button', { name: /眼眸花披肩/ }).click()
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的披肩素材')
+  await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：我的衣橱披肩')
+  await page.locator('.dressup-item').filter({ hasText: '眼眸花披肩' }).click()
   await page.getByLabel('穿搭名称').fill('云端披肩测试')
   await page.getByRole('button', { name: '保存搭配' }).click()
   await expect(page.getByText(/已保存到账号云端/)).toBeVisible()
@@ -302,12 +306,14 @@ test('3D studio saves selected garments as cloud assets and an account outfit', 
   await page.getByRole('button', { name: '披风', exact: true }).click()
   await expect(page.getByRole('button', { name: /我的衣橱披风/ })).toBeVisible()
   await page.getByRole('button', { name: /我的衣橱披风/ }).click()
-  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披风')
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的披风素材')
+  await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：我的衣橱披风')
   await page.getByRole('button', { name: '保存本地草稿' }).click()
   await expect(page.getByText(/已保存到此设备/)).toBeVisible()
 
   await page.reload()
-  await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱外套')
+  await expect(page.locator('.dressup-selected-list')).toContainText('我的外套素材')
+  await expect(page.locator('.dressup-selected-list')).toContainText('作者/署名：我的衣橱外套')
   await expect(page.locator('.dressup-selected-list')).toContainText('我的衣橱披风')
 })
 
@@ -315,6 +321,13 @@ test('authenticated avatar menu supports hover, click, outside dismissal and Esc
   const username = await createAuthenticatedUser(page, 'CDPC Avatar Tester')
   const trigger = page.getByRole('button', { name: /CDPC Avatar Tester/ })
   await expect(trigger).toBeVisible({ timeout: 15_000 })
+  // The shared helper clicks the trigger to confirm the authenticated session;
+  // close that state first so this assertion exercises a fresh hover transition.
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.site-account-links')).toHaveCount(0)
+  // Escape closes the menu but leaves the pointer over the trigger. Move away
+  // first so Playwright dispatches a fresh pointer-enter transition on hover.
+  await page.mouse.move(0, 0)
   await trigger.hover()
   const accountLinks = page.locator('.site-account-links')
   await expect(accountLinks.getByRole('link', { name: '个人主页' })).toBeVisible()
@@ -776,4 +789,93 @@ test('legacy admin route is unavailable and the configured route remains protect
 
   await page.goto('/control-room')
   await expect(page).toHaveURL(/\/login(?:\?|$)/)
+})
+
+
+test('3D studio saves and restores a complete private cloud project across reloads', async ({ page }) => {
+  const pngDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#345678'
+    context.fillRect(0, 0, 64, 64)
+    return canvas.toDataURL('image/png')
+  })
+  const pngBytes = Buffer.from(pngDataUrl.split(',')[1], 'base64')
+  const projectId = 'studio-project-roundtrip'
+  let projectDocument: Record<string, any> | null = null
+  let projectRevision = 0
+  let workspacePointer: Record<string, unknown> = {
+    projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+  }
+
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
+    status: 200, contentType: 'image/png',
+    headers: { 'Access-Control-Allow-Origin': '*' }, body: pngBytes,
+  }))
+  await page.route('**/api/projects**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'POST' && url.pathname === '/api/projects') {
+      const input = request.postDataJSON() as Record<string, any>
+      projectDocument = input.document
+      projectRevision = 1
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: projectId, title: input.title, description: input.description, visibility: input.visibility,
+        revision: projectRevision, createdAt: '2026-11-08T00:00:00.000Z', updatedAt: '2026-11-08T00:00:00.000Z',
+      } }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname === '/api/projects') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: projectDocument ? [{
+        id: projectId, title: '跨设备角色项目', description: 'CDPC 角色换装与创作项目',
+        visibility: 'PRIVATE', revision: projectRevision,
+        createdAt: '2026-11-08T00:00:00.000Z', updatedAt: '2026-11-08T00:00:00.000Z',
+      }] : [] }) })
+      return
+    }
+    if (request.method() === 'PUT' && url.pathname === `/api/projects/${projectId}`) {
+      await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ error: '项目已在其他设备更新，请重新载入。', revision: projectRevision + 1 }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname === `/api/projects/${projectId}`) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: projectId, title: '跨设备角色项目', description: 'CDPC 角色换装与创作项目',
+        visibility: 'PRIVATE', revision: projectRevision, document: projectDocument, assets: [],
+        createdAt: '2026-11-08T00:00:00.000Z', updatedAt: '2026-11-08T00:00:00.000Z',
+      } }) })
+      return
+    }
+    await route.continue()
+  })
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: workspacePointer }) })
+      return
+    }
+    workspacePointer = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: workspacePointer }) })
+  })
+
+  await createAuthenticatedUser(page, 'CDPC Studio Project Tester')
+  await page.goto('/studio')
+  await page.getByLabel('穿搭名称').fill('跨设备角色项目')
+  await page.getByRole('button', { name: '保存为云端项目' }).click()
+  await expect(page.getByRole('status')).toContainText('已保存为账号云端项目（版本 1）')
+  expect(workspacePointer).toMatchObject({ projectId, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null })
+  expect(projectDocument).toMatchObject({
+    format: 'cdpc-studio-project',
+    version: 1,
+    workspace: { activeTool: 'WARDROBE', model: 'steve', pose: 'idle' },
+    outfit: { name: '跨设备角色项目', itemAssetIds: [], skinAssetId: null },
+  })
+  await page.reload()
+  await page.getByLabel('云端创作项目（1）').selectOption(projectId)
+  await page.getByRole('button', { name: '载入云端项目' }).click()
+  await expect(page.getByRole('status')).toContainText('已恢复云端项目“跨设备角色项目”（版本 1）')
+  expect(workspacePointer).toMatchObject({ projectId, activeTool: 'WARDROBE' })
+  await page.getByRole('button', { name: '保存项目版本' }).click()
+  await expect(page.getByRole('status')).toContainText('云端项目版本冲突')
+  await expect(page.getByRole('status')).toContainText('不会覆盖远端版本')
 })
