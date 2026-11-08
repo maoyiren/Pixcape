@@ -152,3 +152,12 @@ Required automated cases:
 - OFFICIAL assets are denied by the stored-file preview endpoint and download endpoint. If an official cape is shown in a preview, its display source must be separately authorized and must not be the downloadable original bytes.
 - The wardrobe UI now requires an explicit originality / rights declaration to enable owner downloads and hides the download action for assets without an effective download permission.
 - Automated E2E coverage has been added for unknown-provenance denial, owner download of an explicitly declared original cape, cross-user denial for a private cape, and OFFICIAL preview-file / download denial. The latest CI run is the acceptance gate; JSON backup and alternate endpoint bypass audits remain open.
+
+
+## 11. Portable outfit backup import hardening (2026-11-08)
+
+- Backup import now normalizes asset references through `src/domain/outfit-backup.ts`; imported `fileUrl` and `texture` values are rebuilt as same-origin `/api/assets/:id/file` routes from a validated asset ID. Arbitrary external URLs from a JSON backup are never loaded as an outfit asset.
+- Asset ID and assetId must match, category must be one of SHAWL / COAT / CAPE, duplicate IDs are removed, and the imported reference count is bounded. Official-provenance assets are omitted from portable backups.
+- Imported download permission is always false; a backup cannot grant itself `canDownload` or change server-side authorization. The download endpoint remains the authority.
+- Skin asset references are accepted only as relative CDPC asset-file routes; external absolute URLs, protocol-relative URLs and embedded data URLs are rejected as cloud skin references.
+- Unit coverage: canonicalized URLs, mismatched IDs, unsupported categories, official-asset omission, forged download flags, duplicate/bounded references and skin URL allowlisting.
