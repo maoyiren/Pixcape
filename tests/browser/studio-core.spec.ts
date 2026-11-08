@@ -115,9 +115,11 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await page.locator('.dressup-item').filter({ hasText: '苦力怕外套' }).click()
   await expect(selected).toContainText('苦力怕外套')
 
-  // Unimplemented categories must be explicit empty states, never fake products.
+  // Pants now has a native outer-layer UV profile. An empty catalog must be
+  // reported as no matching assets, not as an unimplemented category.
   await page.getByRole('button', { name: '裤子', exact: true }).click()
-  await expect(page.getByText('裤子素材尚未接入')).toBeVisible()
+  await expect(page.getByText('该分类暂无匹配素材，请更换关键词。')).toBeVisible()
+  await expect(page.getByText('裤子素材尚未接入')).toHaveCount(0)
 
   // 3D controls are interactive and do not navigate away from the workspace.
   await page.getByRole('button', { name: 'Alex 细臂' }).click()
