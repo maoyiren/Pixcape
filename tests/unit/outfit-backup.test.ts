@@ -42,9 +42,16 @@ test('never imports official assets or trusts client download flags', () => {
   assert.equal(result[0].canDownload, false)
 })
 
-test('deduplicates asset references and bounds backup input size', () => {
-  const result = normalizeOutfitBackupAssets([asset(), asset(), ...Array.from({ length: 80 }, (_, i) => asset({ id: `asset_${i}`, assetId: `asset_${i}` }))])
+test('deduplicates asset references and restores up to 64 unique assets', () => {
+  const result = normalizeOutfitBackupAssets([
+    asset(),
+    asset(),
+    ...Array.from({ length: 80 }, (_, i) => asset({ id: `asset_${i}`, assetId: `asset_${i}` })),
+  ])
   assert.equal(result.length, 64)
+
+  const oversized = Array.from({ length: 1000 }, (_, i) => asset({ id: `bulk_${i}`, assetId: `bulk_${i}` }))
+  assert.equal(normalizeOutfitBackupAssets(oversized).length, 64)
 })
 
 test('accepts only relative CDPC skin asset routes', () => {
