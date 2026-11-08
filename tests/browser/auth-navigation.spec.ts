@@ -790,3 +790,84 @@ test('legacy admin route is unavailable and the configured route remains protect
   await page.goto('/control-room')
   await expect(page).toHaveURL(/\/login(?:\?|$)/)
 })
+
+
+test('3D studio saves and restores a complete private cloud project across reloads', async ({ page }) => {
+  const pngDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#345678'
+    context.fillRect(0, 0, 64, 64)
+    return canvas.toDataURL('image/png')
+  })
+  const pngBytes = Buffer.from(pngDataUrl.split(',')[1], 'base64')
+  const projectId = 'studio-project-roundtrip'
+  let projectDocument: Record<string, any> | null = null
+  let projectRevision = 0
+  let workspacePointer: Record<string, unknown> = {
+    projectId: null, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null,
+  }
+
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
+    status: 200, contentType: 'image/png',
+    headers: { 'Access-Control-Allow-Origin': '*' }, body: pngBytes,
+  }))
+  await page.route('**/api/projects**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (request.method() === 'POST' && url.pathname === '/api/projects') {
+      const input = request.postDataJSON() as Record<string, any>
+      projectDocument = input.document
+      projectRevision = 1
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: projectId, title: input.title, description: input.description, visibility: input.visibility,
+        revision: projectRevision, createdAt: '2026-11-08T00:00:00.000Z', updatedAt: '2026-11-08T00:00:00.000Z',
+      } }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname === '/api/projects') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: projectDocument ? [{
+        id: projectId, title: '跨设备角色项目', description: 'CDPC 角色换装与创作项目',
+        visibility: 'PRIVATE', revision: projectRevision,
+        createdAt: '2026-11-08T00:00:00.000Z', updatedAt: '2026-11-08T00:00:00.000Z',
+      }] : [] }) })
+      return
+    }
+    if (request.method() === 'GET' && url.pathname === `/api/projects/${projectId}`) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: {
+        id: projectId, title: '跨设备角色项目', description: 'CDPC 角色换装与创作项目',
+        visibility: 'PRIVATE', revision: projectRevision, document: projectDocument, assets: [],
+        createdAt: '2026-11-08T00:00:00.000Z', updatedAt: '2026-11-08T00:00:00.000Z',
+      } }) })
+      return
+    }
+    await route.continue()
+  })
+  await page.route('**/api/workspace', async route => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: workspacePointer }) })
+      return
+    }
+    workspacePointer = route.request().postDataJSON() as Record<string, unknown>
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ item: workspacePointer }) })
+  })
+
+  await createAuthenticatedUser(page, 'CDPC Studio Project Tester')
+  await page.goto('/studio')
+  await page.getByLabel('穿搭名称').fill('跨设备角色项目')
+  await page.getByRole('button', { name: '保存为云端项目' }).click()
+  await expect(page.getByRole('status')).toContainText('已保存为账号云端项目（版本 1）')
+  expect(projectDocument).toMatchObject({
+    format: 'cdpc-studio-project',
+    version: 1,
+    workspace: { activeTool: 'WARDROBE', model: 'steve', pose: 'idle' },
+    outfit: { name: '跨设备角色项目', itemAssetIds: [], skinAssetId: null },
+  })
+  await page.reload()
+  await page.getByLabel('云端创作项目（1）').selectOption(projectId)
+  await page.getByRole('button', { name: '载入云端项目' }).click()
+  await expect(page.getByRole('status')).toContainText('已恢复云端项目“跨设备角色项目”（版本 1）')
+  expect(workspacePointer).toMatchObject({ projectId, activeTool: 'WARDROBE' })
+})
