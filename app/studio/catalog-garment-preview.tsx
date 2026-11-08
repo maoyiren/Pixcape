@@ -81,7 +81,7 @@ async function renderCatalogItem(item: Item, model: 'steve' | 'alex', skinUrl: s
       throw new Error('该分类尚无独立 UV 规范')
     }
     const profile = getStudioOverlayUvProfile(item.category)
-    if (profile.composition !== 'full-atlas-alpha') throw new Error('不支持的贴图格式')
+    if (profile.composition !== 'full-atlas-alpha' && profile.composition !== 'outer-layer-parts') throw new Error('不支持的贴图格式')
     const base = await loadImage(skinUrl)
     const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
     if (baseError) throw new Error(baseError)
@@ -94,6 +94,15 @@ async function renderCatalogItem(item: Item, model: 'steve' | 'alex', skinUrl: s
     if (textureError) throw new Error(textureError)
     await viewer.loadSkin(overlay, { model: model === 'alex' ? 'slim' : 'default' })
     makeSkinSurfaceTransparent(viewer)
+    if (profile.targetParts) {
+      const skin = viewer.playerObject.skin as unknown as Record<string, { innerLayer?: { visible: boolean }; outerLayer?: { visible: boolean } }>
+      const targets = new Set(profile.targetParts)
+      for (const [partName, part] of Object.entries(skin)) {
+        if (!part || typeof part !== 'object') continue
+        if (part.innerLayer) part.innerLayer.visible = false
+        if (part.outerLayer) part.outerLayer.visible = targets.has(partName as 'head' | 'leftLeg' | 'rightLeg')
+      }
+    }
     viewer.playerObject.backEquipment = null
   }
 
@@ -115,7 +124,7 @@ export default function CatalogGarmentPreview({ item, model, skinUrl }: Props) {
   const [visible, setVisible] = useState(false)
   const [previewUrl, setPreviewUrl] = useState('')
   const [error, setError] = useState('')
-  const supported = item.category === '披肩' || item.category === '外套' || item.category === '披风'
+  const supported = item.category === '披肩' || item.category === '外套' || item.category === '披风' || item.category === '帽子' || item.category === '裤子'
 
   useEffect(() => {
     const host = hostRef.current
