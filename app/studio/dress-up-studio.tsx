@@ -467,11 +467,11 @@ export default function DressUpStudio() {
           makeTransparentSkinSurface()
           await viewer.loadCape(item.fileUrl || ASSET_ROOT + item.texture, { backEquipment: 'cape' })
         } else {
-          if (item.category !== '披肩' && item.category !== '外套') {
+          if (!['披肩', '外套', '帽子', '裤子'].includes(item.category)) {
             throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，无法进行单件预览`)
           }
-          const uvProfile = getStudioOverlayUvProfile(item.category)
-          if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的单件服装 UV 预览方式')
+          const uvProfile = getStudioOverlayUvProfile(item.category as StudioOverlayCategory)
+          if (uvProfile.composition !== 'full-atlas-alpha' && uvProfile.composition !== 'outer-layer-parts') throw new Error('不支持的单件服装 UV 预览方式')
           const base = await loadImage(skinUrl)
           if (cancelled) return
           const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
@@ -589,11 +589,11 @@ export default function DressUpStudio() {
         context.imageSmoothingEnabled = false
         context.drawImage(base, 0, 0, textureSize, textureSize)
         for (const item of selectedItems.filter(item => item.category !== '披风')) {
-          if (item.category !== '披肩' && item.category !== '外套') {
+          if (!['披肩', '外套', '帽子', '裤子'].includes(item.category)) {
             throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，已停止合成`)
           }
-          const uvProfile = getStudioOverlayUvProfile(item.category)
-          if (uvProfile.composition !== 'full-atlas-alpha') throw new Error('不支持的服装 UV 合成方式')
+          const uvProfile = getStudioOverlayUvProfile(item.category as StudioOverlayCategory)
+          if (uvProfile.composition !== 'full-atlas-alpha' && uvProfile.composition !== 'outer-layer-parts') throw new Error('不支持的服装 UV 合成方式')
           const textureName = item.fileUrl || ASSET_ROOT + selectStudioOverlayTexture(item, model, textureSize as 64 | 128)
           const overlay = await loadImage(textureName)
           if (cancelled) return
