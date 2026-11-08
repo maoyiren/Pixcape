@@ -1315,7 +1315,7 @@ export default function DressUpStudio() {
             <button type="button" onClick={removeCurrentCategory} disabled={category === '全部' || !selected[category]}>脱下当前分类</button>
             <button type="button" onClick={randomOutfit}>随机搭配</button>
             <button type="button" onClick={() => void saveOutfitToCloud()} disabled={savingCloud}>{savingCloud ? '云端保存中…' : '保存搭配'}</button>
-            <button type="button" onClick={saveLocalOutfit}>保存本地草稿</button>
+            <button type="button" data-testid="studio-save-local-outfit" onClick={saveLocalOutfit}>保存本地草稿</button>
             <button type="button" className="primary" onClick={() => void exportSkinPng()} disabled={isBusy}>导出皮肤 PNG</button>
           </div>
           <details className="dressup-more-actions">
@@ -1343,7 +1343,7 @@ export default function DressUpStudio() {
               {savedOutfits.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
             <div className="dressup-outfit-manager-actions">
-              <button type="button" onClick={loadSavedOutfit} disabled={!selectedSavedOutfitId}>载入选择</button>
+              <button type="button" data-testid="studio-load-saved-outfit" onClick={loadSavedOutfit} disabled={!selectedSavedOutfitId}>载入选择</button>
               <button type="button" onClick={deleteSavedOutfit} disabled={!selectedSavedOutfitId}>删除选择</button>
             </div>
           </div>
