@@ -22,6 +22,32 @@ function pngChunk(type, data) {
   return Buffer.concat([length, typeBytes, data, checksum])
 }
 
+function createSkinPng(size = 64) {
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(size, 0)
+  header.writeUInt32BE(size, 4)
+  header[8] = 8
+  header[9] = 6
+  const scanlines = Buffer.alloc(size * (1 + size * 4))
+  for (let y = 0; y < size; y++) {
+    const row = y * (1 + size * 4)
+    scanlines[row] = 0
+    for (let x = 0; x < size; x++) {
+      const pixel = row + 1 + x * 4
+      scanlines[pixel] = 52
+      scanlines[pixel + 1] = 86
+      scanlines[pixel + 2] = 120
+      scanlines[pixel + 3] = 255
+    }
+  }
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk('IHDR', header),
+    pngChunk('IDAT', deflateSync(scanlines)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ])
+}
+
 function createTinyPng() {
   const header = Buffer.alloc(13)
   header.writeUInt32BE(1, 0)
@@ -190,7 +216,7 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     otherSession = await login(emails[1], '198.51.100.92')
 
     const uploadForm = new FormData()
-    uploadForm.set('file', new File([createTinyPng()], 'shawl.png', { type: 'image/png' }))
+    uploadForm.set('file', new File([createSkinPng()], 'shawl.png', { type: 'image/png' }))
     uploadForm.set('category', 'SHAWL')
     uploadForm.set('name', 'E2E 原创披肩')
     uploadForm.set('visibility', 'PRIVATE')
@@ -227,7 +253,7 @@ test('authenticated wardrobe APIs isolate two real user sessions', async () => {
     const ownerFile = await fetch(new URL(asset.fileUrl, base), { headers: { cookie: ownerSession } })
     assert.equal(ownerFile.status, 200, 'owner can read uploaded PNG')
     const ownerFileBytes = Buffer.from(await ownerFile.arrayBuffer())
-    assert.equal(ownerFileBytes.length, createTinyPng().length, 'owner receives the complete PNG bytes')
+    assert.equal(ownerFileBytes.length, createSkinPng().length, 'owner receives the complete PNG bytes')
 
     const otherAssets = await fetch(new URL('/api/assets', base), { headers: { cookie: otherSession } })
     assert.equal(otherAssets.status, 200)
