@@ -59,6 +59,9 @@ test('canonical Studio supports live outfit selection, controls, local restore a
 
   await page.goto('/studio')
   await expect(page.getByRole('heading', { name: '角色穿搭' })).toBeVisible()
+  // The Studio has a long, scrollable workspace. Keep browser auto-scroll deterministic
+  // instead of applying the site's global smooth-scroll animation to form actions.
+  await expect(page.locator('html')).toHaveCSS('scroll-behavior', 'auto')
   await expect(page.getByRole('region', { name: '服装素材' })).toBeVisible()
   await expect(page.locator('.dressup-real-preview canvas')).toBeVisible({ timeout: 15_000 })
 
