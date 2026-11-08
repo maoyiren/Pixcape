@@ -14,33 +14,33 @@ Cloud editor documents are separate from wardrobe assets, outfits, and the cross
 
 ## Stored payload
 
-The version 1 payload is serialized as a string in the database for consistent PostgreSQL, MySQL, and SQLite behavior:
+The version 1 payload is serialized as a string in PostgreSQL for consistent text-based storage:
 
 ```ts
 type EditorDocumentV1 = {
   version: 1
-  width: 64
-  height: 64
+  width: 64 | 128
+  height: 64 | 128
   activeId: string | null
   layers: Array<{
     id: string
     name: string
     visible: boolean
     opacity: number
-    pixels: string[] // exactly 4096 entries; empty string or #RRGGBB
+    pixels: string[] // exactly width × height entries; empty string or #RRGGBB
   }>
 }
 ```
 
 Limits enforced by the API:
 
-- Canvas dimensions must be 64×64.
-- One to 24 layers per document.
+- Canvas dimensions must be 64×64 or 128×128.
+- One to 24 layers per document; the editor disables layer creation at this limit.
 - Layer IDs are non-empty and at most 128 characters.
 - Layer names are at most 80 characters.
 - Opacity is an integer from 0 to 100.
-- The serialized document is at most 2 MiB.
-- The streamed request body is bounded before JSON parsing.
+- The serialized document is at most 8 MiB.
+- The streamed request body is bounded to 8 MiB plus a small request envelope before JSON parsing.
 
 ## API
 
@@ -70,7 +70,6 @@ Updates use optimistic concurrency. The client sends the revision it last read; 
 The `EditorDocument` model and SQL migration are maintained for all supported database providers:
 
 - PostgreSQL: `prisma/schema.prisma` and `prisma/migrations/`
-- MySQL: `prisma/schema.mysql.prisma` and `prisma/migrations-mysql/`
-- SQLite: `prisma/schema.sqlite.prisma` and `prisma/migrations-sqlite/`
 
-The document payload is stored as text (`TEXT` / `LONGTEXT`) rather than a provider-specific JSON column.
+
+The document payload is stored as text rather than a provider-specific JSON column.
