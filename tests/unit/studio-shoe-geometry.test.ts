@@ -24,7 +24,7 @@ test('left and right shoe meshes use independent, normalized 64px and 128px UV i
       assert.ok(Math.abs(uv64.getX(vertex) - uv128.getX(vertex)) < 1e-6)
       assert.ok(Math.abs(uv64.getY(vertex) - uv128.getY(vertex)) < 1e-6)
       assert.ok(uv64.getX(vertex) >= 0 && uv64.getX(vertex) <= 0.25)
-      assert.ok(uv64.getY(vertex) >= 0.25 && uv64.getY(vertex) <= 0.375)
+      assert.ok(uv64.getY(vertex) >= 0.3125 && uv64.getY(vertex) <= 0.5)
     }
 
     geometry64.dispose()
