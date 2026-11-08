@@ -1,11 +1,9 @@
 export type StudioOverlayCategory = '披肩' | '外套' | '帽子' | '裤子' | '鞋子'
+export type StudioUvRect = { x: number; y: number; width: number; height: number }
+export type StudioShoeUvFace = 'top' | 'bottom' | 'left' | 'right' | 'front' | 'back'
 export type StudioShoeUvRegion = {
   side: 'left' | 'right'
-  u: number
-  v: number
-  width: number
-  height: number
-  depth: number
+  faces: Record<StudioShoeUvFace, StudioUvRect>
 }
 export type StudioUvProfile = {
   category: StudioOverlayCategory
@@ -26,26 +24,31 @@ export const STUDIO_OVERLAY_UV_PROFILES: Record<StudioOverlayCategory, StudioUvP
 }
 
 /**
- * Minecraft outer-leg UVs are 4×12×4. Shoes occupy the bottom four texture
- * rows of each outer-leg island and are rendered as independent 4.5-unit boxes.
- * Coordinates are expressed in the canonical 64×64 atlas and scaled for 128px.
+ * Shoes occupy the bottom four rows of each standard Minecraft outer-leg
+ * surface. Side faces use the lower four rows; the foot cap uses the standard
+ * bottom-cap island. The ankle-facing cap is hidden inside the leg and reuses
+ * the front shoe strip. Coordinates are scaled from the 64×64 skin atlas.
  */
 export function getStudioShoeUvRegions(textureSize: 64 | 128): readonly StudioShoeUvRegion[] {
   const scale = textureSize / 64
-  return [
-    { side: 'right' as const, u: 0, v: 40, width: 4, height: 4, depth: 4 },
-    { side: 'left' as const, u: 0, v: 56, width: 4, height: 4, depth: 4 },
-  ].map(region => ({
-    ...region,
-    u: region.u * scale,
-    v: region.v * scale,
-    width: region.width * scale,
-    height: region.height * scale,
-    depth: region.depth * scale,
+  const makeFace = (x: number, y: number): StudioUvRect => ({
+    x: x * scale, y: y * scale, width: 4 * scale, height: 4 * scale,
+  })
+  return ([
+    { side: 'right' as const, y: 32 },
+    { side: 'left' as const, y: 48 },
+  ]).map(({ side, y }) => ({
+    side,
+    faces: {
+      top: makeFace(4, y + 8),
+      bottom: makeFace(8, y),
+      left: makeFace(0, y + 8),
+      right: makeFace(8, y + 8),
+      front: makeFace(4, y + 8),
+      back: makeFace(12, y + 8),
+    },
   }))
 }
-
-export type StudioUvRect = { x: number; y: number; width: number; height: number }
 
 /** Atlas rectangles containing only the UV islands owned by each outer-layer category. */
 export function getStudioOverlayUvRegions(
@@ -53,10 +56,20 @@ export function getStudioOverlayUvRegions(
   textureSize: 64 | 128,
 ): readonly StudioUvRect[] {
   const scale = textureSize / 64
-  const regions: Record<'帽子' | '裤子' | '鞋子', readonly StudioUvRect[]> = {
+  if (category === '鞋子') {
+    const seen = new Set<string>()
+    return getStudioShoeUvRegions(textureSize).flatMap(region =>
+      Object.values(region.faces).filter(rect => {
+        const key = `${rect.x},${rect.y},${rect.width},${rect.height}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      }),
+    )
+  }
+  const regions: Record<'帽子' | '裤子', readonly StudioUvRect[]> = {
     帽子: [{ x: 32, y: 0, width: 24, height: 16 }],
     裤子: [{ x: 0, y: 32, width: 16, height: 16 }, { x: 0, y: 48, width: 16, height: 16 }],
-    鞋子: [{ x: 0, y: 40, width: 16, height: 8 }, { x: 0, y: 56, width: 16, height: 8 }],
   }
   return regions[category].map(region => ({
     x: region.x * scale,
