@@ -18,11 +18,15 @@ export default function CatalogGarmentPreview({ item, model, skinUrl }: Props) {
   const supported = item.category === '披肩' || item.category === '外套' || item.category === '披风'
   useEffect(() => {
     const host = hostRef.current
-    if (!host || visible || !supported) return
+    if (!host || !supported) return
     if (typeof IntersectionObserver === 'undefined') { setVisible(true); return }
-    const observer = new IntersectionObserver(entries => { const current = entries.find(entry => entry.target === host); if (current) setVisible(current.isIntersecting) }, { rootMargin: '96px', threshold: 0 })
-    observer.observe(host); return () => observer.disconnect()
-  }, [visible, supported])
+    const observer = new IntersectionObserver(entries => {
+      const current = entries.find(entry => entry.target === host)
+      if (current) setVisible(current.isIntersecting)
+    }, { rootMargin: '96px', threshold: 0 })
+    observer.observe(host)
+    return () => observer.disconnect()
+  }, [supported])
   useEffect(() => {
     const host = hostRef.current
     if (!host || !visible || !supported) return
@@ -31,8 +35,8 @@ export default function CatalogGarmentPreview({ item, model, skinUrl }: Props) {
     setError('')
     try {
       const canvas = document.createElement('canvas')
-      viewer = new SkinViewer({ canvas, width: Math.max(host.clientWidth, 120), height: 116, enableControls: false, pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5) })
-      viewer.renderer.setClearColor(0x202833, 0); viewer.controls.autoRotate = true; viewer.controls.autoRotateSpeed = 1.2; host.replaceChildren(canvas)
+      viewer = new SkinViewer({ canvas, width: Math.max(host.clientWidth, 120), height: 116, enableControls: false, pixelRatio: 1 })
+      viewer.renderer.setClearColor(0x202833, 0); viewer.controls.autoRotate = false; host.replaceChildren(canvas)
     } catch { setError('WebGL 不可用'); return }
     const makeTransparent = () => viewer.playerObject.skin.traverse(object => {
       const mesh = object as unknown as { isMesh?: boolean; material?: unknown }
