@@ -33,8 +33,8 @@ export const STUDIO_OVERLAY_UV_PROFILES: Record<StudioOverlayCategory, StudioUvP
 export function getStudioShoeUvRegions(textureSize: 64 | 128): readonly StudioShoeUvRegion[] {
   const scale = textureSize / 64
   return [
-    { side: 'right', u: 0, v: 40, width: 4, height: 4, depth: 4 },
-    { side: 'left', u: 0, v: 56, width: 4, height: 4, depth: 4 },
+    { side: 'right' as const, u: 0, v: 40, width: 4, height: 4, depth: 4 },
+    { side: 'left' as const, u: 0, v: 56, width: 4, height: 4, depth: 4 },
   ].map(region => ({
     ...region,
     u: region.u * scale,
