@@ -498,7 +498,9 @@ export default function DressUpStudio() {
             await viewer.loadSkin(transparentSkin, { model: model === 'alex' ? 'slim' : 'default' })
             if (cancelled) return
             makeTransparentSkinSurface()
-            cleanupShoes = attachStudioShoeGeometry(viewer.playerObject.skin, overlay, overlay.naturalWidth as 64 | 128)
+            const detachShoes = attachStudioShoeGeometry(viewer.playerObject.skin, overlay, overlay.naturalWidth as 64 | 128)
+          viewer.canvas.dataset.cdpcShoeMeshes = '2'
+          cleanupShoes = () => { detachShoes(); delete viewer.canvas.dataset.cdpcShoeMeshes }
           } else {
             await viewer.loadSkin(overlay, { model: model === 'alex' ? 'slim' : 'default' })
             if (cancelled) return
@@ -645,7 +647,9 @@ export default function DressUpStudio() {
             { width: shoeImage.naturalWidth, height: shoeImage.naturalHeight },
           )
           if (shoeError) throw new Error(`${shoeItem.name}：${shoeError}`)
-          cleanupShoes = attachStudioShoeGeometry(viewer.playerObject.skin, shoeImage, textureSize as 64 | 128)
+          const detachShoes = attachStudioShoeGeometry(viewer.playerObject.skin, shoeImage, textureSize as 64 | 128)
+          viewer.canvas.dataset.cdpcShoeMeshes = '2'
+          cleanupShoes = () => { detachShoes(); delete viewer.canvas.dataset.cdpcShoeMeshes }
         }
         if (cape) {
           await viewer.loadCape(cape.fileUrl || ASSET_ROOT + cape.texture, { makeVisible: false })
