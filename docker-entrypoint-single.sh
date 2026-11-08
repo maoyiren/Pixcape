@@ -3,12 +3,17 @@ set -eu
 
 cd /opt/pixcape-next
 
-if [ -n "${DATABASE_URL:-}" ]; then
-  echo "Applying Prisma migrations for ${DATABASE_PROVIDER:-postgresql}..."
-  npm run db:migrate
-else
-  echo "WARNING: DATABASE_URL is unset; database-backed account features are unavailable."
-fi
+: "${DATABASE_URL:?DATABASE_URL is required. CDPC supports PostgreSQL only.}"
+case "$DATABASE_URL" in
+  postgres://*|postgresql://*) ;;
+  *)
+    echo "CDPC supports PostgreSQL only. DATABASE_URL must use postgres:// or postgresql://." >&2
+    exit 1
+    ;;
+esac
+
+echo "Applying PostgreSQL Prisma migrations..."
+npm run db:migrate
 
 node /opt/pixcape-ai-api/server.mjs &
 AI_PID=$!

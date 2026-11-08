@@ -16,6 +16,8 @@ RUN mkdir -p /runtime \
     && test -s /runtime/LICENSE.MD
 
 FROM node:26.13.0-bookworm-slim AS next-build
+# Build-time placeholder only: Next.js collects route configuration during build; runtime gets DATABASE_URL from Compose.
+ENV DATABASE_URL=postgresql://build:build@127.0.0.1:5432/cdpc_build?schema=public
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ libatomic1 \
     && rm -rf /var/lib/apt/lists/*
@@ -33,7 +35,6 @@ COPY ai-api/package*.json ./
 RUN npm ci --omit=dev --include=optional --no-audit --no-fund
 COPY ai-api/ ./
 
-# Debian runtime matches the native Prisma SQLite addon built in next-build.
 FROM node:26.13.0-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends bash nginx ca-certificates wget libatomic1 \
     && rm -f /etc/nginx/sites-enabled/default \

@@ -1,7 +1,7 @@
 import 'server-only'
 import { createHmac } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
-import { incrementMysqlRateLimitBucket, incrementRateLimitBucket, incrementSqliteRateLimitBucket } from '@/lib/login-rate-limit-store'
+import { incrementRateLimitBucket } from '@/lib/login-rate-limit-store'
 
 export type RateLimitResult = {
   allowed: boolean
@@ -22,12 +22,7 @@ export async function consumeLoginRateLimit(clientAddress: string): Promise<Rate
   const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'pixcape-local-only-rate-limit-pepper'
   const normalizedAddress = (clientAddress || 'unknown').trim().slice(0, 128) || 'unknown'
   const key = createHmac('sha256', secret).update('pixcape-login:').update(normalizedAddress).digest('hex')
-  const provider = process.env.DATABASE_PROVIDER ?? 'postgresql'
-  const result = provider === 'mysql'
-    ? await prisma.$transaction((tx) => incrementMysqlRateLimitBucket(tx, key, windowSeconds))
-    : provider === 'sqlite'
-      ? await incrementSqliteRateLimitBucket(prisma, key, windowSeconds)
-      : await incrementRateLimitBucket(prisma, key, windowSeconds)
+  const result = await incrementRateLimitBucket(prisma, key, windowSeconds)
 
   if (result.count % 100 === 0) {
     await prisma.loginRateLimit.deleteMany({
