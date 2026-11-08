@@ -127,7 +127,6 @@ test('canonical Studio supports live outfit selection, controls, local restore a
     await actionSelect.selectOption(pose)
     await expect(actionSelect).toHaveValue(pose)
   }
-  expect(pageErrors).toEqual([])
   // Repeating the action switch must not leave a stale pose animation attached.
   const autoRotateControl = page.getByRole('button', { name: '自动旋转', exact: true })
   await autoRotateControl.click()
@@ -239,6 +238,8 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(page.locator('.dressup-selected-list')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Steve 粗臂' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByLabel('切换角色视角')).toHaveValue('front')
+  // Catch asynchronous React/WebGL DOM ownership errors across the entire flow.
+  expect(pageErrors).toEqual([])
 })
 
 test('Studio exports only owner-authorized capes as standalone PNG files', async ({ page }) => {
