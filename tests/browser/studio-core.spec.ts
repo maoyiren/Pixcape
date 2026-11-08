@@ -2,6 +2,9 @@ import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 
 test('canonical Studio supports live outfit selection, controls, local restore and vanilla PNG export', async ({ page }) => {
+  // This end-to-end path mounts two WebGL viewers and exercises multiple texture imports/exports.
+  // Keep the test budget separate from Playwright's 30s default per-test timeout.
+  test.setTimeout(120_000)
   const pngDataUrl = await page.evaluate(() => {
     const canvas = document.createElement('canvas')
     canvas.width = 64
