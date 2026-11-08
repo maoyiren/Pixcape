@@ -580,3 +580,6 @@ body { background: var(--cdpc-surface); color: var(--cdpc-ink); }
 .dressup-favorite-toggle{position:absolute;top:7px;right:7px;z-index:3;width:30px;height:30px;border:1px solid #536174;border-radius:7px;background:#111a28eF;color:#d9e4f7;font-size:19px;line-height:1;cursor:pointer}
 .dressup-favorite-toggle[aria-pressed=true]{color:#ffd36a;border-color:#b58c39}
 @media(max-width:420px){.dressup-catalog-tools{align-items:stretch;flex-direction:column}.dressup-favorites-filter{width:100%}}
+/* Keep Studio form actions deterministic: smooth document scrolling makes browser auto-scroll
+   continuously move lower controls while Playwright/user click targets are being resolved. */
+html:has(.dressup-page){scroll-behavior:auto}
