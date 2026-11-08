@@ -217,3 +217,14 @@
 - 已提交 e19eafe：目录卡片预览现在持续跟踪 IntersectionObserver 的进入/离开状态，离开可视区时触发 cleanup/dispose；卡片不再自动旋转，pixelRatio 固定为 1。保留真实 SkinViewer 3D 预览，不退化为 PNG 放大图。
 - 头像 hover 用例失败原因也已定位：共享登录 helper 通过点击账户按钮确认会话，随后 Escape 关闭菜单但鼠标仍停留在按钮上；Playwright 再次 hover 不会产生新的 pointer-enter。已提交 19cde50，在 hover 前把鼠标移出按钮，再验证新 hover 转换。这是测试起始状态修正，不改变账户菜单功能。
 - 两项修复均等待最新 head CI 复验；在通过前不宣称 Studio 浏览器回归已解决。动作切换的 pageErrors 断言通过，但端到端完整场景仍因后续保存按钮点击超时而失败。
+
+## P0 最新 CI 复核与修复（2026-11-08 03:00 UTC）
+
+- PR #64 head `3bfacc172dc2c165454d92931337da28db636e0a` 的 CI run `42439908220` 失败：36 项 Playwright 通过、2 项失败；失败分别为 Studio 视角重置后选择器仍为 `side`，以及云端素材保存场景在点击“保存本地草稿”时超时。不能将本轮 Studio 全场景或动作切换验收标记为通过。
+- 同一 head 的 Preview/Security run `42439908204` 成功；PostgreSQL Docker smoke run `42439908225` 的 smoke-test 成功，publish 与 Deploy to 1Panel V2 均 skipped。没有发布镜像或部署生产。
+- 视角重置根因已由代码确认：`resetPreviewCamera()` 在 `viewerRef.current` 尚未就绪时提前 return，导致 React 的 `viewAngle` 状态不更新，选择器继续显示旧角度。提交 `ed5a6c8` 将 UI 状态重置移到 WebGL viewer 可用性判断之前；viewer 存在时再同步重置模型旋转和 controls。该修复尚待 CI 复验。
+- 保存本地草稿超时：日志定位在 Playwright click 阶段，未捕获到该处 pageerror；此前目录 3D viewer 的可视区释放、关闭卡片自动旋转和 pixelRatio=1 已提交 `e19eafe`，但这次 CI 仍未证明性能问题解决。下一轮需要检查 trace / 浏览器负载和保存前后页面状态，不以延长超时或跳过断言代替修复。
+- 帽子、裤子、鞋子当前在目录卡片仍显示“3D 渲染开发中”；`src/domain/studio-uv-layout.ts` 仅声明披肩 / 外套的 full-atlas-alpha UV profile，`app/studio/catalog-garment-preview.tsx` 的 supported gate 也只允许披肩 / 外套 / 披风。三类服装真实 UV、对应几何和独立 3D 预览仍未实现。
+- 项目保存现状：`Project` 没有正文与 revision 字段；`WorkspaceState` 仅保存当前工作区指针；`EditorDocument` API 仅覆盖编辑器文档。尚未建立 Project CRUD / revision / 跨设备恢复事务，因此完整创作项目保存恢复仍未闭环。
+- 真实 OAuth / 邮件 provider、生产服务端权限环境验收、移动端人工验收、PostgreSQL 生产备份恢复演练均未执行。CI / 测试环境通过不代表这些真实环境验收通过。
+- 本轮继续保持 PR #64 Draft；不合并、不发布、不部署生产、不执行生产数据库迁移。
