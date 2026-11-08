@@ -8,6 +8,7 @@ import CatalogGarmentPreview from './catalog-garment-preview'
 import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
 import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
 import { canEquipStudioOverlayTogether, getStudioOverlayUvProfile, type StudioOverlayCategory } from '@/src/domain/studio-uv-layout'
+import { normalizeOutfitBackupAssets, normalizeOutfitBackupSkinUrl } from '@/src/domain/outfit-backup'
 
 const ASSET_ROOT = 'https://raw.githubusercontent.com/lonelyang/CapeSkinImage/master/examples/img/'
 const BASE_SKIN = ASSET_ROOT + 'stevea.png'
@@ -943,11 +944,11 @@ export default function DressUpStudio() {
       if (parsed.format !== 'cdpc-outfit' || parsed.version !== 1 || !outfit || !Array.isArray(outfit.itemIds)) {
         throw new Error('文件格式不正确或版本不受支持')
       }
-      const backupAssets = Array.isArray(outfit.assetItems) ? outfit.assetItems.filter(item => item && typeof item.id === 'string' && typeof item.fileUrl === 'string' && fromAssetCategory(item.category === '披肩' ? 'SHAWL' : item.category === '外套' ? 'COAT' : item.category === '披风' ? 'CAPE' : '') !== null) : []
+      const backupAssets = normalizeOutfitBackupAssets(outfit.assetItems)
       const backupIds = new Set(backupAssets.map(item => item.id))
       const itemIds = outfit.itemIds.filter((id): id is string => typeof id === 'string' && (catalog.some(item => item.id === id) || backupIds.has(id)))
       const nextSkinUrl = typeof outfit.skinUrl === 'string' && outfit.skinUrl.startsWith('data:image/png;base64,') ? outfit.skinUrl : undefined
-      let nextSkinAssetUrl = typeof outfit.skinAssetUrl === 'string' && /\/api\/assets\/([^/]+)\/file(?:\?|$)/.test(outfit.skinAssetUrl) ? outfit.skinAssetUrl : undefined
+      let nextSkinAssetUrl = normalizeOutfitBackupSkinUrl(outfit.skinAssetUrl)
       let skinAssetUnavailable = false
       if (nextSkinUrl) {
         const image = await loadImage(nextSkinUrl)
