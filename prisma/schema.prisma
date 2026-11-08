@@ -125,6 +125,8 @@ model Project {
   description String   @default("")
   visibility  String   @default("PRIVATE")
   assetKey    String?
+  document    String   @default("{}") @db.Text
+  revision    Int      @default(1)
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
