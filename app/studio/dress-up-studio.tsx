@@ -40,16 +40,18 @@ const catalog: CatalogItem[] = [
   { id: 'tiktok-cape', name: 'TikTok 披风', category: '披风', texture: 'cape_tiktok.png', note: '背部披风纹理' },
   { id: 'twitch-cape', name: 'Twitch 披风', category: '披风', texture: 'cape_twitch.png', note: '背部披风纹理' },
 ]
-const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风'])
+const availableCategories = new Set<GarmentCategory>(['披肩', '外套', '披风', '帽子', '裤子'])
 type ModelType = 'steve' | 'alex'
 type StudioView = 'front' | 'back' | 'side'
 type LocalOutfit = { id: string; name: string; itemIds: string[]; model: ModelType; pose?: StudioPose; background: string; backgroundScene?: string; skinUrl?: string; skinName: string; savedAt: string; cloud?: boolean; skinAssetId?: string | null; skinAssetUrl?: string; assetItems?: CatalogItem[] }
 
 
-function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' {
+function toAssetCategory(category: GarmentCategory): 'SHAWL' | 'COAT' | 'CAPE' | 'HAT' | 'PANTS' {
   if (category === '披肩') return 'SHAWL'
   if (category === '外套') return 'COAT'
   if (category === '披风') return 'CAPE'
+  if (category === '帽子') return 'HAT'
+  if (category === '裤子') return 'PANTS'
   throw new Error('该服装分类尚未接入云端素材类型')
 }
 
@@ -57,6 +59,8 @@ function fromAssetCategory(category: string | null): GarmentCategory | null {
   if (category === 'SHAWL') return '披肩'
   if (category === 'COAT') return '外套'
   if (category === 'CAPE') return '披风'
+  if (category === 'HAT') return '帽子'
+  if (category === 'PANTS') return '裤子'
   return null
 }
 
@@ -639,7 +643,7 @@ export default function DressUpStudio() {
   }
 
 
-  async function uploadAssetFromUrl(url: string, category: 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE', name: string) {
+  async function uploadAssetFromUrl(url: string, category: 'SKIN' | 'SHAWL' | 'COAT' | 'CAPE' | 'HAT' | 'PANTS', name: string) {
     const imageResponse = await fetch(url, { cache: 'no-store', credentials: 'same-origin' })
     if (!imageResponse.ok) throw new Error(`无法读取素材：${name}`)
     const blob = await imageResponse.blob()
