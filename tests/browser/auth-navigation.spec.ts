@@ -859,6 +859,7 @@ test('3D studio saves and restores a complete private cloud project across reloa
   await page.getByLabel('穿搭名称').fill('跨设备角色项目')
   await page.getByRole('button', { name: '保存为云端项目' }).click()
   await expect(page.getByRole('status')).toContainText('已保存为账号云端项目（版本 1）')
+  expect(workspacePointer).toMatchObject({ projectId, activeTool: 'WARDROBE', activeAssetId: null, activeOutfitId: null })
   expect(projectDocument).toMatchObject({
     format: 'cdpc-studio-project',
     version: 1,
