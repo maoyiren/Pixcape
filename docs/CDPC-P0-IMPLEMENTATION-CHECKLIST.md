@@ -188,3 +188,14 @@
 - 新增单测：`tests/unit/outfit-backup.test.ts` 覆盖同源路径重建、伪造 ID / 类别、官方资产排除、下载权限伪造、重复 / 数量边界和皮肤 URL allowlist。
 - 最新代码和文档提交触发的 CI / Preview / Docker workflow 曾因 PR concurrency 取消旧 run；旧 run 的取消不计为通过。不得重跑带有 1Panel deploy / publish 的工作流任务。需要以当前最新 head 的新一轮 CI、Preview/Security 和 Docker PR smoke 结果作为验收证据。
 - 当前仍未完成：帽子 / 裤子 / 鞋子独立 UV / 几何及有效素材 fixture；完整项目（而非仅穿搭）保存恢复和失败恢复；真实 OAuth / 邮件；移动端人工验收；生产 PostgreSQL 备份恢复演练。
+
+
+## 最新 CI 诊断与修复（2026-11-08 01:05 UTC）
+
+- PR #64 head `20f130f50f55c4f3267216c001da46dc033547be` 的 CI #1107 与 Preview/Security #896 均在单元测试阶段失败；两者定位到同一断言：`tests/unit/outfit-backup.test.ts` 期望恢复 64 个不同素材，实际只恢复 63 个。
+- 根因：备份规范化器先对原始输入 `slice(0, 64)`，再去重；前两条重复记录占用了输入配额，导致有效唯一素材数少于 64。属于实现边界与测试预期不一致，不是渲染或数据库故障。
+- 已修复 `src/domain/outfit-backup.ts`：最多扫描 256 条不可信输入，最多恢复 64 个唯一有效资产；重复、非法和官方资产不再消耗 64 个有效资产名额，同时保留输入扫描上限。
+- 已更新 `tests/unit/outfit-backup.test.ts`：覆盖前置重复记录后仍可恢复 64 个唯一素材，以及超大输入仍最多输出 64 条。
+- Docker smoke #1106：PostgreSQL-only image build、容器启动与路由 smoke 成功；`publish` 与 `Deploy to 1Panel V2` job 均为 skipped。未发布镜像、未部署生产。此前工作流显示 success 指的是 smoke job 成功，不是 publish。
+- 修复提交后必须等待新 head 的 CI、Preview/Security 和 Docker smoke 结果；本次没有手动重跑旧 workflow，也没有触发生产发布。
+- 帽子 / 裤子 / 鞋子的真实 UV / 几何、完整项目保存恢复和故障恢复、真实 OAuth / 邮件、移动端人工验收、生产 PostgreSQL 备份恢复演练仍未完成。
