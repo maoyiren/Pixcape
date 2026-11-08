@@ -1117,14 +1117,17 @@ export default function DressUpStudio() {
 
   function resetPreviewCamera() {
     const viewer = viewerRef.current
-    if (!viewer) {
-      setSaveNotice('3D 预览尚未准备好')
+    // The view selector is application state, not a side effect of WebGL
+    // readiness. Always reset it so the control cannot remain stuck on
+    // "back"/"side" while the viewer is mounting or recovering.
+    setViewAngle('front')
+    if (viewer) {
+      viewer.playerObject.rotation.set(0, 0, 0)
+      viewer.controls.reset()
+      setSaveNotice('已重置角色视角')
       return
     }
-    viewer.playerObject.rotation.set(0, 0, 0)
-    viewer.controls.reset()
-    setViewAngle('front')
-    setSaveNotice('已重置角色视角')
+    setSaveNotice('视角状态已重置；3D 预览正在初始化')
   }
 
   function removeCurrentCategory() {
