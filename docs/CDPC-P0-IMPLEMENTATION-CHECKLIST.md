@@ -176,3 +176,15 @@
 - `f18487e` 的新 CI 尚未取得运行结果；必须等待 Playwright、Preview/Security、Docker workflow 完成后，才能更新验收状态。
 - 帽子 / 裤子 / 鞋子的真实 UV / 几何和有效素材 fixture、完整项目保存恢复的故障恢复测试、移动端人工验收、生产数据库备份恢复演练仍未完成；不得标记 P0 全部完成。
 - 未合并 PR、未发布镜像、未部署 1Panel、未执行生产迁移或生产数据变更。
+
+
+## 最新功能推进记录（2026-11-08 00:55 UTC）
+
+- PR #64 head：`0071dfe16e43863425aa141793a795b79abd128a`；保持 Draft，不合并、不发布、不部署。
+- Studio 动作系统：在 `f18487e` 改为 skinview3d 原生动作类，修复此前浏览器回归中 hit 动作切换时的 `null.trim` 异常；该修复尚待新一轮完整 CI 证据。
+- 编辑器图层：本地文档校验、编辑器新建图层和云端文档 API 统一为最多 24 层，新增 24 / 25 层边界单测。
+- 穿搭备份安全：新增 `src/domain/outfit-backup.ts`，导入时仅接受披肩 / 外套 / 披风且 ID 一致的素材引用；重建同源 `/api/assets/:id/file` 路径，不信任 JSON 中的外部 URL；排除官方来源资产，不接受备份伪造的下载权限；皮肤云端引用同样只接受同源相对路径。
+- 穿搭备份完整性：修复导出遗漏 pose、导入不恢复 pose 的问题；备份 JSON 现在保留角色动作，导入后恢复动作状态；Playwright 增加导出 / 恢复 pose 断言。
+- 新增单测：`tests/unit/outfit-backup.test.ts` 覆盖同源路径重建、伪造 ID / 类别、官方资产排除、下载权限伪造、重复 / 数量边界和皮肤 URL allowlist。
+- 最新代码和文档提交触发的 CI / Preview / Docker workflow 曾因 PR concurrency 取消旧 run；旧 run 的取消不计为通过。不得重跑带有 1Panel deploy / publish 的工作流任务。需要以当前最新 head 的新一轮 CI、Preview/Security 和 Docker PR smoke 结果作为验收证据。
+- 当前仍未完成：帽子 / 裤子 / 鞋子独立 UV / 几何及有效素材 fixture；完整项目（而非仅穿搭）保存恢复和失败恢复；真实 OAuth / 邮件；移动端人工验收；生产 PostgreSQL 备份恢复演练。
