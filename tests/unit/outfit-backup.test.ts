@@ -27,7 +27,7 @@ test('restores only canonical same-origin asset references', () => {
 test('rejects mismatched ids, unsupported categories and malformed records', () => {
   assert.deepEqual(normalizeOutfitBackupAssets([
     asset({ assetId: 'another_asset' }),
-    asset({ category: '帽子' }),
+    asset({ category: 'OTHER_ACCESSORY' }),
     null,
     'not-an-object',
   ]), [])
