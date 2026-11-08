@@ -38,3 +38,11 @@ test('rejects duplicate layer ids and invalid pixel colors', () => {
   pixels[0] = 'red'
   assert.equal(normalizePixelEditorDocument({ version: 1, width: 64, height: 64, activeId: 'x', layers: [{ ...layer('x'), pixels }] }), null)
 })
+
+
+test('enforces the same 24-layer limit as the cloud document API', () => {
+  const layers24 = Array.from({ length: 24 }, (_, index) => layer(`layer-${index}`))
+  const layers25 = Array.from({ length: 25 }, (_, index) => layer(`layer-${index}`))
+  assert.equal(normalizePixelEditorDocument({ version: 1, width: 64, height: 64, activeId: 'layer-0', layers: layers24 })?.layers.length, 24)
+  assert.equal(normalizePixelEditorDocument({ version: 1, width: 64, height: 64, activeId: 'layer-0', layers: layers25 }), null)
+})
