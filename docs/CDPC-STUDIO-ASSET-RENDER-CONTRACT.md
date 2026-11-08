@@ -127,13 +127,13 @@ The same normalized descriptor must be consumed by preview and export. Do not ma
 
 The P0 branch maps SHAWL, COAT, CAPE, HAT, PANTS, and SHOES to distinct Studio render paths. Hat and pants use native outer-layer model geometry with category-clipped UV composition; shoes use two custom box meshes attached to the animated leg pivots. The catalog still has no bundled hat/pants/shoe preset pack: those categories are available for user-uploaded assets. Production acceptance remains pending real asset fixtures and visual review.
 
-The non-cape preview and export paths now composite the full category-authored skin atlas with alpha; the former shared six-rectangle crop has been removed. SHAWL and COAT have separate category profiles and are mutually exclusive because their source atlases overlap on upper-body surfaces. Cape remains a separate back-equipment texture.
+SHAWL and COAT composite their complete category-authored alpha atlases and remain mutually exclusive because their source atlases overlap on upper-body surfaces. HAT and PANTS copy only their native outer-layer UV regions. SHOES use two custom animated boot meshes in the live preview and copy only their lower-leg UV islands into vanilla PNG exports. CAPE remains separate back equipment.
 
 A second SkinViewer surface now renders a selected item in isolation by applying its own texture to the 3D skin geometry with transparent skin materials; the base character skin is not composited into this preview. The catalogue thumbnail remains a fast-scan image only.
 
 Playwright coverage has been added for isolated preview canvas creation, category exclusivity, 128×128 editor import/undo/redo/cloud restore/export, server-backed Studio outfit restore from an empty local cache, and wardrobe PNG upload/download. These tests use controlled API and texture fixtures. They do not replace visual review of every real upstream texture file, real-account cross-device testing, or a production object-storage check.
 
-The current atlas approach preserves the UV layout encoded in each source PNG; it does not claim a pixel-by-pixel source-asset fixture audit. Before marking the full rendering acceptance complete, visually inspect the actual SHAWL/COAT Classic and Slim textures at 64px and 128px and record expected screenshots/fixture hashes. Hat, pants, shoes, and other accessories remain disabled until their own UV/geometry fixtures are reviewed.
+The current atlas approach preserves category-specific UV layouts but does not claim a pixel-by-pixel source-asset fixture audit. Before marking full rendering acceptance complete, visually inspect real SHAWL/COAT Classic and Slim textures at 64px and 128px, plus HAT/PANTS/SHOES assets for Classic and Slim models, and record expected screenshots/fixture hashes. HAT/PANTS/SHOES are now selectable for uploaded assets, but they are not yet certified against a bundled, visually reviewed preset pack.
 
 ## 9. Asset provenance and download rights
 
@@ -184,3 +184,15 @@ Required automated cases:
 
 - Fixed a persistence gap: portable outfit JSON now includes the selected character pose, and importing a backup restores that pose in Studio rather than silently reverting to the default.
 - Playwright regression coverage asserts the exported pose and the restored action selector value.
+
+
+
+## 13. P0 rendering implementation update (2026-11-08)
+
+- PR #64 was synchronized with PostgreSQL-only main commit c64fa08; the branch is no longer behind main.
+- Added two independent shoe meshes using skinview3d's animated left/right leg pivots. Each mesh has its own BoxGeometry and material, uses only its corresponding lower-leg UV island, and is removed/disposed when the selected shoe changes.
+- Added category-specific atlas clipping for HAT, PANTS, and SHOES. This prevents pixels outside a category's UV regions from overwriting the user's base skin.
+- Added SHOES to Studio category mapping, wardrobe asset discovery, cloud outfit persistence, portable outfit backup import/export, and vanilla PNG export. Existing PostgreSQL asset/outfit enums and input schema already support HAT/PANTS/SHOES.
+- Server upload now validates 64×64 or 128×128 dimensions for SHAWL/COAT/HAT/PANTS/SHOES; CAPE remains on its separate back-equipment contract.
+- Added unit coverage for the category UV rectangles at 64px and 128px, backup restore for HAT/PANTS/SHOES, PostgreSQL outfit persistence coverage, and a browser flow for isolated preview, live try-on, Slim-model shoe attachment, and vanilla PNG export.
+- No bundled preset textures were invented. Hat/pants/shoes are usable with uploaded category-tagged assets; real artist-authored fixtures and visual review remain required before marking their rendering acceptance complete.
