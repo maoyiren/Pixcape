@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cdpcApi, type OutfitInput } from '@/src/client/cdpc-api'
-import { FlyingAnimation, IdleAnimation, SkinViewer, WalkingAnimation } from 'skinview3d'
+import { CrouchAnimation, FlyingAnimation, HitAnimation, IdleAnimation, RunningAnimation, SkinViewer, SwimAnimation, WalkingAnimation, WaveAnimation } from 'skinview3d'
 import CatalogGarmentPreview from './catalog-garment-preview'
 import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
 import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
@@ -516,56 +516,20 @@ export default function DressUpStudio() {
   useEffect(() => {
     const viewer = viewerRef.current
     if (!viewer) return
-    const animation = pose === 'fly' ? new FlyingAnimation() : pose === 'walk' || pose === 'run' ? new WalkingAnimation() : new IdleAnimation()
-    if (pose === 'wave') {
-      animation.addAnimation((player, progress) => {
-        player.skin.rightArm.rotation.z = -2.35 + Math.sin(progress * 5) * 0.22
-        player.skin.rightArm.rotation.x = Math.sin(progress * 3) * 0.12
-      })
-    }
-    if (pose === 'crouch') {
-      animation.addAnimation((player, progress) => {
-        // Skin variants and partial player objects can omit individual groups.
-        // Guard each part so an animation tick cannot tear down the preview UI.
-        const skin = player.skin as unknown as Record<string, { rotation?: { x: number; y: number; z: number } }>
-        if (skin.body?.rotation) skin.body.rotation.x = 0.32
-        if (skin.head?.rotation) skin.head.rotation.x = -0.22
-        if (skin.leftArm?.rotation) skin.leftArm.rotation.x = -0.48 + Math.sin(progress * 2) * 0.035
-        if (skin.rightArm?.rotation) skin.rightArm.rotation.x = -0.48 - Math.sin(progress * 2) * 0.035
-        if (skin.leftLeg?.rotation) skin.leftLeg.rotation.x = -0.62
-        if (skin.rightLeg?.rotation) skin.rightLeg.rotation.x = -0.62
-      })
-    }
-    if (pose === 'hit') {
-      animation.addAnimation((player, progress) => {
-        const recoil = Math.sin(progress * 8) * 0.12
-        const skin = player.skin as unknown as Record<string, { rotation?: { x: number; y: number; z: number } }>
-        if (skin.body?.rotation) skin.body.rotation.z = recoil
-        if (skin.head?.rotation) skin.head.rotation.z = -recoil * 0.6
-        if (skin.leftArm?.rotation) skin.leftArm.rotation.x = -1.15 + recoil
-        if (skin.rightArm?.rotation) skin.rightArm.rotation.x = -1.15 - recoil
-        if (skin.leftLeg?.rotation) skin.leftLeg.rotation.x = 0.24
-        if (skin.rightLeg?.rotation) skin.rightLeg.rotation.x = -0.18
-      })
-    }
-    if (pose === 'swim') {
-      animation.addAnimation((player, progress) => {
-        const stroke = Math.sin(progress * 5)
-        const skin = player.skin as unknown as Record<string, { rotation?: { x: number; y: number; z: number } }>
-        if (skin.body?.rotation) skin.body.rotation.x = -0.72
-        if (skin.head?.rotation) skin.head.rotation.x = 0.48
-        if (skin.leftArm?.rotation) skin.leftArm.rotation.x = -1.2 + stroke * 0.75
-        if (skin.rightArm?.rotation) skin.rightArm.rotation.x = -1.2 - stroke * 0.75
-        if (skin.leftLeg?.rotation) skin.leftLeg.rotation.x = Math.sin(progress * 5 + Math.PI) * 0.55
-        if (skin.rightLeg?.rotation) skin.rightLeg.rotation.x = Math.sin(progress * 5) * 0.55
-      })
-    }
-    if (pose === 'fly' && cape && !elytraVisible) {
-      animation.addAnimation((player, progress) => {
-        player.cape.rotation.x = 0.35 + Math.sin(progress * 2.2) * 0.02
-        player.cape.rotation.z = Math.sin(progress * 1.8) * 0.025
-      })
-    }
+
+    // Use skinview3d's native animation classes. Custom callbacks attached to
+    // IdleAnimation triggered a null.trim runtime error in the animation
+    // controller when switching to crouch/hit/swim.
+    const animation =
+      pose === 'fly' ? new FlyingAnimation()
+        : pose === 'walk' ? new WalkingAnimation()
+          : pose === 'run' ? new RunningAnimation()
+            : pose === 'wave' ? new WaveAnimation()
+              : pose === 'crouch' ? new CrouchAnimation()
+                : pose === 'hit' ? new HitAnimation()
+                  : pose === 'swim' ? new SwimAnimation()
+                    : new IdleAnimation()
+
     animation.speed = pose === 'walk' ? 0.72 : pose === 'run' ? 1.45 : 1
     viewer.animation = animation
     return () => { if (viewer.animation === animation) viewer.animation = null }
