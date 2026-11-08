@@ -85,6 +85,10 @@ export type ApiOutfit = {
   skinAsset?: Pick<ApiAsset, 'id' | 'category' | 'kind' | 'width' | 'height'> | null
 }
 
+export type ApiProjectSummary = { id: string; title: string; description: string; visibility: string; revision: number; createdAt: string; updatedAt: string }
+export type ApiProject = ApiProjectSummary & { document: Record<string, unknown>; assets: Array<Pick<ApiAsset, 'id' | 'category' | 'kind' | 'name' | 'mimeType' | 'byteSize'>> }
+export type ProjectInput = { title: string; description?: string; visibility?: 'PRIVATE' | 'PUBLIC'; document: Record<string, unknown>; assetIds: string[] }
+
 export type EditorDocumentPayload = {
   version: 1
   width: 64 | 128
@@ -159,6 +163,12 @@ export const cdpcApi = {
     if (options.rightsDeclaration) form.set('rightsDeclaration', 'I_OWN_THE_RIGHTS')
     return (await request<{ item: ApiAsset }>('/api/assets', { method: 'POST', body: form })).item
   },
+
+  listProjects: async () => (await request<{ items: ApiProjectSummary[] }>('/api/projects')).items,
+  getProject: async (id: string) => (await request<{ item: ApiProject }>(`/api/projects/${encodeURIComponent(id)}`)).item,
+  createProject: async (input: ProjectInput) => (await request<{ item: ApiProjectSummary }>('/api/projects', { method: 'POST', body: JSON.stringify(input) })).item,
+  updateProject: async (id: string, input: ProjectInput, revision: number) => (await request<{ item: ApiProjectSummary }>(`/api/projects/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ ...input, revision }) })).item,
+  deleteProject: (id: string) => request<void>(`/api/projects/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
   listOutfits: async () => (await request<{ items: ApiOutfit[] }>('/api/outfits')).items,
 
