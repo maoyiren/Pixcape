@@ -295,6 +295,12 @@ test('Studio renders an uploaded shoe as two independent animated meshes and exp
     fileUrl: '/api/assets/browser-shoe-asset/file',
   }
 
+  await page.route('https://raw.githubusercontent.com/**', route => route.fulfill({
+    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: png,
+  }))
+  await page.route('https://www.minecraft.net/**', route => route.fulfill({
+    status: 200, contentType: 'image/png', headers: { 'Access-Control-Allow-Origin': '*' }, body: png,
+  }))
   await page.route('**/api/outfits', route => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }),
   }))
@@ -326,6 +332,8 @@ test('Studio renders an uploaded shoe as two independent animated meshes and exp
   await expect(page.locator('.dressup-real-preview canvas')).toHaveAttribute('data-cdpc-shoe-meshes', '2')
   await expect(page.locator('.dressup-single-item-preview canvas')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('region', { name: '单件素材独立渲染预览' })).toContainText('浏览器独立鞋子素材')
+  await page.getByRole('button', { name: 'Alex 细臂' }).click()
+  await expect(page.locator('.dressup-real-preview canvas')).toHaveAttribute('data-cdpc-shoe-meshes', '2')
 
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '导出皮肤 PNG' }).click()
