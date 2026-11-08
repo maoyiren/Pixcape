@@ -56,8 +56,8 @@ test('shoes use independent left/right lower-leg UV islands at 64px and 128px', 
     { side: 'left', u: 0, v: 56, width: 4, height: 4, depth: 4 },
   ])
   assert.deepEqual(getStudioShoeUvRegions(128), [
-    { side: 'right', u: 0, v: 80, width: 4, height: 4, depth: 4 },
-    { side: 'left', u: 0, v: 112, width: 4, height: 4, depth: 4 },
+    { side: 'right', u: 0, v: 80, width: 8, height: 8, depth: 8 },
+    { side: 'left', u: 0, v: 112, width: 8, height: 8, depth: 8 },
   ])
   assert.equal(canEquipStudioOverlayTogether(['裤子'], '鞋子'), true)
   assert.equal(canEquipStudioOverlayTogether(['鞋子'], '裤子'), true)
