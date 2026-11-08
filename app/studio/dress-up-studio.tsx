@@ -6,6 +6,7 @@ import { cdpcApi, type ApiProjectSummary, type OutfitInput, type ProjectInput } 
 import { CrouchAnimation, FlyingAnimation, HitAnimation, IdleAnimation, RunningAnimation, SkinViewer, SwimAnimation, WalkingAnimation, WaveAnimation } from 'skinview3d'
 import CatalogGarmentPreview from './catalog-garment-preview'
 import { attachStudioShoeGeometry } from '@/src/client/studio-shoe-geometry'
+import { drawStudioOverlayUvRegions } from '@/src/client/studio-overlay-compositor'
 import { selectStudioOverlayTexture, validateStudioOverlayMatchesBase, validateStudioSkinTexture } from '@/src/domain/studio-texture'
 import { buildStudioWorkspaceState, normalizeStudioPose, type StudioPose } from '@/src/domain/studio-outfit-state'
 import { canEquipStudioOverlayTogether, getStudioOverlayUvProfile, getStudioOverlayUvRegions, type StudioOverlayCategory } from '@/src/domain/studio-uv-layout'
@@ -628,9 +629,7 @@ export default function DressUpStudio() {
           } else if (item.category === '帽子' || item.category === '裤子') {
             // Preserve only this category's native outer-layer UV islands.
             // This prevents unrelated pixels in an uploaded atlas from repainting the skin.
-            for (const region of getStudioOverlayUvRegions(item.category, textureSize as 64 | 128)) {
-              context.drawImage(overlay, region.x, region.y, region.width, region.height, region.x, region.y, region.width, region.height)
-            }
+            drawStudioOverlayUvRegions(context, overlay, item.category, textureSize as 64 | 128)
           } else {
             throw new Error(`${item.category} 必须使用独立几何预览，不允许合并进基础皮肤图层`)
           }
@@ -1200,9 +1199,7 @@ export default function DressUpStudio() {
         } else if (item.category === '帽子' || item.category === '裤子' || item.category === '鞋子') {
           // Export only category-owned UV islands. Shoes are custom meshes in
           // the preview but use standard outer-leg UV pixels in vanilla PNGs.
-          for (const region of getStudioOverlayUvRegions(item.category, textureSize)) {
-            context.drawImage(overlay, region.x, region.y, region.width, region.height, region.x, region.y, region.width, region.height)
-          }
+          drawStudioOverlayUvRegions(context, overlay, item.category, textureSize)
         } else {
           throw new Error(`${item.category} 缺少可导出的 UV 区域`)
         }
