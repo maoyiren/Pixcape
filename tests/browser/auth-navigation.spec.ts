@@ -318,6 +318,10 @@ test('authenticated avatar menu supports hover, click, outside dismissal and Esc
   const username = await createAuthenticatedUser(page, 'CDPC Avatar Tester')
   const trigger = page.getByRole('button', { name: /CDPC Avatar Tester/ })
   await expect(trigger).toBeVisible({ timeout: 15_000 })
+  // The shared helper clicks the trigger to confirm the authenticated session;
+  // close that state first so this assertion exercises a fresh hover transition.
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.site-account-links')).toHaveCount(0)
   await trigger.hover()
   const accountLinks = page.locator('.site-account-links')
   await expect(accountLinks.getByRole('link', { name: '个人主页' })).toBeVisible()
