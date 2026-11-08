@@ -1,6 +1,6 @@
 import type { AssetProvenance, AssetDownloadPolicy } from './asset'
 
-export type OutfitBackupGarmentCategory = '披肩' | '外套' | '披风'
+export type OutfitBackupGarmentCategory = '披肩' | '外套' | '披风' | '帽子' | '裤子' | '鞋子'
 export type OutfitBackupAsset = {
   id: string
   assetId: string
@@ -17,7 +17,7 @@ export type OutfitBackupAsset = {
   canDownload: false
 }
 
-const categories = new Set<OutfitBackupGarmentCategory>(['披肩', '外套', '披风'])
+const categories = new Set<OutfitBackupGarmentCategory>(['披肩', '外套', '披风', '帽子', '裤子', '鞋子'])
 const provenances = new Set<AssetProvenance>(['USER_CREATED', 'OFFICIAL', 'LICENSED', 'THIRD_PARTY', 'UNKNOWN'])
 const policies = new Set<AssetDownloadPolicy>(['DENY', 'OWNER_ONLY', 'LICENSED_PUBLIC'])
 const visibilities = new Set(['PRIVATE', 'UNLISTED', 'PUBLIC'])
