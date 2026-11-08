@@ -418,6 +418,7 @@ export default function DressUpStudio() {
 
     let viewer: SkinViewer
     let cancelled = false
+    let cleanupShoes: (() => void) | null = null
     try {
       const canvas = document.createElement('canvas')
       viewer = new SkinViewer({
@@ -470,11 +471,11 @@ export default function DressUpStudio() {
           makeTransparentSkinSurface()
           await viewer.loadCape(item.fileUrl || ASSET_ROOT + item.texture, { backEquipment: 'cape' })
         } else {
-          if (!['披肩', '外套', '帽子', '裤子'].includes(item.category)) {
+          if (!['披肩', '外套', '帽子', '裤子', '鞋子'].includes(item.category)) {
             throw new Error(`尚未定义 ${item.category} 的真实 UV 布局，无法进行单件预览`)
           }
           const uvProfile = getStudioOverlayUvProfile(item.category as StudioOverlayCategory)
-          if (uvProfile.composition !== 'full-atlas-alpha' && uvProfile.composition !== 'outer-layer-parts') throw new Error('不支持的单件服装 UV 预览方式')
+          if (uvProfile.composition !== 'full-atlas-alpha' && uvProfile.composition !== 'outer-layer-parts' && uvProfile.composition !== 'separate-box-geometry') throw new Error('不支持的单件服装 UV 预览方式')
           const base = await loadImage(skinUrl)
           if (cancelled) return
           const baseError = validateStudioSkinTexture({ width: base.naturalWidth, height: base.naturalHeight }, 'base-skin')
@@ -490,9 +491,19 @@ export default function DressUpStudio() {
           // Render the source atlas directly on the 3D skin geometry with no
           // character skin underneath. Transparent pixels stay invisible, so
           // the user sees only the selected garment's mapped surfaces.
-          await viewer.loadSkin(overlay, { model: model === 'alex' ? 'slim' : 'default' })
-          if (cancelled) return
-          makeTransparentSkinSurface()
+          if (item.category === '鞋子') {
+            const transparentSkin = document.createElement('canvas')
+            transparentSkin.width = overlay.naturalWidth
+            transparentSkin.height = overlay.naturalHeight
+            await viewer.loadSkin(transparentSkin, { model: model === 'alex' ? 'slim' : 'default' })
+            if (cancelled) return
+            makeTransparentSkinSurface()
+            cleanupShoes = attachStudioShoeGeometry(viewer.playerObject.skin, overlay, overlay.naturalWidth as 64 | 128)
+          } else {
+            await viewer.loadSkin(overlay, { model: model === 'alex' ? 'slim' : 'default' })
+            if (cancelled) return
+            makeTransparentSkinSurface()
+          }
           if (uvProfile.targetParts) {
             const skinParts = viewer.playerObject.skin as unknown as Record<string, { innerLayer?: { visible: boolean }; outerLayer?: { visible: boolean } }>
             const targets = new Set(uvProfile.targetParts)
@@ -514,6 +525,8 @@ export default function DressUpStudio() {
       cancelled = true
       observer?.disconnect()
       window.removeEventListener('resize', resize)
+      cleanupShoes?.()
+      cleanupShoes = null
       viewer.dispose()
     }
   }, [singlePreviewItem, model])
