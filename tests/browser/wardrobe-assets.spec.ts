@@ -25,6 +25,23 @@ async function createAuthenticatedUser(page: import('@playwright/test').Page) {
   return session.user.username as string
 }
 
+async function makeGarmentOverlayPng(page: import('@playwright/test').Page, size = 64) {
+  const dataUrl = await page.evaluate((dimension) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = dimension
+    canvas.height = dimension
+    const context = canvas.getContext('2d')!
+    context.fillStyle = '#345678'
+    context.fillRect(0, 0, dimension, dimension)
+    // Transparent samples inside the HAT, PANTS and SHOES UV islands.
+    context.clearRect(32, 0, 1, 1)
+    context.clearRect(0, 32, 1, 1)
+    context.clearRect(0, 40, 1, 1)
+    return canvas.toDataURL('image/png')
+  }, size)
+  return Buffer.from(dataUrl.split(',')[1], 'base64')
+}
+
 async function makePng(page: import('@playwright/test').Page, size = 64) {
   const dataUrl = await page.evaluate((dimension) => {
     const canvas = document.createElement('canvas')
@@ -273,7 +290,7 @@ test('wardrobe preserves a 128×128 skin PNG through private upload and download
 
 test('Studio renders an uploaded shoe as two independent animated meshes and exports its vanilla UV islands', async ({ page }) => {
   await createAuthenticatedUser(page)
-  const png = await makePng(page, 64)
+  const png = await makeGarmentOverlayPng(page, 64)
   const shoe = {
     id: 'browser-shoe-asset',
     ownerId: 'browser-user',
@@ -354,4 +371,20 @@ test('Studio renders an uploaded shoe as two independent animated meshes and exp
   expect(output.subarray(1, 4).toString()).toBe('PNG')
   expect(output.readUInt32BE(16)).toBe(64)
   expect(output.readUInt32BE(20)).toBe(64)
+  const alphaSamples = await page.evaluate(async (base64) => {
+    const image = new Image()
+    image.src = `data:image/png;base64,${base64}`
+    await image.decode()
+    const canvas = document.createElement('canvas')
+    canvas.width = image.width
+    canvas.height = image.height
+    const context = canvas.getContext('2d')!
+    context.drawImage(image, 0, 0)
+    return [
+      context.getImageData(32, 0, 1, 1).data[3],
+      context.getImageData(0, 32, 1, 1).data[3],
+      context.getImageData(0, 40, 1, 1).data[3],
+    ]
+  }, output.toString('base64'))
+  expect(alphaSamples).toEqual([0, 0, 0])
 })
