@@ -67,6 +67,7 @@
 const {createApp}=Vue;
 createApp({
  data(){return{zoom:10,showGrid:true,tool:'pencil',color:'#a5e35b',modelType:'Steve（宽手臂）',cursor:{x:0,y:0},drawing:false,activeLayer:0,nextLayerId:2,layers:[{id:1,name:'基础皮肤',visible:true,pixels:Array(4096).fill(null)}],history:[],historyIndex:-1,palette:['#17191f','#343b48','#596579','#8d9bad','#d9e0e8','#ffffff','#7c3f2c','#bd6b45','#e6a16c','#f0d3a4','#4c783e','#83b95b','#b8df7c','#294d83','#477fba','#83b9e8','#653f85','#a36ab8','#d98bb7','#e7a6b0','#3f252c','#80535a','#c48a86','#e8c1b1']}},
+ watch:{zoom(){this.$nextTick(()=>this.render())},showGrid(){this.$nextTick(()=>this.render())}},
  computed:{tools(){return[{id:'pencil',icon:'✎',name:'画笔'},{id:'eraser',icon:'▱',name:'橡皮擦'},{id:'bucket',icon:'▨',name:'油漆桶'},{id:'eyedropper',icon:'⌁',name:'吸管'}]},toolName(){return({pencil:'画笔',eraser:'橡皮擦',bucket:'油漆桶',eyedropper:'吸管'})[this.tool]}},
  mounted(){this.saveHistory();this.render();window.addEventListener('keydown',this.keydown)},
  beforeUnmount(){window.removeEventListener('keydown',this.keydown)},
