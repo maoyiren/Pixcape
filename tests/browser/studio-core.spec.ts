@@ -186,7 +186,7 @@ test('canonical Studio supports live outfit selection, controls, local restore a
   await expect(page.locator('.dressup-selected-list')).not.toContainText('眼眸花披肩')
   await expect(page.locator('.dressup-selected-list')).toContainText('苦力怕外套')
   await expect(page.locator('.dressup-selected-list')).toContainText('眼眸花披风')
-  await expect(page.getByLabel('穿搭名称')).toHaveValue('Studio 浏览器验收搭配')
+  await expect(page.getByLabel('穿搭名称')).toHaveValue('Studio 浏览器验收搭配（已重命名）')
   await expect(page.getByLabel('Minecraft 场景背景')).toHaveValue('forest')
 
   // The standard skin download is a 64x64 PNG; cape remains a separate equipment item.
