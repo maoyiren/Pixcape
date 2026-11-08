@@ -210,3 +210,10 @@
 - 项目数据层现状复核：Prisma 有 `Project`（标题/描述/可见性/资源关联）、`WorkspaceState`（当前项目/工具/素材/穿搭指针）和带 revision 的 `EditorDocument`；编辑器文档 API 已实现用户隔离、8 MiB/24 层校验及乐观并发冲突检测。但尚未发现 `/api/projects` CRUD 路由，且 Project 模型本身没有文档正文/revision。因此“完整创作项目跨设备保存/恢复”仍未形成闭环，不能将编辑器文档 API 或穿搭 JSON 备份等同于项目保存。
 - 当前下一项阻塞是获取 Studio 动作切换超时对应的浏览器 pageerror/trace 证据并修复真实原因；不应通过跳过动作断言、放宽超时或吞掉异常来制造绿灯。
 - 帽子/裤子/鞋子的真实 UV 与独立几何、完整项目持久化、真实 OAuth/邮件、移动端人工验收、PostgreSQL 备份恢复演练仍未完成。未合并 PR、未发布镜像、未部署生产、未执行生产迁移。
+## 3D 预览性能与 hover 回归诊断（2026-11-08 02:45 UTC）
+
+- 最新 CI #1112（head 1b88d20）失败项已从日志确认：Studio 测试在动作切换与多项 3D 控件操作后，点击“保存本地草稿”卡在 Playwright click 阶段；动作选择本身通过，且该测试在卡住前的 pageErrors 断言通过。因此本轮证据不支持“动作选择仍触发 pageerror”的结论。
+- 初步根因指向目录卡片 3D 预览生命周期：每个可见卡片都启动独立 SkinViewer 并持续自动旋转；旧 IntersectionObserver 逻辑一旦进入可视区便不再跟踪离开，导致滚出屏幕的 WebGL renderer 仍持续运行。主预览、单件预览和卡片预览叠加时可能造成浏览器主线程/GPU 负载过高。这是基于源码与失败位置的根因判断，仍需新 CI 证实。
+- 已提交 e19eafe：目录卡片预览现在持续跟踪 IntersectionObserver 的进入/离开状态，离开可视区时触发 cleanup/dispose；卡片不再自动旋转，pixelRatio 固定为 1。保留真实 SkinViewer 3D 预览，不退化为 PNG 放大图。
+- 头像 hover 用例失败原因也已定位：共享登录 helper 通过点击账户按钮确认会话，随后 Escape 关闭菜单但鼠标仍停留在按钮上；Playwright 再次 hover 不会产生新的 pointer-enter。已提交 19cde50，在 hover 前把鼠标移出按钮，再验证新 hover 转换。这是测试起始状态修正，不改变账户菜单功能。
+- 两项修复均等待最新 head CI 复验；在通过前不宣称 Studio 浏览器回归已解决。动作切换的 pageErrors 断言通过，但端到端完整场景仍因后续保存按钮点击超时而失败。
