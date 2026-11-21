@@ -49,6 +49,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <Link href="/creator">创作者中心</Link>
                 <Link href="/account">个人中心</Link>
                 <Link href="/login">登录 / 注册</Link>
+                <Link href="/privacy">隐私政策</Link>
+                <Link href="/terms">服务条款</Link>
               </nav>
               <p>CDPC 为独立社区工具项目，不隶属于 Mojang Studios 或 Microsoft，也非 Minecraft 官方产品。</p>
             </div>
