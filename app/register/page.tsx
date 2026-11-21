@@ -108,6 +108,7 @@ export default function RegisterPage() {
             <Text size="sm" c="dimmed" lh={1.7}>
               你的创作者身份将在注册时自动开通。作品默认保存在本机；公开发布、商业销售等功能会在对应权限开放后提供。
             </Text>
+            <Text size="xs" c="dimmed">创建账户即表示你已阅读并同意<Link href="/terms">服务条款</Link>，并知悉<Link href="/privacy">隐私政策</Link>。</Text>
           </Stack>
         </Paper>
       </Stack>
