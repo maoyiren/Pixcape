@@ -4,7 +4,7 @@ import { Anchor, Container, Divider, List, Stack, Text, Title } from '@mantine/c
 export const metadata = {
   title: '隐私政策',
   description: '了解 CDPC 如何处理账户、创作内容、设备与服务使用信息。',
-  alternates: { canonical: '/privacy' },
+  alternates: { canonical: 'https://liseezn.top/privacy' },
 }
 
 export default function PrivacyPage() {
