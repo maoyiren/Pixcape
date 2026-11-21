@@ -4,7 +4,7 @@ import { Anchor, Container, Divider, List, Stack, Text, Title } from '@mantine/c
 export const metadata = {
   title: '服务条款',
   description: 'CDPC 网站与像素角色创作工具的使用规则。',
-  alternates: { canonical: '/terms' },
+  alternates: { canonical: 'https://liseezn.top/terms' },
 }
 
 export default function TermsPage() {
